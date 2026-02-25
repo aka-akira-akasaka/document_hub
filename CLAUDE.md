@@ -304,4 +304,22 @@ Keep entries concise and accurate. Remove stale information.
 
 ---
 
-*Last updated: 2026-02-25 — Repository initialized; no source code yet.*
+---
+
+## AIアシスタント拡張ルール
+
+詳細は [`docs/assistant/guidelines.md`](docs/assistant/guidelines.md) を参照。
+
+### 要約
+
+| ルール | 内容 |
+|---|---|
+| 言語 | 常に日本語でやり取りする |
+| タスク実行 | 必ずサブエージェントに委託（直接実行しない） |
+| Plan Mode | 3ステップ以上は計画を先に提示してユーザー承認を得る |
+| Self-Improvement | ミスを `docs/assistant/errors_log.md` に記録し、毎回読み返す |
+| Verification | 完了前に「シニアコンサルタント承認レベルか」を自問する |
+| Elegance | 設計変更時は2〜3アプローチを比較検討する |
+| Bug Fix | バグは自分で調査・修正してから報告する |
+
+*Last updated: 2026-02-25 — AIアシスタント拡張ルールを追加。*
