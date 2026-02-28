@@ -10,10 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
-import { parseCSV, type ParseResult } from "@/lib/csv-parser";
+import { parseCSV, downloadCSV, type ParseResult } from "@/lib/csv-parser";
+import { CSV_COLUMNS } from "@/types/csv";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { toast } from "sonner";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Download } from "lucide-react";
 
 interface CsvImportDialogProps {
   dealId: string;
@@ -26,6 +27,11 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
 
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const handleDownloadTemplate = useCallback(() => {
+    const headerOnly = CSV_COLUMNS.join(",");
+    downloadCSV(headerOnly, "stakeholders_template.csv");
+  }, []);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -120,6 +126,15 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
               influence_level, attitude, relationship_owner, parent_id,
               email, phone, notes
             </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-xs text-blue-500 hover:text-blue-700"
+              onClick={handleDownloadTemplate}
+            >
+              <Download className="h-3 w-3 mr-1" />
+              テンプレートCSVをダウンロード
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
