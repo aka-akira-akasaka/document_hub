@@ -119,7 +119,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>ステークホルダー一括追加</DialogTitle>
         </DialogHeader>
