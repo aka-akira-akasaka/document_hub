@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { parseCSV, downloadCSV, type ParseResult } from "@/lib/csv-parser";
-import { CSV_COLUMNS } from "@/types/csv";
+import { CSV_COLUMNS, CSV_COLUMN_LABELS, CSV_TEMPLATE_EXAMPLE } from "@/types/csv";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { toast } from "sonner";
 import { Upload, FileText, Download } from "lucide-react";
@@ -29,8 +29,10 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
   const [dragOver, setDragOver] = useState(false);
 
   const handleDownloadTemplate = useCallback(() => {
-    const headerOnly = CSV_COLUMNS.join(",");
-    downloadCSV(headerOnly, "stakeholders_template.csv");
+    const headers = CSV_COLUMNS.map((col) => CSV_COLUMN_LABELS[col]);
+    const example = CSV_COLUMNS.map((col) => CSV_TEMPLATE_EXAMPLE[col]);
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    downloadCSV(csv, "stakeholders_template.csv");
   }, []);
 
   const handleFile = useCallback(
@@ -122,9 +124,8 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
               </Button>
             </label>
             <p className="text-xs text-gray-400 mt-4">
-              カラム: id, name, department, title, role_in_deal,
-              influence_level, attitude, relationship_owner, parent_id,
-              email, phone, notes
+              カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
+              関係構築担当, 上位者ID, メール, 電話番号, 備考
             </p>
             <Button
               variant="ghost"

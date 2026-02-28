@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { z } from "zod";
 import type { Stakeholder } from "@/types/stakeholder";
-import { CSV_COLUMNS, type CsvRow } from "@/types/csv";
+import { CSV_COLUMNS, CSV_LABEL_TO_COLUMN, type CsvRow } from "@/types/csv";
 
 const VALID_ROLES = [
   "decision_maker",
@@ -64,7 +64,10 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
   const result = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
+    transformHeader: (h) => {
+      const trimmed = h.trim().toLowerCase();
+      return CSV_LABEL_TO_COLUMN[trimmed] ?? trimmed;
+    },
   });
 
   const valid: Stakeholder[] = [];

@@ -27,3 +27,40 @@ export const CSV_COLUMNS: (keyof CsvRow)[] = [
   "phone",
   "notes",
 ];
+
+/** Japanese display names for CSV columns */
+export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
+  id: "ID",
+  name: "氏名",
+  department: "部署",
+  title: "役職",
+  role_in_deal: "案件での役割",
+  influence_level: "影響力",
+  attitude: "態度",
+  relationship_owner: "関係構築担当",
+  parent_id: "上位者ID",
+  email: "メール",
+  phone: "電話番号",
+  notes: "備考",
+};
+
+/** Reverse mapping: Japanese label → English key */
+export const CSV_LABEL_TO_COLUMN: Record<string, keyof CsvRow> = Object.fromEntries(
+  Object.entries(CSV_COLUMN_LABELS).map(([key, label]) => [label.toLowerCase(), key])
+) as Record<string, keyof CsvRow>;
+
+/** Example row for template CSV */
+export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
+  id: "",
+  name: "山田太郎",
+  department: "経営企画部",
+  title: "部長",
+  role_in_deal: "decision_maker",
+  influence_level: "5",
+  attitude: "supporter",
+  relationship_owner: "佐藤",
+  parent_id: "",
+  email: "yamada@example.com",
+  phone: "03-1234-5678",
+  notes: "最終決裁者",
+};
