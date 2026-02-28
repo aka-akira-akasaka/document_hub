@@ -123,10 +123,26 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
                 </span>
               </Button>
             </label>
-            <p className="text-xs text-gray-400 mt-4">
-              カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
-              関係構築担当, 上位者ID, メール, 電話番号, 備考
-            </p>
+            <div className="text-xs text-gray-400 mt-4 space-y-1">
+              <p>
+                カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
+                関係構築担当, 上位者ID, メール, 電話番号, 備考
+              </p>
+              <div className="text-left inline-block space-y-0.5 mt-1">
+                <p>
+                  <span className="text-gray-500 font-medium">影響力:</span>{" "}
+                  1（低）〜 5（高）
+                </p>
+                <p>
+                  <span className="text-gray-500 font-medium">態度:</span>{" "}
+                  champion / supporter / neutral / opponent / blocker
+                </p>
+                <p>
+                  <span className="text-gray-500 font-medium">案件での役割:</span>{" "}
+                  decision_maker / influencer / champion / coach / gatekeeper / user / evaluator
+                </p>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="sm"

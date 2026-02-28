@@ -5,16 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
-import { ArrowLeft, Download, Upload } from "lucide-react";
+import { ArrowLeft, Download, Upload, Users } from "lucide-react";
 
 interface DealHeaderProps {
   deal: Deal;
+  onBatchAddClick: () => void;
   onImportClick: () => void;
   onExportClick: () => void;
 }
 
 export function DealHeader({
   deal,
+  onBatchAddClick,
   onImportClick,
   onExportClick,
 }: DealHeaderProps) {
@@ -40,6 +42,10 @@ export function DealHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onBatchAddClick}>
+          <Users className="h-4 w-4 mr-1" />
+          一括追加
+        </Button>
         <Button variant="outline" size="sm" onClick={onImportClick}>
           <Upload className="h-4 w-4 mr-1" />
           CSVインポート
