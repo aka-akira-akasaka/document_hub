@@ -1,0 +1,11 @@
+id,name,department,title,role_in_deal,influence_level,attitude,relationship_owner,parent_id,email,phone,notes
+p001,佐藤一郎,経営企画部,取締役 経営企画部長,decision_maker,5,supporter,赤坂,,satoi@example.co.jp,03-1234-5001,最終意思決定者。DX推進に前向き
+p002,田中美咲,経営企画部,経営企画部 次長,influencer,4,champion,赤坂,p001,tanaka.m@example.co.jp,03-1234-5002,実質的な推進者。週次で進捗確認
+p003,鈴木健太,情報システム部,情報システム部長,evaluator,4,neutral,山本,p001,suzuki.k@example.co.jp,03-1234-5003,技術面の評価担当。セキュリティ要件に厳しい
+p004,高橋裕子,情報システム部,情報システム部 課長,user,3,supporter,,p003,takahashi.y@example.co.jp,03-1234-5004,実務の運用担当。現行システムの不満あり
+p005,渡辺大輔,総務部,総務部長,gatekeeper,3,opponent,,p001,watanabe.d@example.co.jp,03-1234-5005,コスト意識が強い。既存ベンダーとの関係を重視
+p006,伊藤恵,経理部,経理部長,user,4,champion,赤坂,p001,ito.m@example.co.jp,03-1234-5006,バクラクの既存ユーザー。導入効果を実感済み
+p007,山本翔太,経理部,経理部 主任,user,2,supporter,,p006,yamamoto.s@example.co.jp,03-1234-5007,日常的にバクラクを利用。操作性の改善要望あり
+p008,中村浩二,コンプライアンス部,コンプライアンス部長,gatekeeper,3,neutral,,p001,nakamura.k@example.co.jp,03-1234-5008,規制対応の観点で評価。クラウドサービスに慎重
+p009,小林真理,営業推進部,営業推進部長,influencer,3,neutral,山本,,kobayashi.m@example.co.jp,03-1234-5009,新規サービスへの関心あるが優先順位低い
+p010,加藤俊介,秘書室,秘書室長,coach,2,supporter,赤坂,,kato.s@example.co.jp,03-1234-5010,佐藤取締役のスケジュール管理。面談調整の窓口

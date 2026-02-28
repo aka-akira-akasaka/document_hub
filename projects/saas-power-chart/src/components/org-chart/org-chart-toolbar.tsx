@@ -1,0 +1,100 @@
+"use client";
+
+import { useReactFlow } from "@xyflow/react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Maximize2,
+  Minus,
+  Network,
+  Plus,
+  UserPlus,
+} from "lucide-react";
+
+interface OrgChartToolbarProps {
+  onAutoLayout: () => void;
+  onAddNode: () => void;
+}
+
+export function OrgChartToolbar({
+  onAutoLayout,
+  onAddNode,
+}: OrgChartToolbarProps) {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+
+  return (
+    <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 bg-white rounded-lg shadow-md border p-1">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => zoomIn()}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">ズームイン</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => zoomOut()}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">ズームアウト</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => fitView({ padding: 0.2 })}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">全体表示</TooltipContent>
+      </Tooltip>
+
+      <div className="border-t my-0.5" />
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onAutoLayout}
+          >
+            <Network className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">自動レイアウト</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onAddNode}
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">ステークホルダー追加</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
