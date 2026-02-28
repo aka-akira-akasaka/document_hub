@@ -23,6 +23,7 @@ import {
   ROLE_LABELS,
   ATTITUDE_OPTIONS,
   ATTITUDE_LABELS,
+  ATTITUDE_COLORS,
   INFLUENCE_LABELS,
 } from "@/lib/constants";
 import type {
@@ -31,7 +32,7 @@ import type {
   InfluenceLevel,
 } from "@/types/stakeholder";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 interface RowData {
   name: string;
@@ -119,119 +120,161 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-[90vw] max-h-[80vh] p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>ステークホルダー一括追加</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2">
-          {/* Header */}
-          <div className="grid grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.6fr_0.8fr_2rem] gap-2 text-xs font-medium text-gray-500 px-1">
-            <span>氏名 *</span>
-            <span>部署</span>
-            <span>役職</span>
-            <span>役割</span>
-            <span>影響力</span>
-            <span>態度</span>
-            <span />
-          </div>
-
-          {/* Rows */}
-          {rows.map((row, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.6fr_0.8fr_2rem] gap-2 items-center"
-            >
-              <Input
-                value={row.name}
-                onChange={(e) => updateRow(i, "name", e.target.value)}
-                placeholder="山田太郎"
-                className="h-9 text-sm"
-              />
-              <Input
-                value={row.department}
-                onChange={(e) => updateRow(i, "department", e.target.value)}
-                placeholder="経営企画部"
-                className="h-9 text-sm"
-              />
-              <Input
-                value={row.title}
-                onChange={(e) => updateRow(i, "title", e.target.value)}
-                placeholder="部長"
-                className="h-9 text-sm"
-              />
-              <Select
-                value={row.roleInDeal}
-                onValueChange={(v) => updateRow(i, "roleInDeal", v as RoleInDeal)}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={String(row.influenceLevel)}
-                onValueChange={(v) =>
-                  updateRow(i, "influenceLevel", Number(v) as InfluenceLevel)
-                }
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {([1, 2, 3, 4, 5] as InfluenceLevel[]).map((lv) => (
-                    <SelectItem key={lv} value={String(lv)}>
-                      {lv} - {INFLUENCE_LABELS[lv]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={row.attitude}
-                onValueChange={(v) => updateRow(i, "attitude", v as Attitude)}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ATTITUDE_OPTIONS.map((a) => (
-                    <SelectItem key={a} value={a}>
-                      {ATTITUDE_LABELS[a]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-red-500"
-                onClick={() => removeRow(i)}
-                disabled={rows.length <= 1}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+        <div className="overflow-auto px-6">
+          <table className="w-full border-collapse min-w-[900px]">
+            <thead>
+              <tr className="border-b-2 border-gray-200">
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap w-8">
+                  #
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[160px]">
+                  氏名 <span className="text-red-400">*</span>
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[140px]">
+                  部署
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[120px]">
+                  役職
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[140px]">
+                  役割
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[100px]">
+                  影響力
+                </th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[130px]">
+                  態度
+                </th>
+                <th className="w-10 px-1" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr
+                  key={i}
+                  className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                >
+                  <td className="px-3 py-2 text-xs text-gray-400 text-center align-middle">
+                    {i + 1}
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Input
+                      value={row.name}
+                      onChange={(e) => updateRow(i, "name", e.target.value)}
+                      placeholder="山田太郎"
+                      className="h-9 text-sm border-gray-200 focus:border-blue-400"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Input
+                      value={row.department}
+                      onChange={(e) => updateRow(i, "department", e.target.value)}
+                      placeholder="経営企画部"
+                      className="h-9 text-sm border-gray-200 focus:border-blue-400"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Input
+                      value={row.title}
+                      onChange={(e) => updateRow(i, "title", e.target.value)}
+                      placeholder="部長"
+                      className="h-9 text-sm border-gray-200 focus:border-blue-400"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Select
+                      value={row.roleInDeal}
+                      onValueChange={(v) => updateRow(i, "roleInDeal", v as RoleInDeal)}
+                    >
+                      <SelectTrigger className="h-9 text-sm border-gray-200 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {ROLE_LABELS[r]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Select
+                      value={String(row.influenceLevel)}
+                      onValueChange={(v) =>
+                        updateRow(i, "influenceLevel", Number(v) as InfluenceLevel)
+                      }
+                    >
+                      <SelectTrigger className="h-9 text-sm border-gray-200 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {([1, 2, 3, 4, 5] as InfluenceLevel[]).map((lv) => (
+                          <SelectItem key={lv} value={String(lv)}>
+                            {lv} - {INFLUENCE_LABELS[lv]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-2 py-1.5 align-middle">
+                    <Select
+                      value={row.attitude}
+                      onValueChange={(v) => updateRow(i, "attitude", v as Attitude)}
+                    >
+                      <SelectTrigger className="h-9 text-sm border-gray-200 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ATTITUDE_OPTIONS.map((a) => (
+                          <SelectItem key={a} value={a}>
+                            <span className="flex items-center gap-2">
+                              <span
+                                className={`inline-block w-2 h-2 rounded-full ${ATTITUDE_COLORS[a].bg} ${ATTITUDE_COLORS[a].border} border`}
+                              />
+                              {ATTITUDE_LABELS[a]}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-1 py-1.5 align-middle">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-300 hover:text-red-500"
+                      onClick={() => removeRow(i)}
+                      disabled={rows.length <= 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {/* Add row */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-gray-500"
-            onClick={addRow}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            行を追加
-          </Button>
+          <div className="py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-gray-500 hover:text-gray-700"
+              onClick={addRow}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              行を追加
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50">
           <p className="text-sm text-gray-500">
             {validCount}名が入力済み
           </p>
