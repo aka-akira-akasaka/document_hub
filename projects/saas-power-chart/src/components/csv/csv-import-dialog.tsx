@@ -135,11 +135,11 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
                 </p>
                 <p>
                   <span className="text-gray-500 font-medium">態度:</span>{" "}
-                  champion / supporter / neutral / opponent / blocker
+                  promoter / supportive / neutral / cautious / opposed
                 </p>
                 <p>
                   <span className="text-gray-500 font-medium">案件での役割:</span>{" "}
-                  decision_maker / influencer / champion / coach / gatekeeper / user / evaluator
+                  decision_maker / approver / initiator / evaluator / user / gatekeeper
                 </p>
               </div>
             </div>

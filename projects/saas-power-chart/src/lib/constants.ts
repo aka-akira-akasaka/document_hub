@@ -6,12 +6,12 @@ export const ATTITUDE_COLORS: Record<
   Attitude,
   { bg: string; text: string; border: string }
 > = {
-  champion: {
+  promoter: {
     bg: "bg-green-100",
     text: "text-green-800",
     border: "border-green-400",
   },
-  supporter: {
+  supportive: {
     bg: "bg-blue-100",
     text: "text-blue-800",
     border: "border-blue-400",
@@ -21,12 +21,12 @@ export const ATTITUDE_COLORS: Record<
     text: "text-gray-800",
     border: "border-gray-400",
   },
-  opponent: {
+  cautious: {
     bg: "bg-orange-100",
     text: "text-orange-800",
     border: "border-orange-400",
   },
-  blocker: {
+  opposed: {
     bg: "bg-red-100",
     text: "text-red-800",
     border: "border-red-400",
@@ -34,19 +34,19 @@ export const ATTITUDE_COLORS: Record<
 };
 
 export const ATTITUDE_LABELS: Record<Attitude, string> = {
-  champion: "チャンピオン",
-  supporter: "支持者",
+  promoter: "推進",
+  supportive: "賛成",
   neutral: "中立",
-  opponent: "反対者",
-  blocker: "障害者",
+  cautious: "慎重",
+  opposed: "反対",
 };
 
 export const ATTITUDE_OPTIONS: Attitude[] = [
-  "champion",
-  "supporter",
+  "promoter",
+  "supportive",
   "neutral",
-  "opponent",
-  "blocker",
+  "cautious",
+  "opposed",
 ];
 
 export const INFLUENCE_LABELS: Record<InfluenceLevel, string> = {
@@ -58,24 +58,22 @@ export const INFLUENCE_LABELS: Record<InfluenceLevel, string> = {
 };
 
 export const ROLE_LABELS: Record<RoleInDeal, string> = {
-  decision_maker: "意思決定者",
-  influencer: "影響者",
-  champion: "チャンピオン",
-  coach: "コーチ",
-  gatekeeper: "ゲートキーパー",
-  user: "ユーザー",
+  decision_maker: "決裁者",
+  approver: "承認者",
+  initiator: "起案者",
   evaluator: "評価者",
+  user: "利用者",
+  gatekeeper: "管理部門",
   unknown: "不明",
 };
 
 export const ROLE_OPTIONS: RoleInDeal[] = [
   "decision_maker",
-  "influencer",
-  "champion",
-  "coach",
-  "gatekeeper",
-  "user",
+  "approver",
+  "initiator",
   "evaluator",
+  "user",
+  "gatekeeper",
   "unknown",
 ];
 

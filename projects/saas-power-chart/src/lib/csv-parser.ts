@@ -5,21 +5,20 @@ import { CSV_COLUMNS, CSV_LABEL_TO_COLUMN, type CsvRow } from "@/types/csv";
 
 const VALID_ROLES = [
   "decision_maker",
-  "influencer",
-  "champion",
-  "coach",
-  "gatekeeper",
-  "user",
+  "approver",
+  "initiator",
   "evaluator",
+  "user",
+  "gatekeeper",
   "unknown",
 ] as const;
 
 const VALID_ATTITUDES = [
-  "champion",
-  "supporter",
+  "promoter",
+  "supportive",
   "neutral",
-  "opponent",
-  "blocker",
+  "cautious",
+  "opposed",
 ] as const;
 
 const csvRowSchema = z.object({

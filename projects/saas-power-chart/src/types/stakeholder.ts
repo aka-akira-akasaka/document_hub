@@ -1,21 +1,20 @@
 export type RoleInDeal =
   | "decision_maker"
-  | "influencer"
-  | "champion"
-  | "coach"
-  | "gatekeeper"
-  | "user"
+  | "approver"
+  | "initiator"
   | "evaluator"
+  | "user"
+  | "gatekeeper"
   | "unknown";
 
 export type InfluenceLevel = 1 | 2 | 3 | 4 | 5;
 
 export type Attitude =
-  | "champion"
-  | "supporter"
+  | "promoter"
+  | "supportive"
   | "neutral"
-  | "opponent"
-  | "blocker";
+  | "cautious"
+  | "opposed";
 
 export interface Stakeholder {
   id: string;
