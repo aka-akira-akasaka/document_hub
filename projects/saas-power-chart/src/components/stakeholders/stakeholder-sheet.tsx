@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StakeholderForm } from "./stakeholder-form";
 import { StakeholderDetail } from "./stakeholder-detail";
 import { useUiStore } from "@/stores/ui-store";
@@ -52,11 +52,11 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
         : stakeholder?.name ?? "";
 
   return (
-    <Sheet open={sheetOpen} onOpenChange={(open) => !open && closeSheet()}>
-      <SheetContent className="w-[400px] sm:w-[450px] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-        </SheetHeader>
+    <Dialog open={sheetOpen} onOpenChange={(open) => !open && closeSheet()}>
+      <DialogContent className="sm:max-w-[480px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
 
         {sheetMode === "view" && stakeholder && (
           <StakeholderDetail
@@ -74,7 +74,7 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
             parentOptions={parentOptions}
           />
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

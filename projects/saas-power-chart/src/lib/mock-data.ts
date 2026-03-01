@@ -1,0 +1,211 @@
+/**
+ * モックデータ（仮置き）
+ * TODO: 使用感確認後に削除する
+ *
+ * 組織階層イメージ（東海マルチファイナンス株式会社）:
+ *
+ * L1: 常務取締役 井上
+ * ├─ L2: 経営企画部 部長 藤原
+ * │  ├─ L3: DX推進課 課長 小林   ← 同部署並列
+ * │  │  └─ L4: DX推進課 主任 渡辺
+ * │  └─ L3: 企画課 課長 松本     ← 同部署並列
+ * ├─ L2: 情報システム部 部長 吉田
+ * │  ├─ L3: インフラ課 課長 山口  ← 同部署並列
+ * │  └─ L3: 開発課 課長 加藤     ← 同部署並列
+ * ├─ L2: 総務部 次長 石井
+ * └─ L2: 経理部 課長 木村
+ */
+import type { Stakeholder } from "@/types/stakeholder";
+import type { Deal } from "@/types/deal";
+
+export const MOCK_DEAL_ID = "mock-deal-001";
+
+export const MOCK_DEAL: Deal = {
+  id: MOCK_DEAL_ID,
+  name: "経費精算SaaS導入プロジェクト",
+  clientName: "東海マルチファイナンス株式会社",
+  stage: "proposal",
+  description: "経費精算・請求書処理のDX推進。全社400名規模での導入を検討中。",
+  targetAmount: 18000000,
+  expectedCloseDate: "2026-06-30",
+  createdAt: "2026-01-15T09:00:00.000Z",
+  updatedAt: "2026-03-01T10:00:00.000Z",
+};
+
+export const MOCK_STAKEHOLDERS: Stakeholder[] = [
+  // ── L1: トップ ──
+  {
+    id: "sh-001",
+    dealId: MOCK_DEAL_ID,
+    name: "井上 雅之",
+    department: "経営層",
+    title: "常務取締役",
+    roleInDeal: "approver",
+    influenceLevel: 5,
+    attitude: "neutral",
+    relationshipOwner: "",
+    parentId: null,
+    email: "inoue@tokai-mf.example.co.jp",
+    phone: "052-000-0001",
+    notes: "最終承認者。DX投資に前向きだが、ROI確認を重視。",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  // ── L2: 部長クラス ──
+  {
+    id: "sh-002",
+    dealId: MOCK_DEAL_ID,
+    name: "藤原 達也",
+    department: "経営企画部",
+    title: "部長",
+    roleInDeal: "decision_maker",
+    influenceLevel: 5,
+    attitude: "supportive",
+    relationshipOwner: "佐々木",
+    parentId: "sh-001",
+    email: "fujiwara@tokai-mf.example.co.jp",
+    phone: "052-000-0010",
+    notes: "実質的な意思決定者。中期経営計画でDX推進を掲げており本件を牽引。",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  {
+    id: "sh-003",
+    dealId: MOCK_DEAL_ID,
+    name: "吉田 健一",
+    department: "情報システム部",
+    title: "部長",
+    roleInDeal: "evaluator",
+    influenceLevel: 4,
+    attitude: "cautious",
+    relationshipOwner: "",
+    parentId: "sh-001",
+    email: "yoshida@tokai-mf.example.co.jp",
+    phone: "052-000-0020",
+    notes: "技術選定の責任者。セキュリティ基準と既存基幹システムとの連携を重視。",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  {
+    id: "sh-004",
+    dealId: MOCK_DEAL_ID,
+    name: "石井 真紀",
+    department: "総務部",
+    title: "次長",
+    roleInDeal: "gatekeeper",
+    influenceLevel: 3,
+    attitude: "opposed",
+    relationshipOwner: "",
+    parentId: "sh-001",
+    email: "ishii@tokai-mf.example.co.jp",
+    phone: "052-000-0030",
+    notes: "既存の紙ベース運用に満足。コスト増を懸念し導入に消極的。",
+    createdAt: "2026-02-05T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  {
+    id: "sh-005",
+    dealId: MOCK_DEAL_ID,
+    name: "木村 裕子",
+    department: "経理部",
+    title: "課長",
+    roleInDeal: "user",
+    influenceLevel: 2,
+    attitude: "promoter",
+    relationshipOwner: "佐々木",
+    parentId: "sh-001",
+    email: "kimura@tokai-mf.example.co.jp",
+    phone: "",
+    notes: "現場で月次締め作業に追われており、自動化を強く希望。導入後の主要ユーザー。",
+    createdAt: "2026-02-10T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  // ── L3: 課長クラス（経営企画部 並列） ──
+  {
+    id: "sh-006",
+    dealId: MOCK_DEAL_ID,
+    name: "小林 拓海",
+    department: "経営企画部 DX推進課",
+    title: "課長",
+    roleInDeal: "initiator",
+    influenceLevel: 4,
+    attitude: "promoter",
+    relationshipOwner: "佐々木",
+    parentId: "sh-002",
+    email: "kobayashi@tokai-mf.example.co.jp",
+    phone: "052-000-0011",
+    notes: "本案件の起案者・推進リーダー。競合製品の比較検討も担当。",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  {
+    id: "sh-007",
+    dealId: MOCK_DEAL_ID,
+    name: "松本 彩花",
+    department: "経営企画部 企画課",
+    title: "課長",
+    roleInDeal: "evaluator",
+    influenceLevel: 3,
+    attitude: "neutral",
+    relationshipOwner: "",
+    parentId: "sh-002",
+    email: "matsumoto@tokai-mf.example.co.jp",
+    phone: "052-000-0012",
+    notes: "費用対効果の分析を担当。数字で判断するタイプ。",
+    createdAt: "2026-02-05T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  // ── L3: 課長クラス（情報システム部 並列） ──
+  {
+    id: "sh-008",
+    dealId: MOCK_DEAL_ID,
+    name: "山口 大地",
+    department: "情報システム部 インフラ課",
+    title: "課長",
+    roleInDeal: "gatekeeper",
+    influenceLevel: 3,
+    attitude: "cautious",
+    relationshipOwner: "",
+    parentId: "sh-003",
+    email: "yamaguchi@tokai-mf.example.co.jp",
+    phone: "052-000-0021",
+    notes: "ネットワーク・サーバ管理を統括。クラウド移行に慎重。",
+    createdAt: "2026-02-05T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  {
+    id: "sh-009",
+    dealId: MOCK_DEAL_ID,
+    name: "加藤 莉奈",
+    department: "情報システム部 開発課",
+    title: "課長",
+    roleInDeal: "evaluator",
+    influenceLevel: 3,
+    attitude: "supportive",
+    relationshipOwner: "",
+    parentId: "sh-003",
+    email: "kato@tokai-mf.example.co.jp",
+    phone: "052-000-0022",
+    notes: "API連携・技術検証を担当。SaaS連携の実績あり、導入に前向き。",
+    createdAt: "2026-02-05T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+  // ── L4: 主任クラス ──
+  {
+    id: "sh-010",
+    dealId: MOCK_DEAL_ID,
+    name: "渡辺 翔太",
+    department: "経営企画部 DX推進課",
+    title: "主任",
+    roleInDeal: "user",
+    influenceLevel: 2,
+    attitude: "promoter",
+    relationshipOwner: "佐々木",
+    parentId: "sh-006",
+    email: "watanabe@tokai-mf.example.co.jp",
+    phone: "",
+    notes: "PoCの実務担当。現行業務フローを最も詳しく把握している。",
+    createdAt: "2026-02-10T09:00:00.000Z",
+    updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+];
