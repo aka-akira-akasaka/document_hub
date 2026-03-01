@@ -22,7 +22,7 @@ export default function DealLayout({
   const deal = useDealStore((s) => s.getDealById(dealId));
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const openBatchAdd = useUiStore((s) => s.openBatchAdd);
-  const { handleExport } = useCsvExport({
+  const { handleExport, handleYamlExport } = useCsvExport({
     dealId,
     dealName: deal?.name ?? "export",
   });
@@ -41,7 +41,8 @@ export default function DealLayout({
         deal={deal}
         onBatchAddClick={openBatchAdd}
         onImportClick={openCsvImport}
-        onExportClick={handleExport}
+        onCsvExportClick={handleExport}
+        onYamlExportClick={handleYamlExport}
       />
       <DealTabs dealId={dealId} />
       <div className="flex-1 flex flex-col">{children}</div>

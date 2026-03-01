@@ -11,10 +11,22 @@ import { Button } from "@/components/ui/button";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { parseCSV, downloadCSV, type ParseResult } from "@/lib/csv-parser";
+import { parseYAML, downloadYAML, YAML_TEMPLATE } from "@/lib/yaml-parser";
 import { CSV_COLUMNS, CSV_COLUMN_LABELS, CSV_TEMPLATE_EXAMPLE } from "@/types/csv";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { toast } from "sonner";
 import { Upload, FileText, Download } from "lucide-react";
+
+// 対応ファイル拡張子
+const ACCEPTED_EXTENSIONS = [".csv", ".yaml", ".yml"];
+
+function isYamlFile(filename: string): boolean {
+  return filename.endsWith(".yaml") || filename.endsWith(".yml");
+}
+
+function isAcceptedFile(filename: string): boolean {
+  return ACCEPTED_EXTENSIONS.some((ext) => filename.endsWith(ext));
+}
 
 interface CsvImportDialogProps {
   dealId: string;
@@ -28,11 +40,15 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const handleDownloadTemplate = useCallback(() => {
+  const handleDownloadCsvTemplate = useCallback(() => {
     const headers = CSV_COLUMNS.map((col) => CSV_COLUMN_LABELS[col]);
     const example = CSV_COLUMNS.map((col) => CSV_TEMPLATE_EXAMPLE[col]);
     const csv = [headers.join(","), example.join(",")].join("\n");
     downloadCSV(csv, "stakeholders_template.csv");
+  }, []);
+
+  const handleDownloadYamlTemplate = useCallback(() => {
+    downloadYAML(YAML_TEMPLATE, "stakeholders_template.yaml");
   }, []);
 
   const handleFile = useCallback(
@@ -40,7 +56,9 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
-        const result = parseCSV(text, dealId);
+        const result = isYamlFile(file.name)
+          ? parseYAML(text, dealId)
+          : parseCSV(text, dealId);
         setParseResult(result);
       };
       reader.readAsText(file);
@@ -53,7 +71,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
       e.preventDefault();
       setDragOver(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith(".csv")) {
+      if (file && isAcceptedFile(file.name)) {
         handleFile(file);
       }
     },
@@ -87,7 +105,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>CSVインポート</DialogTitle>
+          <DialogTitle>データインポート</DialogTitle>
         </DialogHeader>
 
         {!parseResult ? (
@@ -106,13 +124,13 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
           >
             <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
             <p className="text-sm text-gray-600 mb-2">
-              CSVファイルをドラッグ&ドロップ
+              CSV / YAML ファイルをドラッグ&ドロップ
             </p>
             <p className="text-xs text-gray-400 mb-4">または</p>
             <label>
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.yaml,.yml"
                 className="hidden"
                 onChange={handleFileInput}
               />
@@ -124,9 +142,14 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
               </Button>
             </label>
             <div className="text-xs text-gray-400 mt-4 space-y-1">
+              <p className="font-medium text-gray-500">CSV形式</p>
               <p>
                 カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
                 関係構築担当, 上位者ID, メール, 電話番号, 備考
+              </p>
+              <p className="font-medium text-gray-500 mt-2">YAML形式</p>
+              <p>
+                ツリー構造で階層関係を表現（name, title, department, children）
               </p>
               <div className="text-left inline-block space-y-0.5 mt-1">
                 <p>
@@ -143,21 +166,32 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2 text-xs text-blue-500 hover:text-blue-700"
-              onClick={handleDownloadTemplate}
-            >
-              <Download className="h-3 w-3 mr-1" />
-              テンプレートCSVをダウンロード
-            </Button>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-blue-500 hover:text-blue-700"
+                onClick={handleDownloadCsvTemplate}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                CSVテンプレート
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-blue-500 hover:text-blue-700"
+                onClick={handleDownloadYamlTemplate}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                YAMLテンプレート
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-4 text-sm">
               <span>
-                合計: <strong>{parseResult.totalRows}</strong>行
+                合計: <strong>{parseResult.totalRows}</strong>件
               </span>
               <span className="text-green-600">
                 有効: <strong>{parseResult.valid.length}</strong>件

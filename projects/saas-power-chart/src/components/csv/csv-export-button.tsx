@@ -2,6 +2,7 @@
 
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { exportCSV, downloadCSV } from "@/lib/csv-parser";
+import { exportYAML, downloadYAML } from "@/lib/yaml-parser";
 import { toast } from "sonner";
 import type { Stakeholder } from "@/types/stakeholder";
 
@@ -29,5 +30,17 @@ export function useCsvExport({ dealId, dealName }: CsvExportButtonProps) {
     toast.success(`${stakeholders.length}件をCSVエクスポートしました`);
   };
 
-  return { handleExport };
+  const handleYamlExport = () => {
+    if (stakeholders.length === 0) {
+      toast.error("エクスポートするステークホルダーがいません");
+      return;
+    }
+
+    const yamlStr = exportYAML(stakeholders);
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    downloadYAML(yamlStr, `${dealName}_${date}.yaml`);
+    toast.success(`${stakeholders.length}件をYAMLエクスポートしました`);
+  };
+
+  return { handleExport, handleYamlExport };
 }

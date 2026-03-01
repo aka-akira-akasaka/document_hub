@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
 import { ArrowLeft, Download, Upload, Users } from "lucide-react";
@@ -11,14 +17,16 @@ interface DealHeaderProps {
   deal: Deal;
   onBatchAddClick: () => void;
   onImportClick: () => void;
-  onExportClick: () => void;
+  onCsvExportClick: () => void;
+  onYamlExportClick: () => void;
 }
 
 export function DealHeader({
   deal,
   onBatchAddClick,
   onImportClick,
-  onExportClick,
+  onCsvExportClick,
+  onYamlExportClick,
 }: DealHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b bg-white">
@@ -48,12 +56,24 @@ export function DealHeader({
         </Button>
         <Button variant="outline" size="sm" onClick={onImportClick}>
           <Upload className="h-4 w-4 mr-1" />
-          CSVインポート
+          インポート
         </Button>
-        <Button variant="outline" size="sm" onClick={onExportClick}>
-          <Download className="h-4 w-4 mr-1" />
-          CSVエクスポート
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              エクスポート
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onCsvExportClick}>
+              CSVエクスポート
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onYamlExportClick}>
+              YAMLエクスポート
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

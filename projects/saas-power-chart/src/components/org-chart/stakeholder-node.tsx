@@ -15,7 +15,12 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      <Handle type="target" position={Position.Top} className="!bg-gray-400" />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
+        isConnectable
+      />
       <div
         className={cn(
           "bg-white rounded-lg shadow-sm border-2 p-3 w-[200px] cursor-pointer transition-shadow",
@@ -58,7 +63,8 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-gray-400"
+        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
+        isConnectable
       />
     </>
   );

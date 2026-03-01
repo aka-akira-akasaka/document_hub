@@ -9,6 +9,7 @@ import {
   useNodesState,
   useEdgesState,
   type NodeMouseHandler,
+  type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -44,6 +45,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
 
   const openSheet = useUiStore((s) => s.openSheet);
+  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
@@ -52,6 +54,32 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     setNodes(layoutNodes);
     setEdges(layoutEdges);
   }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+
+  // ノード接続: ドラッグで上下関係（parentId）を設定
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      if (connection.source === connection.target) return;
+
+      // 循環参照チェック: source が target の子孫でないことを確認
+      const isDescendant = (parentId: string, targetId: string): boolean => {
+        let current = stakeholders.find((s) => s.id === parentId);
+        while (current?.parentId) {
+          if (current.parentId === targetId) return true;
+          current = stakeholders.find((s) => s.id === current!.parentId);
+        }
+        return false;
+      };
+
+      if (isDescendant(connection.source, connection.target)) return;
+
+      // 接続元を上司、接続先を部下とする上下関係を作成
+      updateStakeholder(connection.target, dealId, {
+        parentId: connection.source,
+      });
+    },
+    [dealId, stakeholders, updateStakeholder]
+  );
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
@@ -93,6 +121,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeDragStop={onNodeDragStop}
