@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SideNav } from "@/components/layout/side-nav";
 import "./globals.css";
 
 const notoSansJP = Noto_Sans_JP({
@@ -24,7 +25,11 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${notoSansJP.variable} font-sans antialiased`}>
         <TooltipProvider>
-          {children}
+          {/* サイドバー + メインコンテンツ の横並びレイアウト */}
+          <div className="flex min-h-screen">
+            <SideNav />
+            <div className="flex-1 flex flex-col min-w-0">{children}</div>
+          </div>
           <Toaster />
         </TooltipProvider>
       </body>
