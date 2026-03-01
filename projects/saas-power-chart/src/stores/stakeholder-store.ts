@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
+import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS } from "@/lib/mock-data";
 
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 const EMPTY_RELATIONSHIPS: Relationship[] = [];
@@ -45,6 +46,9 @@ interface StakeholderState {
     dealId: string,
     position: { x: number; y: number }
   ) => void;
+
+  /** モックデータをシード（仮置き・確認後削除） */
+  seedMockData: () => void;
 }
 
 export const useStakeholderStore = create<StakeholderState>()(
@@ -189,6 +193,17 @@ export const useStakeholderStore = create<StakeholderState>()(
               [dealId]: list.map((s) =>
                 s.id === id ? { ...s, position } : s
               ),
+            },
+          };
+        }),
+
+      seedMockData: () =>
+        set((state) => {
+          if ((state.stakeholdersByDeal[MOCK_DEAL_ID] ?? []).length > 0) return state;
+          return {
+            stakeholdersByDeal: {
+              ...state.stakeholdersByDeal,
+              [MOCK_DEAL_ID]: MOCK_STAKEHOLDERS,
             },
           };
         }),
