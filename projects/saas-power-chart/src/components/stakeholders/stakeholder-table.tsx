@@ -150,6 +150,7 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
                   </th>
                 ))}
                 <th className="px-4 py-2.5 text-left font-medium">役割</th>
+                <th className="px-4 py-2.5 text-left font-medium">ミッション</th>
                 <th className="px-4 py-2.5 text-left font-medium">担当者</th>
               </tr>
             </thead>
@@ -171,6 +172,9 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
                   </td>
                   <td className="px-4 py-2.5">
                     {ROLE_LABELS[s.roleInDeal]}
+                  </td>
+                  <td className="px-4 py-2.5 max-w-[200px] truncate">
+                    {s.mission}
                   </td>
                   <td className="px-4 py-2.5">{s.relationshipOwner}</td>
                 </tr>

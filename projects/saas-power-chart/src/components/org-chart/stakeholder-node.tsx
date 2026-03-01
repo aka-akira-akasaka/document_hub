@@ -42,9 +42,13 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
             )}
           />
         </div>
-        <p className="text-xs text-muted-foreground truncate mb-2">
+        <p className="text-xs text-muted-foreground truncate">
           {s.department}
         </p>
+        {s.mission && (
+          <p className="text-xs text-blue-600 truncate mb-1">{s.mission}</p>
+        )}
+        {!s.mission && <div className="mb-1" />}
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
             {ROLE_LABELS[s.roleInDeal]}

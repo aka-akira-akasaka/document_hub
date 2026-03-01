@@ -25,6 +25,7 @@ export interface Stakeholder {
   roleInDeal: RoleInDeal;
   influenceLevel: InfluenceLevel;
   attitude: Attitude;
+  mission: string;
   relationshipOwner: string;
   parentId: string | null;
   email: string;

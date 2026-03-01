@@ -56,6 +56,7 @@ export function StakeholderForm({
   const [attitude, setAttitude] = useState<Attitude>(
     stakeholder?.attitude ?? "neutral"
   );
+  const [mission, setMission] = useState(stakeholder?.mission ?? "");
   const [relationshipOwner, setRelationshipOwner] = useState(
     stakeholder?.relationshipOwner ?? ""
   );
@@ -76,6 +77,7 @@ export function StakeholderForm({
       roleInDeal,
       influenceLevel,
       attitude,
+      mission: mission.trim(),
       relationshipOwner: relationshipOwner.trim(),
       parentId: parentId || null,
       email: email.trim(),
@@ -226,6 +228,16 @@ export function StakeholderForm({
             onChange={(e) => setPhone(e.target.value)}
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="sh-mission">ミッション</Label>
+        <Input
+          id="sh-mission"
+          value={mission}
+          onChange={(e) => setMission(e.target.value)}
+          placeholder="例: DX推進の全社統括"
+        />
       </div>
 
       <div className="space-y-2">

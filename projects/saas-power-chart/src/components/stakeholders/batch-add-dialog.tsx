@@ -99,6 +99,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
         roleInDeal: row.roleInDeal,
         influenceLevel: row.influenceLevel,
         attitude: row.attitude,
+        mission: "",
         relationshipOwner: "",
         parentId: null,
         email: "",

@@ -40,6 +40,7 @@ export function StakeholderDetail({
           label="影響力"
           value={`${INFLUENCE_LABELS[s.influenceLevel as InfluenceLevel]} (${s.influenceLevel}/5)`}
         />
+        <DetailRow label="ミッション" value={s.mission || "未設定"} />
         <DetailRow label="関係構築担当" value={s.relationshipOwner || "未設定"} />
       </div>
 

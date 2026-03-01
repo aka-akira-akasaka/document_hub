@@ -13,6 +13,7 @@ export interface YamlOrgNode {
   role_in_deal?: string;
   influence_level?: number;
   attitude?: string;
+  mission?: string;
   relationship_owner?: string;
   email?: string;
   phone?: string;
@@ -118,6 +119,7 @@ export function parseYAML(yamlText: string, dealId: string): ParseResult {
           roleInDeal,
           influenceLevel,
           attitude,
+          mission: String(node.mission ?? ""),
           relationshipOwner: String(node.relationship_owner ?? ""),
           parentId: parentId,
           email: String(node.email ?? ""),
@@ -160,6 +162,7 @@ interface ExportNode {
   role_in_deal?: string;
   influence_level?: number;
   attitude?: string;
+  mission?: string;
   relationship_owner?: string;
   email?: string;
   phone?: string;
@@ -182,6 +185,7 @@ export function exportYAML(stakeholders: Stakeholder[]): string {
       ...(s.roleInDeal !== "unknown" && { role_in_deal: s.roleInDeal }),
       ...(s.influenceLevel !== 3 && { influence_level: s.influenceLevel }),
       ...(s.attitude !== "neutral" && { attitude: s.attitude }),
+      ...(s.mission && { mission: s.mission }),
       ...(s.relationshipOwner && { relationship_owner: s.relationshipOwner }),
       ...(s.email && { email: s.email }),
       ...(s.phone && { phone: s.phone }),
@@ -245,6 +249,7 @@ export const YAML_TEMPLATE = `- name: 山田太郎
   role_in_deal: decision_maker
   influence_level: 5
   attitude: supportive
+  mission: 中期経営計画の推進
   children:
     - name: 鈴木一郎
       title: 営業本部長

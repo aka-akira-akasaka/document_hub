@@ -6,6 +6,7 @@ export interface CsvRow {
   role_in_deal: string;
   influence_level: string;
   attitude: string;
+  mission: string;
   relationship_owner: string;
   parent_id: string;
   email: string;
@@ -21,6 +22,7 @@ export const CSV_COLUMNS: (keyof CsvRow)[] = [
   "role_in_deal",
   "influence_level",
   "attitude",
+  "mission",
   "relationship_owner",
   "parent_id",
   "email",
@@ -37,6 +39,7 @@ export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
   role_in_deal: "案件での役割",
   influence_level: "影響力",
   attitude: "態度",
+  mission: "ミッション",
   relationship_owner: "関係構築担当",
   parent_id: "上位者ID",
   email: "メール",
@@ -58,6 +61,7 @@ export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
   role_in_deal: "decision_maker",
   influence_level: "5",
   attitude: "supportive",
+  mission: "中期経営計画の推進",
   relationship_owner: "佐藤",
   parent_id: "",
   email: "yamada@example.com",

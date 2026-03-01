@@ -40,6 +40,7 @@ const csvRowSchema = z.object({
     .enum(VALID_ATTITUDES)
     .optional()
     .default("neutral"),
+  mission: z.string().optional().default(""),
   relationship_owner: z.string().optional().default(""),
   parent_id: z.string().optional().default(""),
   email: z.string().optional().default(""),
@@ -95,6 +96,7 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
       roleInDeal: d.role_in_deal,
       influenceLevel: d.influence_level as 1 | 2 | 3 | 4 | 5,
       attitude: d.attitude,
+      mission: d.mission ?? "",
       relationshipOwner: d.relationship_owner ?? "",
       parentId: d.parent_id || null,
       email: d.email ?? "",
@@ -118,6 +120,7 @@ export function stakeholderToCsvRow(s: Stakeholder): CsvRow {
     role_in_deal: s.roleInDeal,
     influence_level: String(s.influenceLevel),
     attitude: s.attitude,
+    mission: s.mission,
     relationship_owner: s.relationshipOwner,
     parent_id: s.parentId ?? "",
     email: s.email,
