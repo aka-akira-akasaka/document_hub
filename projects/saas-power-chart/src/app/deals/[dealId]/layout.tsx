@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { AppHeader } from "@/components/layout/app-header";
 import { DealHeader } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
@@ -37,8 +36,7 @@ export default function DealLayout({
   if (!deal) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <AppHeader />
+    <div className="flex-1 bg-gray-50 flex flex-col">
       <DealHeader
         deal={deal}
         onBatchAddClick={openBatchAdd}
