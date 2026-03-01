@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -50,10 +50,23 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
 
+  const autoLayoutApplied = useRef(false);
+
   useEffect(() => {
     setNodes(layoutNodes);
     setEdges(layoutEdges);
   }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+
+  // positionが未設定のノードばかりの場合、初回のみ自動レイアウトを適用
+  useEffect(() => {
+    if (autoLayoutApplied.current) return;
+    if (stakeholders.length === 0) return;
+    const allUnpositioned = stakeholders.every((s) => !s.position);
+    if (allUnpositioned) {
+      autoLayoutApplied.current = true;
+      applyAutoLayout();
+    }
+  }, [stakeholders, applyAutoLayout]);
 
   // ノード接続: ドラッグで上下関係（parentId）を設定
   const onConnect = useCallback(
