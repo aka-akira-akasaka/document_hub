@@ -14,19 +14,19 @@ interface InfluenceAttitudeMatrixProps {
 }
 
 const ATTITUDE_ORDER: Attitude[] = [
-  "blocker",
-  "opponent",
+  "opposed",
+  "cautious",
   "neutral",
-  "supporter",
-  "champion",
+  "supportive",
+  "promoter",
 ];
 
 const ATTITUDE_X: Record<Attitude, number> = {
-  blocker: 0,
-  opponent: 1,
+  opposed: 0,
+  cautious: 1,
   neutral: 2,
-  supporter: 3,
-  champion: 4,
+  supportive: 3,
+  promoter: 4,
 };
 
 const SVG_WIDTH = 700;
@@ -45,11 +45,11 @@ function getPosition(s: Stakeholder): { cx: number; cy: number } {
 }
 
 const DOT_COLORS: Record<Attitude, string> = {
-  champion: "#22c55e",
-  supporter: "#3b82f6",
+  promoter: "#22c55e",
+  supportive: "#3b82f6",
   neutral: "#9ca3af",
-  opponent: "#f97316",
-  blocker: "#ef4444",
+  cautious: "#f97316",
+  opposed: "#ef4444",
 };
 
 export function InfluenceAttitudeMatrix({

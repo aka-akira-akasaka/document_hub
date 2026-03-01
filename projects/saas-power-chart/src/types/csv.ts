@@ -57,7 +57,7 @@ export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
   title: "部長",
   role_in_deal: "decision_maker",
   influence_level: "5",
-  attitude: "supporter",
+  attitude: "supportive",
   relationship_owner: "佐藤",
   parent_id: "",
   email: "yamada@example.com",
