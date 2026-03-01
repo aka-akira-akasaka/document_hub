@@ -12,6 +12,7 @@ export interface CsvRow {
   email: string;
   phone: string;
   notes: string;
+  is_unknown: string;
 }
 
 export const CSV_COLUMNS: (keyof CsvRow)[] = [
@@ -28,6 +29,7 @@ export const CSV_COLUMNS: (keyof CsvRow)[] = [
   "email",
   "phone",
   "notes",
+  "is_unknown",
 ];
 
 /** Japanese display names for CSV columns */
@@ -45,6 +47,7 @@ export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
   email: "メール",
   phone: "電話番号",
   notes: "備考",
+  is_unknown: "不明フラグ",
 };
 
 /** Reverse mapping: Japanese label → English key */
@@ -67,4 +70,5 @@ export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
   email: "yamada@example.com",
   phone: "03-1234-5678",
   notes: "最終決裁者",
+  is_unknown: "",
 };

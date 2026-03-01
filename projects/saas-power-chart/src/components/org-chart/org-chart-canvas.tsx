@@ -16,6 +16,7 @@ import "@xyflow/react/dist/style.css";
 import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgChartToolbar } from "./org-chart-toolbar";
+import { AddNodeMenu } from "./add-node-menu";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
@@ -23,6 +24,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Stakeholder } from "@/types/stakeholder";
+import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 
@@ -45,6 +47,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
 
   const openSheet = useUiStore((s) => s.openSheet);
+  const addContext = useUiStore((s) => s.addContext);
+  const closeAddPopover = useUiStore((s) => s.closeAddPopover);
+  const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
@@ -96,9 +101,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
+      // +ボタンのポップオーバーが開いている場合はクリックを無視
+      if (addContext) return;
       openSheet(node.id, "view");
     },
-    [openSheet]
+    [openSheet, addContext]
   );
 
   const onNodeDoubleClick: NodeMouseHandler = useCallback(
@@ -111,6 +118,121 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const handleAddNode = useCallback(() => {
     openSheet(null, "create");
   }, [openSheet]);
+
+  // +ボタン → 「新規作成」を選択した場合
+  const handleCreateFromContext = useCallback(
+    (parentId: string | null, isUnknown?: boolean) => {
+      const context = useUiStore.getState().addContext;
+      if (!context) return;
+
+      if (isUnknown) {
+        // 不明人物を即座に追加
+        let resolvedParentId = parentId;
+        let childToRelink: string | null = null;
+
+        if (context.type === "edge") {
+          resolvedParentId = context.sourceId;
+          childToRelink = context.targetId;
+        } else if (context.type === "node" && context.position === "above") {
+          // 上司として追加: 現在のノードの親を新ノードの親に、現在のノードの親を新ノードに
+          const currentNode = stakeholders.find((s) => s.id === context.nodeId);
+          resolvedParentId = currentNode?.parentId ?? null;
+          childToRelink = context.nodeId;
+        }
+
+        const newStakeholder = addStakeholder({
+          dealId,
+          name: "不明",
+          department: "",
+          title: "",
+          roleInDeal: "unknown",
+          influenceLevel: 3,
+          attitude: "neutral",
+          mission: "",
+          relationshipOwner: "",
+          parentId: resolvedParentId,
+          email: "",
+          phone: "",
+          notes: "",
+          isUnknown: true,
+        });
+
+        // エッジ中間 or 上司追加の場合、元の子を新ノードの下に付け替え
+        if (childToRelink) {
+          updateStakeholder(childToRelink, dealId, {
+            parentId: newStakeholder.id,
+          });
+        }
+
+        toast.success("不明人物を追加しました");
+        // 追加後すぐに編集ダイアログを開く
+        openSheet(newStakeholder.id, "edit");
+        return;
+      }
+
+      // 新規作成 → フォームを開く
+      if (context.type === "node") {
+        if (context.position === "below") {
+          // 部下として追加: parentId = このノード
+          // StakeholderFormにparentIdを渡すためにUIストアにコンテキストを残す
+          openSheet(null, "create");
+        } else {
+          // 上司として追加: parentId = このノードの親
+          openSheet(null, "create");
+        }
+      } else if (context.type === "edge") {
+        // 中間者として追加
+        openSheet(null, "create");
+      }
+    },
+    [dealId, stakeholders, addStakeholder, updateStakeholder, openSheet]
+  );
+
+  // +ボタン → 「既存の人物を選択」した場合
+  const handleSelectExisting = useCallback(
+    (stakeholderId: string) => {
+      const context = useUiStore.getState().addContext;
+      if (!context) return;
+
+      if (context.type === "node") {
+        if (context.position === "below") {
+          // 選択した人物をこのノードの部下に
+          updateStakeholder(stakeholderId, dealId, {
+            parentId: context.nodeId,
+          });
+        } else {
+          // 選択した人物をこのノードの上司に
+          const currentNode = stakeholders.find((s) => s.id === context.nodeId);
+          // 選択した人物の親を、現在のノードの親に
+          updateStakeholder(stakeholderId, dealId, {
+            parentId: currentNode?.parentId ?? null,
+          });
+          // 現在のノードの親を、選択した人物に
+          updateStakeholder(context.nodeId, dealId, {
+            parentId: stakeholderId,
+          });
+        }
+      } else if (context.type === "edge") {
+        // 中間者として挿入: source→選択した人物→target
+        updateStakeholder(stakeholderId, dealId, {
+          parentId: context.sourceId,
+        });
+        updateStakeholder(context.targetId, dealId, {
+          parentId: stakeholderId,
+        });
+      }
+
+      toast.success("人物を接続しました");
+    },
+    [dealId, stakeholders, updateStakeholder]
+  );
+
+  // キャンバスクリックでポップオーバーを閉じる
+  const onPaneClick = useCallback(() => {
+    if (addContext) {
+      closeAddPopover();
+    }
+  }, [addContext, closeAddPopover]);
 
   if (stakeholders.length === 0) {
     return (
@@ -138,6 +260,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeDragStop={onNodeDragStop}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
@@ -158,6 +281,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         />
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
       </ReactFlow>
+
+      {/* +ボタンの追加メニュー */}
+      <AddNodeMenu
+        dealId={dealId}
+        onCreateNew={handleCreateFromContext}
+        onSelectExisting={handleSelectExisting}
+      />
     </div>
   );
 }

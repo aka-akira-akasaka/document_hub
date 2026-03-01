@@ -32,6 +32,10 @@ interface StakeholderFormProps {
   stakeholder?: Stakeholder;
   onClose: () => void;
   parentOptions: { id: string; name: string }[];
+  /** +ボタンからのコンテキストで自動設定されるparentId */
+  defaultParentId?: string | null;
+  /** 作成後にparentIdをリンクし直す子ノードID（上司追加・中間追加用） */
+  childToRelink?: string | null;
 }
 
 export function StakeholderForm({
@@ -39,6 +43,8 @@ export function StakeholderForm({
   stakeholder,
   onClose,
   parentOptions,
+  defaultParentId,
+  childToRelink,
 }: StakeholderFormProps) {
   const isEdit = !!stakeholder;
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
@@ -60,7 +66,9 @@ export function StakeholderForm({
   const [relationshipOwner, setRelationshipOwner] = useState(
     stakeholder?.relationshipOwner ?? ""
   );
-  const [parentId, setParentId] = useState(stakeholder?.parentId ?? "");
+  const [parentId, setParentId] = useState(
+    stakeholder?.parentId ?? defaultParentId ?? ""
+  );
   const [email, setEmail] = useState(stakeholder?.email ?? "");
   const [phone, setPhone] = useState(stakeholder?.phone ?? "");
   const [notes, setNotes] = useState(stakeholder?.notes ?? "");
@@ -88,7 +96,13 @@ export function StakeholderForm({
     if (isEdit && stakeholder) {
       updateStakeholder(stakeholder.id, dealId, data);
     } else {
-      addStakeholder(data);
+      const newStakeholder = addStakeholder(data);
+      // 上司追加・中間追加の場合、元の子ノードを新ノードの部下にリンク
+      if (childToRelink) {
+        updateStakeholder(childToRelink, dealId, {
+          parentId: newStakeholder.id,
+        });
+      }
     }
     onClose();
   };

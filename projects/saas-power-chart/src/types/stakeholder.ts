@@ -31,6 +31,8 @@ export interface Stakeholder {
   email: string;
   phone: string;
   notes: string;
+  /** 名前不明の人物（役職は存在するが特定できていない） */
+  isUnknown?: boolean;
   position?: { x: number; y: number };
   createdAt: string;
   updatedAt: string;

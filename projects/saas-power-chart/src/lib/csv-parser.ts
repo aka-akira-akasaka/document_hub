@@ -46,6 +46,7 @@ const csvRowSchema = z.object({
   email: z.string().optional().default(""),
   phone: z.string().optional().default(""),
   notes: z.string().optional().default(""),
+  is_unknown: z.string().optional().default(""),
 });
 
 export interface ParseError {
@@ -102,6 +103,7 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
       email: d.email ?? "",
       phone: d.phone ?? "",
       notes: d.notes ?? "",
+      isUnknown: d.is_unknown === "true" || d.is_unknown === "1" || undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -126,6 +128,7 @@ export function stakeholderToCsvRow(s: Stakeholder): CsvRow {
     email: s.email,
     phone: s.phone,
     notes: s.notes,
+    is_unknown: s.isUnknown ? "true" : "",
   };
 }
 

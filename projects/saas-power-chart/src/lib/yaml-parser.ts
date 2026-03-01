@@ -18,6 +18,7 @@ export interface YamlOrgNode {
   email?: string;
   phone?: string;
   notes?: string;
+  is_unknown?: boolean;
   children?: YamlOrgNode[];
 }
 
@@ -125,6 +126,7 @@ export function parseYAML(yamlText: string, dealId: string): ParseResult {
           email: String(node.email ?? ""),
           phone: String(node.phone ?? ""),
           notes: String(node.notes ?? ""),
+          isUnknown: node.is_unknown === true || undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -167,6 +169,7 @@ interface ExportNode {
   email?: string;
   phone?: string;
   notes?: string;
+  is_unknown?: boolean;
   children: ExportNode[];
 }
 
@@ -190,6 +193,7 @@ export function exportYAML(stakeholders: Stakeholder[]): string {
       ...(s.email && { email: s.email }),
       ...(s.phone && { phone: s.phone }),
       ...(s.notes && { notes: s.notes }),
+      ...(s.isUnknown && { is_unknown: true }),
       children: [],
     });
   }

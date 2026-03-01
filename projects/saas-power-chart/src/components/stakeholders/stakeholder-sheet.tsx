@@ -25,6 +25,7 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
   const sheetMode = useUiStore((s) => s.sheetMode);
   const closeSheet = useUiStore((s) => s.closeSheet);
   const openSheet = useUiStore((s) => s.openSheet);
+  const addContext = useUiStore((s) => s.addContext);
 
   const stakeholder = useStakeholderStore((s) =>
     selectedId ? (s.stakeholdersByDeal[dealId] ?? EMPTY).find((sh) => sh.id === selectedId) : undefined
@@ -42,6 +43,33 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
       toast.success(`${stakeholder.name} を削除しました`);
       closeSheet();
     }
+  };
+
+  // +ボタンコンテキストからデフォルトのparentIdを決定
+  const getDefaultParentId = (): string | null => {
+    if (!addContext || sheetMode !== "create") return null;
+    if (addContext.type === "node") {
+      if (addContext.position === "below") return addContext.nodeId;
+      // 上司として追加: 現在のノードの親を新ノードの親に
+      const currentNode = stakeholders.find((s) => s.id === addContext.nodeId);
+      return currentNode?.parentId ?? null;
+    }
+    if (addContext.type === "edge") {
+      return addContext.sourceId;
+    }
+    return null;
+  };
+
+  // +ボタンコンテキストから、作成後にリンクし直す必要がある子ノードのID
+  const getChildToRelink = (): string | null => {
+    if (!addContext || sheetMode !== "create") return null;
+    if (addContext.type === "node" && addContext.position === "above") {
+      return addContext.nodeId;
+    }
+    if (addContext.type === "edge") {
+      return addContext.targetId;
+    }
+    return null;
   };
 
   const title =
@@ -72,6 +100,8 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
             stakeholder={sheetMode === "edit" ? stakeholder : undefined}
             onClose={closeSheet}
             parentOptions={parentOptions}
+            defaultParentId={getDefaultParentId()}
+            childToRelink={getChildToRelink()}
           />
         )}
       </DialogContent>
