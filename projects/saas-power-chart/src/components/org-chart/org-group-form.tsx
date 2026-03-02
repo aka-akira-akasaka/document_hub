@@ -58,14 +58,14 @@ export function OrgGroupForm({
   const prevOpenRef = useRef(false);
   if (open && !prevOpenRef.current) {
     // open が false→true に変わった瞬間
-    if (!isEdit) {
-      // 新規作成時: defaultParentGroupIdを反映
-      if ((defaultParentGroupId ?? "") !== parentGroupId) {
-        setParentGroupId(defaultParentGroupId ?? "");
-      }
-      if (name !== "") {
-        setName("");
-      }
+    if (isEdit && editGroup) {
+      // 編集時: 現在の部署名・親部署をプリセット
+      setName(editGroup.name);
+      setParentGroupId(editGroup.parentGroupId ?? "");
+    } else {
+      // 新規作成時: defaultParentGroupIdを反映、名前は空にリセット
+      setParentGroupId(defaultParentGroupId ?? "");
+      setName("");
     }
   }
   prevOpenRef.current = open;
@@ -136,7 +136,7 @@ export function OrgGroupForm({
               value={parentGroupId || "none"}
               onValueChange={(v) => setParentGroupId(v === "none" ? "" : v)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="なし（トップレベル）" />
               </SelectTrigger>
               <SelectContent>
