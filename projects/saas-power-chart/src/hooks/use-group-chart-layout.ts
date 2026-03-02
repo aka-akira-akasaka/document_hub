@@ -5,7 +5,6 @@ import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { computeGroupLayout } from "@/lib/group-layout-engine";
-import type { RelationshipType } from "@/types/relationship";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
@@ -21,36 +20,17 @@ export function useGroupChartLayout(dealId: string) {
     s.groupsByDeal[dealId] ?? []
   );
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
-  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
 
-  // エッジ削除コールバック
+  // エッジ削除コールバック（relationship専用、reportingエッジは描画しない）
   const handleEdgeDelete = useCallback(
-    (edgeId: string, _source: string, target: string, relType: RelationshipType) => {
-      if (relType === "reporting") {
-        updateStakeholder(target, dealId, { parentId: null });
-      } else {
-        deleteRelationship(edgeId, dealId);
-      }
+    (edgeId: string) => {
+      deleteRelationship(edgeId, dealId);
     },
-    [dealId, updateStakeholder, deleteRelationship]
+    [dealId, deleteRelationship]
   );
 
-  // reportingエッジの生成
-  const reportingEdges: Edge[] = useMemo(() =>
-    stakeholders
-      .filter((s) => s.parentId)
-      .map((s) => ({
-        id: `org-${s.parentId}-${s.id}`,
-        source: s.parentId!,
-        target: s.id,
-        type: "relationship",
-        data: { type: "reporting", onDelete: handleEdgeDelete },
-      })),
-    [stakeholders, handleEdgeDelete]
-  );
-
-  // relationship（非reporting）エッジ
+  // relationship（非reporting）エッジのみ描画
   const relEdges: Edge[] = useMemo(() =>
     relationships.map((r) => ({
       id: r.id,
@@ -64,13 +44,12 @@ export function useGroupChartLayout(dealId: string) {
 
   // グループベースレイアウト計算
   const { layoutNodes, allEdges } = useMemo(() => {
-    const allReportingAndRelEdges = [...reportingEdges, ...relEdges];
-    const result = computeGroupLayout(stakeholders, orgGroups, allReportingAndRelEdges);
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
     return {
       layoutNodes: result.nodes,
       allEdges: result.edges,
     };
-  }, [stakeholders, orgGroups, reportingEdges, relEdges]);
+  }, [stakeholders, orgGroups, relEdges]);
 
   // position保存済みならそちらを優先（フリーフローティングノードのみ）
   const nodes: Node[] = useMemo(() =>
@@ -102,13 +81,13 @@ export function useGroupChartLayout(dealId: string) {
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
   const applyAutoLayout = useCallback(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, [...reportingEdges, ...relEdges]);
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
     for (const n of result.nodes) {
       if (n.type !== "orgGroup" && !n.parentId) {
         updateNodePosition(n.id, dealId, n.position);
       }
     }
-  }, [stakeholders, orgGroups, reportingEdges, relEdges, dealId, updateNodePosition]);
+  }, [stakeholders, orgGroups, relEdges, dealId, updateNodePosition]);
 
   return { nodes, edges: allEdges, onNodeDragStop, applyAutoLayout };
 }

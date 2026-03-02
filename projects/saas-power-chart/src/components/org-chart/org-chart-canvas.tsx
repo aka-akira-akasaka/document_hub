@@ -65,6 +65,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const addContext = useUiStore((s) => s.addContext);
   const closeAddPopover = useUiStore((s) => s.closeAddPopover);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const addRelationship = useStakeholderStore((s) => s.addRelationship);
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
@@ -91,31 +92,22 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     }
   }, [stakeholders, applyAutoLayout]);
 
-  // ノード接続: ドラッグで上下関係（parentId）を設定
+  // ノード接続: ドラッグで関係性（relationship）を作成
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
       if (connection.source === connection.target) return;
 
-      // 循環参照チェック: source が target の子孫でないことを確認
-      const isDescendant = (parentId: string, targetId: string): boolean => {
-        let current = stakeholders.find((s) => s.id === parentId);
-        while (current?.parentId) {
-          if (current.parentId === targetId) return true;
-          current = stakeholders.find((s) => s.id === current!.parentId);
-        }
-        return false;
-      };
-
-      if (isDescendant(connection.source, connection.target)) return;
-
-      // 接続元を上司、接続先を部下とする上下関係を作成
-      updateStakeholder(connection.target, dealId, {
-        parentId: connection.source,
+      addRelationship({
+        dealId,
+        sourceId: connection.source,
+        targetId: connection.target,
+        type: "informal",
+        bidirectional: true,
       });
-      toast.success("つながりを作成しました");
+      toast.success("関係性を作成しました");
     },
-    [dealId, stakeholders, updateStakeholder]
+    [dealId, addRelationship]
   );
 
   const onNodeClick: NodeMouseHandler = useCallback(
