@@ -7,15 +7,6 @@ export const ATTITUDE_COLORS: Record<
   { bg: string; text: string; border: string; cardBg: string; stripColor: string; avatarBg: string; avatarText: string }
 > = {
   promoter: {
-    bg: "bg-green-100",
-    text: "text-green-800",
-    border: "border-green-400",
-    cardBg: "bg-green-50",
-    stripColor: "bg-green-400",
-    avatarBg: "bg-green-100",
-    avatarText: "text-green-600",
-  },
-  supportive: {
     bg: "bg-blue-100",
     text: "text-blue-800",
     border: "border-blue-400",
@@ -23,6 +14,15 @@ export const ATTITUDE_COLORS: Record<
     stripColor: "bg-blue-400",
     avatarBg: "bg-blue-100",
     avatarText: "text-blue-600",
+  },
+  supportive: {
+    bg: "bg-sky-50",
+    text: "text-sky-700",
+    border: "border-sky-300",
+    cardBg: "bg-sky-50/50",
+    stripColor: "bg-sky-300",
+    avatarBg: "bg-sky-50",
+    avatarText: "text-sky-500",
   },
   neutral: {
     bg: "bg-gray-100",
@@ -34,22 +34,22 @@ export const ATTITUDE_COLORS: Record<
     avatarText: "text-gray-400",
   },
   cautious: {
-    bg: "bg-amber-100",
-    text: "text-amber-800",
-    border: "border-amber-400",
-    cardBg: "bg-amber-50",
-    stripColor: "bg-amber-400",
-    avatarBg: "bg-amber-100",
-    avatarText: "text-amber-600",
+    bg: "bg-pink-50",
+    text: "text-pink-700",
+    border: "border-pink-300",
+    cardBg: "bg-pink-50/50",
+    stripColor: "bg-pink-300",
+    avatarBg: "bg-pink-50",
+    avatarText: "text-pink-400",
   },
   opposed: {
-    bg: "bg-red-100",
-    text: "text-red-800",
-    border: "border-red-400",
-    cardBg: "bg-red-50",
-    stripColor: "bg-red-400",
-    avatarBg: "bg-red-100",
-    avatarText: "text-red-600",
+    bg: "bg-pink-100",
+    text: "text-pink-800",
+    border: "border-pink-400",
+    cardBg: "bg-pink-50",
+    stripColor: "bg-pink-400",
+    avatarBg: "bg-pink-100",
+    avatarText: "text-pink-600",
   },
 };
 

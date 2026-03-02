@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { AttitudeBadge } from "./attitude-badge";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useUiStore } from "@/stores/ui-store";
 import {
   ROLE_LABELS,
@@ -35,7 +36,27 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
   const openSheet = useUiStore((s) => s.openSheet);
+
+  // groupId → グループ名の逆引きMap（親部署表示用）
+  const groupNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of orgGroups) {
+      map.set(g.id, g.name);
+    }
+    return map;
+  }, [orgGroups]);
+
+  // groupId → 親部署名を解決（グループの parentGroupId を辿る）
+  const getParentGroupName = useMemo(() => {
+    return (groupId: string | null): string => {
+      if (!groupId) return "";
+      const group = orgGroups.find((g) => g.id === groupId);
+      if (!group?.parentGroupId) return "";
+      return groupNameMap.get(group.parentGroupId) ?? "";
+    };
+  }, [orgGroups, groupNameMap]);
 
   const [search, setSearch] = useState("");
   const [filterAttitude, setFilterAttitude] = useState<string>("all");
@@ -149,6 +170,7 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
                     </div>
                   </th>
                 ))}
+                <th className="px-4 py-2.5 text-left font-medium">親部署</th>
                 <th className="px-4 py-2.5 text-left font-medium">役割</th>
                 <th className="px-4 py-2.5 text-left font-medium">ミッション</th>
                 <th className="px-4 py-2.5 text-left font-medium">担当者</th>
@@ -169,6 +191,9 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
                   </td>
                   <td className="px-4 py-2.5">
                     <AttitudeBadge attitude={s.attitude} />
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-500">
+                    {getParentGroupName(s.groupId)}
                   </td>
                   <td className="px-4 py-2.5">
                     {ROLE_LABELS[s.roleInDeal]}
