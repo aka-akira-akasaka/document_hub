@@ -5,7 +5,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { ATTITUDE_COLORS, ROLE_LABELS, INFLUENCE_LABELS } from "@/lib/constants";
 import type { Stakeholder, InfluenceLevel } from "@/types/stakeholder";
 import { cn } from "@/lib/utils";
-import { Plus, HelpCircle } from "lucide-react";
+import { Plus, HelpCircle, Pencil, Trash2 } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 
 type StakeholderNodeData = Stakeholder & { label?: string };
@@ -16,6 +16,7 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
   const influenceWidth = ((s.influenceLevel as number) / 5) * 100;
   const isUnknown = s.isUnknown;
   const openAddPopover = useUiStore((st) => st.openAddPopover);
+  const openSheet = useUiStore((st) => st.openSheet);
 
   const handleAddAbove = useCallback(
     (e: React.MouseEvent) => {
@@ -39,12 +40,28 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
     [id, openAddPopover]
   );
 
+  const handleEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      openSheet(id, "edit");
+    },
+    [id, openSheet]
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      openSheet(id, "view");
+    },
+    [id, openSheet]
+  );
+
   return (
     <>
-      {/* 上ハンドル + 上方向追加ボタン */}
-      <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex flex-col items-center">
+      {/* 上方向追加ボタン */}
+      <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
         <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center opacity-0 hover:opacity-100 group-hover:opacity-70 transition-opacity shadow-sm hover:scale-110 z-10"
+          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
           onClick={handleAddAbove}
           title="上司を追加"
         >
@@ -67,6 +84,24 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
           selected && "ring-2 ring-blue-500 shadow-md"
         )}
       >
+        {/* 編集・削除ボタン（ホバー表示） */}
+        <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            className="w-5 h-5 rounded bg-white/80 border border-gray-200 flex items-center justify-center hover:bg-blue-50"
+            onClick={handleEdit}
+            title="編集"
+          >
+            <Pencil className="w-3 h-3 text-gray-500" />
+          </button>
+          <button
+            className="w-5 h-5 rounded bg-white/80 border border-gray-200 flex items-center justify-center hover:bg-red-50"
+            onClick={handleDelete}
+            title="詳細/削除"
+          >
+            <Trash2 className="w-3 h-3 text-gray-500" />
+          </button>
+        </div>
+
         <div className="flex items-start justify-between mb-1">
           <div className="min-w-0">
             {isUnknown ? (
@@ -122,9 +157,9 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
         isConnectable
       />
       {/* 下方向追加ボタン */}
-      <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center">
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
         <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center opacity-0 hover:opacity-100 group-hover:opacity-70 transition-opacity shadow-sm hover:scale-110 z-10"
+          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
           onClick={handleAddBelow}
           title="部下を追加"
         >

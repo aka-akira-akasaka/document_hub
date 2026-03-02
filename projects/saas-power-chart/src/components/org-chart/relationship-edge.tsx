@@ -3,7 +3,7 @@
 import { memo, useCallback } from "react";
 import {
   BaseEdge,
-  getBezierPath,
+  getSmoothStepPath,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -42,13 +42,14 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const style = EDGE_STYLES[relType];
   const openAddPopover = useUiStore((s) => s.openAddPopover);
 
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
     sourcePosition,
     targetPosition,
+    borderRadius: 0,
   });
 
   const handleAddMidpoint = useCallback(
@@ -95,7 +96,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             }}
           >
             <button
-              className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center opacity-0 hover:!opacity-100 transition-opacity shadow-sm hover:scale-110"
+              className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
               onClick={handleAddMidpoint}
               title="中間者を追加"
             >

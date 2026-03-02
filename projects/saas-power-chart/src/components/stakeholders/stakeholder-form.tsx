@@ -72,6 +72,9 @@ export function StakeholderForm({
   const [email, setEmail] = useState(stakeholder?.email ?? "");
   const [phone, setPhone] = useState(stakeholder?.phone ?? "");
   const [notes, setNotes] = useState(stakeholder?.notes ?? "");
+  const [orgLevel, setOrgLevel] = useState(
+    stakeholder?.orgLevel?.toString() ?? ""
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +94,7 @@ export function StakeholderForm({
       email: email.trim(),
       phone: phone.trim(),
       notes: notes.trim(),
+      orgLevel: orgLevel ? Number(orgLevel) : undefined,
     };
 
     if (isEdit && stakeholder) {
@@ -212,6 +216,22 @@ export function StakeholderForm({
               ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="sh-org-level">組織階層レベル</Label>
+        <Input
+          id="sh-org-level"
+          type="number"
+          min={1}
+          max={10}
+          value={orgLevel}
+          onChange={(e) => setOrgLevel(e.target.value)}
+          placeholder="例: 1=役員, 2=部長, 3=課長"
+        />
+        <p className="text-xs text-muted-foreground">
+          同じレベルの人物が同じ高さに配置されます
+        </p>
       </div>
 
       <div className="space-y-2">

@@ -47,6 +47,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
 
   const openSheet = useUiStore((s) => s.openSheet);
+  const openSheetForCreate = useUiStore((s) => s.openSheetForCreate);
   const addContext = useUiStore((s) => s.addContext);
   const closeAddPopover = useUiStore((s) => s.closeAddPopover);
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
@@ -170,22 +171,26 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         return;
       }
 
-      // 新規作成 → フォームを開く
+      // 新規作成 → フォームを開く（parentIdとchildToRelinkをストアに保存してから開く）
+      let resolvedParentId: string | null = null;
+      let childToRelink: string | null = null;
+
       if (context.type === "node") {
         if (context.position === "below") {
-          // 部下として追加: parentId = このノード
-          // StakeholderFormにparentIdを渡すためにUIストアにコンテキストを残す
-          openSheet(null, "create");
+          resolvedParentId = context.nodeId;
         } else {
-          // 上司として追加: parentId = このノードの親
-          openSheet(null, "create");
+          const currentNode = stakeholders.find((s) => s.id === context.nodeId);
+          resolvedParentId = currentNode?.parentId ?? null;
+          childToRelink = context.nodeId;
         }
       } else if (context.type === "edge") {
-        // 中間者として追加
-        openSheet(null, "create");
+        resolvedParentId = context.sourceId;
+        childToRelink = context.targetId;
       }
+
+      openSheetForCreate(resolvedParentId, childToRelink);
     },
-    [dealId, stakeholders, addStakeholder, updateStakeholder, openSheet]
+    [dealId, stakeholders, addStakeholder, updateStakeholder, openSheet, openSheetForCreate]
   );
 
   // +ボタン → 「既存の人物を選択」した場合

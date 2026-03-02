@@ -19,6 +19,7 @@ export interface YamlOrgNode {
   phone?: string;
   notes?: string;
   is_unknown?: boolean;
+  org_level?: number;
   children?: YamlOrgNode[];
 }
 
@@ -127,6 +128,7 @@ export function parseYAML(yamlText: string, dealId: string): ParseResult {
           phone: String(node.phone ?? ""),
           notes: String(node.notes ?? ""),
           isUnknown: node.is_unknown === true || undefined,
+          orgLevel: node.org_level != null ? Number(node.org_level) : undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -170,6 +172,7 @@ interface ExportNode {
   phone?: string;
   notes?: string;
   is_unknown?: boolean;
+  org_level?: number;
   children: ExportNode[];
 }
 
@@ -194,6 +197,7 @@ export function exportYAML(stakeholders: Stakeholder[]): string {
       ...(s.phone && { phone: s.phone }),
       ...(s.notes && { notes: s.notes }),
       ...(s.isUnknown && { is_unknown: true }),
+      ...(s.orgLevel != null && { org_level: s.orgLevel }),
       children: [],
     });
   }
@@ -254,12 +258,15 @@ export const YAML_TEMPLATE = `- name: 山田太郎
   influence_level: 5
   attitude: supportive
   mission: 中期経営計画の推進
+  org_level: 1
   children:
     - name: 鈴木一郎
       title: 営業本部長
       department: 営業本部
+      org_level: 2
       children:
         - name: 佐藤花子
           title: 営業一部長
           department: 営業一部
+          org_level: 3
 `;
