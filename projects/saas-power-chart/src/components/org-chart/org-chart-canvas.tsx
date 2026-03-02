@@ -107,16 +107,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     (_event, node) => {
       // +ボタンのポップオーバーが開いている場合はクリックを無視
       if (addContext) return;
-      openSheet(node.id, "view");
-    },
-    [openSheet, addContext]
-  );
-
-  const onNodeDoubleClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
       openSheet(node.id, "edit");
     },
-    [openSheet]
+    [openSheet, addContext]
   );
 
   const handleAddNode = useCallback(() => {
@@ -266,7 +259,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
-        onNodeDoubleClick={onNodeDoubleClick}
         onNodeDragStop={onNodeDragStop}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}

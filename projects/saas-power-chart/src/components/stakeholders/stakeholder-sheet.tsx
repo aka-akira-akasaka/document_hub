@@ -86,6 +86,7 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
             defaultParentId={sheetMode === "create" ? createParentId : null}
             childToRelink={sheetMode === "create" ? createChildToRelink : null}
             defaultOrgLevel={sheetMode === "create" ? createOrgLevel : null}
+            onDelete={sheetMode === "edit" && stakeholder ? handleDelete : undefined}
           />
         )}
       </DialogContent>

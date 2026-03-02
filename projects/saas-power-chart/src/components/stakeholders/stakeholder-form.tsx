@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,6 +40,8 @@ interface StakeholderFormProps {
   childToRelink?: string | null;
   /** +ボタンからのコンテキストで推定されたorgLevel */
   defaultOrgLevel?: number | null;
+  /** 削除コールバック（編集モード時のみ） */
+  onDelete?: () => void;
 }
 
 export function StakeholderForm({
@@ -49,6 +52,7 @@ export function StakeholderForm({
   defaultParentId,
   childToRelink,
   defaultOrgLevel,
+  onDelete,
 }: StakeholderFormProps) {
   const isEdit = !!stakeholder;
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
@@ -297,11 +301,26 @@ export function StakeholderForm({
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          キャンセル
-        </Button>
-        <Button type="submit">{isEdit ? "更新" : "追加"}</Button>
+      <div className="flex justify-between items-center pt-2">
+        {isEdit && onDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            削除
+          </Button>
+        ) : (
+          <div />
+        )}
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button type="submit">{isEdit ? "更新" : "追加"}</Button>
+        </div>
       </div>
     </form>
   );
