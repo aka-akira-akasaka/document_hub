@@ -12,14 +12,30 @@ import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
 
+/**
+ * Hydrationガードラッパー
+ * Zustand persist の hydration 完了までストア依存UIをマウントしない。
+ */
 export default function DealLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const hydrated = useHydrated();
+
+  if (!hydrated) return null;
+
+  return <DealLayoutContent>{children}</DealLayoutContent>;
+}
+
+/** Zustand ストア依存の実コンテンツ（Hydration完了後にのみマウントされる） */
+function DealLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const params = useParams();
   const router = useRouter();
-  const hydrated = useHydrated();
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.getDealById(dealId));
   const openCsvImport = useUiStore((s) => s.openCsvImport);
@@ -30,12 +46,12 @@ export default function DealLayout({
   });
 
   useEffect(() => {
-    if (hydrated && !deal) {
+    if (!deal) {
       router.push("/");
     }
-  }, [hydrated, deal, router]);
+  }, [deal, router]);
 
-  if (!hydrated || !deal) return null;
+  if (!deal) return null;
 
   return (
     <div className="flex-1 bg-gray-50 flex flex-col">

@@ -1,16 +1,18 @@
 "use client";
 
+import { useHydrated } from "@/hooks/use-hydrated";
 import { DealList } from "@/components/deals/deal-list";
 import { DealCreateDialog } from "@/components/deals/deal-create-dialog";
 import { useDealStore } from "@/stores/deal-store";
-import { useHydrated } from "@/hooks/use-hydrated";
 
+/**
+ * Hydrationガードラッパー
+ * Zustand persist の hydration 完了までストア依存UIをマウントしない。
+ * useSyncExternalStore と SSR の状態不一致 (React #185) を防止。
+ */
 export default function DashboardPage() {
   const hydrated = useHydrated();
-  const deals = useDealStore((s) => s.deals);
 
-  // Zustand persist のハイドレーション完了まで何も描画しない
-  // （SSRとクライアントの状態不一致 → React #418/#185 を防止）
   if (!hydrated) {
     return (
       <div className="flex-1 bg-gray-50">
@@ -25,6 +27,13 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  return <DashboardContent />;
+}
+
+/** Zustand ストア依存の実コンテンツ（Hydration完了後にのみマウントされる） */
+function DashboardContent() {
+  const deals = useDealStore((s) => s.deals);
 
   return (
     <div className="flex-1 bg-gray-50">
