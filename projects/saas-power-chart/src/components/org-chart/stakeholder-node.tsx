@@ -22,7 +22,7 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
 
   const handleClass = hovered
     ? "!w-2.5 !h-2.5 !bg-blue-400 !border-2 !border-blue-600 !rounded-full transition-all"
-    : "!w-3 !h-3 !bg-transparent !border-0 transition-all";
+    : "!w-3 !h-3 !bg-transparent !border-0 !pointer-events-none transition-all";
 
   return (
     <div

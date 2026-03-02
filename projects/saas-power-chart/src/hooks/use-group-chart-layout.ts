@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useUiStore } from "@/stores/ui-store";
-import { computeGroupLayout } from "@/lib/group-layout-engine";
+import { computeGroupLayout, type GroupBound } from "@/lib/group-layout-engine";
 import { GROUP_LAYOUT } from "@/lib/constants";
 import { assignHandlesToEdges } from "@/lib/handle-utils";
 import { useHistoryStore } from "@/stores/history-store";
@@ -13,24 +13,6 @@ import { toast } from "sonner";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
-
-/**
- * ノードの絶対座標を算出（parent chain を辿る）
- */
-function getAbsolutePosition(
-  node: Node,
-  nodeMap: Map<string, Node>
-): { x: number; y: number } {
-  let x = node.position.x;
-  let y = node.position.y;
-  let current = node.parentId ? nodeMap.get(node.parentId) : undefined;
-  while (current) {
-    x += current.position.x;
-    y += current.position.y;
-    current = current.parentId ? nodeMap.get(current.parentId) : undefined;
-  }
-  return { x, y };
-}
 
 export function useGroupChartLayout(dealId: string) {
   const stakeholders = useStakeholderStore((s) =>
@@ -70,10 +52,14 @@ export function useGroupChartLayout(dealId: string) {
   );
 
   // グループベースレイアウト計算
+  const groupBoundsRef = useRef<GroupBound[]>([]);
+
   const { layoutNodes, allEdges } = useMemo(() => {
     const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
+    // groupBoundsをRefに保存（コールバック内で参照するため）
+    groupBoundsRef.current = result.groupBounds;
     return {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
@@ -102,27 +88,51 @@ export function useGroupChartLayout(dealId: string) {
   );
 
   /**
+   * ドラッグ中のノードの絶対座標を算出
+   * ReactFlowのコールバック第3引数にはドラッグ中のノードのみが含まれるため、
+   * 親グループの座標はgroupBoundsRefから取得する。
+   */
+  const getNodeAbsolutePosition = useCallback(
+    (node: Node): { x: number; y: number } => {
+      let absX = node.position.x;
+      let absY = node.position.y;
+
+      if (node.parentId) {
+        // parentIdは "group-xxx" 形式 → groupBoundsから親グループの絶対座標を取得
+        const parentGroupId = node.parentId.replace(/^group-/, "");
+        const parentBound = groupBoundsRef.current.find(
+          (gb) => gb.groupId === parentGroupId
+        );
+        if (parentBound) {
+          absX += parentBound.x;
+          absY += parentBound.y;
+        }
+      }
+
+      return { x: absX, y: absY };
+    },
+    []
+  );
+
+  /**
    * ドロップ先のグループを検出
-   * allNodesから現在のグループ位置をリアルタイムに算出し、
-   * ノードの絶対中心座標がグループBBox内にあるか判定。
-   * 最も深い（最内側の）グループを返す。
+   * groupBoundsRef（レイアウト計算済みの絶対座標・サイズ）から判定。
+   * ReactFlowコールバックの第3引数に全ノードが含まれない問題を回避。
    */
   const findDropTargetGroup = useCallback(
-    (absolutePosition: { x: number; y: number }, allNodes: Node[]): string | null => {
+    (absolutePosition: { x: number; y: number }): string | null => {
       const cx = absolutePosition.x + GROUP_LAYOUT.nodeWidth / 2;
       const cy = absolutePosition.y + GROUP_LAYOUT.nodeHeight / 2;
 
-      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
-      const groupNodes = allNodes.filter((n) => n.type === "orgGroup");
-
       const candidates: { groupId: string; area: number }[] = [];
-      for (const gn of groupNodes) {
-        const abs = getAbsolutePosition(gn, nodeMap);
-        const w = (gn.style?.width as number) ?? gn.measured?.width ?? 0;
-        const h = (gn.style?.height as number) ?? gn.measured?.height ?? 0;
-        if (w === 0 || h === 0) continue;
-        if (cx >= abs.x && cx <= abs.x + w && cy >= abs.y && cy <= abs.y + h) {
-          candidates.push({ groupId: gn.id.replace(/^group-/, ""), area: w * h });
+      for (const gb of groupBoundsRef.current) {
+        if (
+          cx >= gb.x &&
+          cx <= gb.x + gb.width &&
+          cy >= gb.y &&
+          cy <= gb.y + gb.height
+        ) {
+          candidates.push({ groupId: gb.groupId, area: gb.width * gb.height });
         }
       }
 
@@ -139,33 +149,31 @@ export function useGroupChartLayout(dealId: string) {
   const setDragOverGroupId = useUiStore((s) => s.setDragOverGroupId);
 
   const onNodeDrag = useCallback(
-    (_event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+    (_event: React.MouseEvent, node: Node) => {
       if (node.type === "orgGroup") {
         setDragOverGroupId(null);
         return;
       }
-      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
-      const absPos = getAbsolutePosition(node, nodeMap);
-      const targetGroupId = findDropTargetGroup(absPos, allNodes);
+      const absPos = getNodeAbsolutePosition(node);
+      const targetGroupId = findDropTargetGroup(absPos);
       setDragOverGroupId(targetGroupId);
     },
-    [findDropTargetGroup, setDragOverGroupId]
+    [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId]
   );
 
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+    (_event: React.MouseEvent, node: Node) => {
       // ドラッグオーバー状態をリセット
       setDragOverGroupId(null);
 
       // グループノードのドラッグ: 子が自動追従するので何もしない
       if (node.type === "orgGroup") return;
 
-      // ノードの絶対座標を算出（parentId chain を辿る）
-      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
-      const absPos = getAbsolutePosition(node, nodeMap);
+      // ノードの絶対座標を算出（groupBoundsRefベース）
+      const absPos = getNodeAbsolutePosition(node);
 
-      // ドロップ先のグループを検出（allNodesの現在位置ベース）
-      const targetGroupId = findDropTargetGroup(absPos, allNodes);
+      // ドロップ先のグループを検出
+      const targetGroupId = findDropTargetGroup(absPos);
       const s = stakeholders.find((st) => st.id === node.id);
       const currentGroupId = s?.groupId ?? null;
 
@@ -192,7 +200,7 @@ export function useGroupChartLayout(dealId: string) {
       }
       // グループ内でのドラッグ完了→何もしない（レイアウトで自動配置されるため）
     },
-    [dealId, stakeholders, orgGroups, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot, setDragOverGroupId]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot, setDragOverGroupId]
   );
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
