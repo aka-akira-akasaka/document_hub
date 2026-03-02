@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
+const EMPTY_G: import("@/types/org-group").OrgGroup[] = [];
 
 export function useGroupChartLayout(dealId: string) {
   const stakeholders = useStakeholderStore((s) =>
@@ -22,7 +23,7 @@ export function useGroupChartLayout(dealId: string) {
     s.relationshipsByDeal[dealId] ?? EMPTY_R
   );
   const orgGroups = useOrgGroupStore((s) =>
-    s.groupsByDeal[dealId] ?? []
+    s.groupsByDeal[dealId] ?? EMPTY_G
   );
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);

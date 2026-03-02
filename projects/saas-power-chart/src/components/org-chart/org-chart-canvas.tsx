@@ -35,6 +35,7 @@ import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
+const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
 
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -44,7 +45,7 @@ interface OrgChartCanvasProps {
 }
 
 export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
-  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const isGroupMode = orgGroups.length > 0;
 
   // フォールバック: グループなし→レイヤーレイアウト、グループあり→グループレイアウト
@@ -83,8 +84,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
-  const canUndo = useHistoryStore((s) => s.canUndo());
-  const canRedo = useHistoryStore((s) => s.canRedo());
+  const canUndo = useHistoryStore((s) => s.past.length > 0);
+  const canRedo = useHistoryStore((s) => s.future.length > 0);
 
   // ⋮メニュー「編集」用: groupFormEditIdからOrgGroupオブジェクトを取得
   const editGroupObj = groupFormEditId
