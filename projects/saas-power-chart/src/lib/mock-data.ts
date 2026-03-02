@@ -6,14 +6,14 @@
  *
  * L1: 常務取締役 井上
  * ├─ L2: 経営企画部 部長 藤原
- * │  ├─ L3: DX推進課 課長 小林   ← 同部署並列
- * │  │  └─ L4: DX推進課 主任 渡辺
- * │  └─ L3: 企画課 課長 松本     ← 同部署並列
+ * │  ├─ L4: DX推進課 課長 小林   ← 同部署並列
+ * │  │  └─ L5: DX推進課 主任 渡辺
+ * │  └─ L4: 企画課 課長 松本     ← 同部署並列
  * ├─ L2: 情報システム部 部長 吉田
- * │  ├─ L3: インフラ課 課長 山口  ← 同部署並列
- * │  └─ L3: 開発課 課長 加藤     ← 同部署並列
- * ├─ L2: 総務部 次長 石井
- * └─ L2: 経理部 課長 木村
+ * │  ├─ L4: インフラ課 課長 山口  ← 同部署並列
+ * │  └─ L4: 開発課 課長 加藤     ← 同部署並列
+ * ├─ L3: 総務部 次長 石井
+ * └─ L4: 経理部 課長 木村
  */
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Deal } from "@/types/deal";
@@ -107,7 +107,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "ishii@tokai-mf.example.co.jp",
     phone: "052-000-0030",
     notes: "既存の紙ベース運用に満足。コスト増を懸念し導入に消極的。",
-    orgLevel: 2,
+    orgLevel: 3,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -126,7 +126,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kimura@tokai-mf.example.co.jp",
     phone: "",
     notes: "現場で月次締め作業に追われており、自動化を強く希望。導入後の主要ユーザー。",
-    orgLevel: 3,
+    orgLevel: 4,
     createdAt: "2026-02-10T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -146,7 +146,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kobayashi@tokai-mf.example.co.jp",
     phone: "052-000-0011",
     notes: "本案件の起案者・推進リーダー。競合製品の比較検討も担当。",
-    orgLevel: 3,
+    orgLevel: 4,
     createdAt: "2026-02-01T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -165,7 +165,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "matsumoto@tokai-mf.example.co.jp",
     phone: "052-000-0012",
     notes: "費用対効果の分析を担当。数字で判断するタイプ。",
-    orgLevel: 3,
+    orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -185,7 +185,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "yamaguchi@tokai-mf.example.co.jp",
     phone: "052-000-0021",
     notes: "ネットワーク・サーバ管理を統括。クラウド移行に慎重。",
-    orgLevel: 3,
+    orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -204,7 +204,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kato@tokai-mf.example.co.jp",
     phone: "052-000-0022",
     notes: "API連携・技術検証を担当。SaaS連携の実績あり、導入に前向き。",
-    orgLevel: 3,
+    orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },
@@ -224,7 +224,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "watanabe@tokai-mf.example.co.jp",
     phone: "",
     notes: "PoCの実務担当。現行業務フローを最も詳しく把握している。",
-    orgLevel: 4,
+    orgLevel: 5,
     createdAt: "2026-02-10T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
   },

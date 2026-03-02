@@ -122,3 +122,40 @@ export const RELATIONSHIP_TYPE_OPTIONS: RelationshipType[] = [
   "rivalry",
   "informal",
 ];
+
+/**
+ * デフォルト組織階層（新規案件や未設定時に使用）
+ */
+export const DEFAULT_ORG_LEVELS: { level: number; label: string }[] = [
+  { level: 1, label: "役員" },
+  { level: 2, label: "部長" },
+  { level: 3, label: "次長" },
+  { level: 4, label: "課長" },
+  { level: 5, label: "係長/主任" },
+];
+
+/**
+ * 2つのorgLevel間に挿入可能な役職リストを返す
+ * dealLevels: 案件固有の階層定義（指定がなければデフォルトを使用）
+ * 例: parentLevel=2(部長), childLevel=4(課長) → [{ level: 3, label: "次長" }]
+ */
+export function getInsertableLevels(
+  parentLevel: number | undefined,
+  childLevel: number | undefined,
+  dealLevels?: { level: number; label: string }[]
+): { level: number; label: string }[] {
+  if (parentLevel == null || childLevel == null) return [];
+  if (childLevel - parentLevel <= 1) return [];
+
+  const levels = dealLevels && dealLevels.length > 0 ? dealLevels : DEFAULT_ORG_LEVELS;
+  const levelMap = new Map(levels.map((l) => [l.level, l.label]));
+
+  const result: { level: number; label: string }[] = [];
+  for (let level = parentLevel + 1; level < childLevel; level++) {
+    const label = levelMap.get(level);
+    if (label) {
+      result.push({ level, label });
+    }
+  }
+  return result;
+}

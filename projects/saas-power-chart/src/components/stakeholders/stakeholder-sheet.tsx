@@ -27,6 +27,7 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
   const openSheet = useUiStore((s) => s.openSheet);
   const createParentId = useUiStore((s) => s.createParentId);
   const createChildToRelink = useUiStore((s) => s.createChildToRelink);
+  const createOrgLevel = useUiStore((s) => s.createOrgLevel);
 
   const stakeholder = useStakeholderStore((s) =>
     selectedId ? (s.stakeholdersByDeal[dealId] ?? EMPTY).find((sh) => sh.id === selectedId) : undefined
@@ -84,6 +85,7 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
             parentOptions={parentOptions}
             defaultParentId={sheetMode === "create" ? createParentId : null}
             childToRelink={sheetMode === "create" ? createChildToRelink : null}
+            defaultOrgLevel={sheetMode === "create" ? createOrgLevel : null}
           />
         )}
       </DialogContent>

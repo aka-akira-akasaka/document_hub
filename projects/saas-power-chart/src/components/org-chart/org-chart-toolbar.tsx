@@ -4,6 +4,7 @@ import { useReactFlow } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  Layers,
   Maximize2,
   Minus,
   Network,
@@ -14,11 +15,13 @@ import {
 interface OrgChartToolbarProps {
   onAutoLayout: () => void;
   onAddNode: () => void;
+  onOpenLevelEditor: () => void;
 }
 
 export function OrgChartToolbar({
   onAutoLayout,
   onAddNode,
+  onOpenLevelEditor,
 }: OrgChartToolbarProps) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
@@ -94,6 +97,20 @@ export function OrgChartToolbar({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">ステークホルダー追加</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onOpenLevelEditor}
+          >
+            <Layers className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">階層設定</TooltipContent>
       </Tooltip>
     </div>
   );

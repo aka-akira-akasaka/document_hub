@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -17,6 +17,7 @@ import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
+import { OrgLevelEditor } from "./org-level-editor";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
@@ -56,6 +57,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
 
+  const [levelEditorOpen, setLevelEditorOpen] = useState(false);
   const autoLayoutApplied = useRef(false);
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       updateStakeholder(connection.target, dealId, {
         parentId: connection.source,
       });
+      toast.success("つながりを作成しました");
     },
     [dealId, stakeholders, updateStakeholder]
   );
@@ -122,7 +125,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   // +ボタン → 「新規作成」を選択した場合
   const handleCreateFromContext = useCallback(
-    (parentId: string | null, isUnknown?: boolean) => {
+    (parentId: string | null, isUnknown?: boolean, suggestedOrgLevel?: number) => {
       const context = useUiStore.getState().addContext;
       if (!context) return;
 
@@ -188,7 +191,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         childToRelink = context.targetId;
       }
 
-      openSheetForCreate(resolvedParentId, childToRelink);
+      openSheetForCreate(resolvedParentId, childToRelink, suggestedOrgLevel);
     },
     [dealId, stakeholders, addStakeholder, updateStakeholder, openSheet, openSheetForCreate]
   );
@@ -273,10 +276,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={{ deletable: true }}
       >
         <OrgChartToolbar
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
+          onOpenLevelEditor={() => setLevelEditorOpen(true)}
         />
         <MiniMap
           nodeStrokeWidth={3}
@@ -292,6 +297,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         dealId={dealId}
         onCreateNew={handleCreateFromContext}
         onSelectExisting={handleSelectExisting}
+      />
+
+      {/* 階層設定ダイアログ */}
+      <OrgLevelEditor
+        dealId={dealId}
+        open={levelEditorOpen}
+        onOpenChange={setLevelEditorOpen}
       />
     </div>
   );

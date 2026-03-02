@@ -18,6 +18,7 @@ import {
   ROLE_LABELS,
   ROLE_OPTIONS,
   INFLUENCE_LABELS,
+  DEFAULT_ORG_LEVELS,
 } from "@/lib/constants";
 import type {
   Stakeholder,
@@ -36,6 +37,8 @@ interface StakeholderFormProps {
   defaultParentId?: string | null;
   /** 作成後にparentIdをリンクし直す子ノードID（上司追加・中間追加用） */
   childToRelink?: string | null;
+  /** +ボタンからのコンテキストで推定されたorgLevel */
+  defaultOrgLevel?: number | null;
 }
 
 export function StakeholderForm({
@@ -45,10 +48,13 @@ export function StakeholderForm({
   parentOptions,
   defaultParentId,
   childToRelink,
+  defaultOrgLevel,
 }: StakeholderFormProps) {
   const isEdit = !!stakeholder;
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
+  const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 
   const [name, setName] = useState(stakeholder?.name ?? "");
   const [department, setDepartment] = useState(stakeholder?.department ?? "");
@@ -73,7 +79,7 @@ export function StakeholderForm({
   const [phone, setPhone] = useState(stakeholder?.phone ?? "");
   const [notes, setNotes] = useState(stakeholder?.notes ?? "");
   const [orgLevel, setOrgLevel] = useState(
-    stakeholder?.orgLevel?.toString() ?? ""
+    stakeholder?.orgLevel?.toString() ?? defaultOrgLevel?.toString() ?? ""
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -219,16 +225,23 @@ export function StakeholderForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="sh-org-level">組織階層レベル</Label>
-        <Input
-          id="sh-org-level"
-          type="number"
-          min={1}
-          max={10}
-          value={orgLevel}
-          onChange={(e) => setOrgLevel(e.target.value)}
-          placeholder="例: 1=役員, 2=部長, 3=課長"
-        />
+        <Label>組織階層レベル</Label>
+        <Select
+          value={orgLevel || "none"}
+          onValueChange={(v) => setOrgLevel(v === "none" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="未設定" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">未設定</SelectItem>
+            {orgLevelOptions.map((opt) => (
+              <SelectItem key={opt.level} value={opt.level.toString()}>
+                L{opt.level}: {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-xs text-muted-foreground">
           同じレベルの人物が同じ高さに配置されます
         </p>

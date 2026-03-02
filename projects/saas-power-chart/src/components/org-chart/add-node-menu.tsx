@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import { UserPlus, HelpCircle, Users } from "lucide-react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import { UserPlus, HelpCircle, Users, ChevronRight } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { getInsertableLevels } from "@/lib/constants";
 import type { Stakeholder } from "@/types/stakeholder";
 
 interface AddNodeMenuProps {
   dealId: string;
-  onCreateNew: (parentId: string | null, isUnknown?: boolean) => void;
+  onCreateNew: (parentId: string | null, isUnknown?: boolean, suggestedOrgLevel?: number) => void;
   onSelectExisting: (stakeholderId: string) => void;
 }
 
@@ -20,6 +21,9 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
 
   const stakeholders = useStakeholderStore(
     (s) => s.stakeholdersByDeal[dealId] ?? []
+  );
+  const dealOrgLevels = useStakeholderStore(
+    (s) => s.orgLevelConfigByDeal[dealId]
   );
 
   // 未接続（parentIdがなく、誰の親でもない孤立ノード）の人物を取得
@@ -34,6 +38,25 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     }
     return !hasParent && !isParentOfSomeone;
   });
+
+  // エッジ中間追加時: 上下のorgLevelから挿入可能な役職を推定
+  const insertableLevels = useMemo(() => {
+    if (!addContext || addContext.type !== "edge") return [];
+    const source = stakeholders.find((s) => s.id === addContext.sourceId);
+    const target = stakeholders.find((s) => s.id === addContext.targetId);
+    return getInsertableLevels(source?.orgLevel, target?.orgLevel, dealOrgLevels);
+  }, [addContext, stakeholders, dealOrgLevels]);
+
+  // ノード上（上司追加）の場合: 現在のノードとその親の間の役職を推定
+  const insertableLevelsForAbove = useMemo(() => {
+    if (!addContext || addContext.type !== "node" || addContext.position !== "above") return [];
+    const currentNode = stakeholders.find((s) => s.id === addContext.nodeId);
+    if (!currentNode?.parentId) return [];
+    const parentNode = stakeholders.find((s) => s.id === currentNode.parentId);
+    return getInsertableLevels(parentNode?.orgLevel, currentNode?.orgLevel, dealOrgLevels);
+  }, [addContext, stakeholders, dealOrgLevels]);
+
+  const allInsertableLevels = addContext?.type === "edge" ? insertableLevels : insertableLevelsForAbove;
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -89,10 +112,14 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
         : "上司を追加"
       : "中間者を追加";
 
+  // 推定される役職が1つだけの場合はラベルを特定
+  const singleSuggestedLevel = allInsertableLevels.length === 1 ? allInsertableLevels[0] : null;
+  const hasSuggestion = allInsertableLevels.length > 0;
+
   return (
     <div
       ref={menuRef}
-      className="fixed z-[100] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[200px] animate-in fade-in zoom-in-95 duration-150"
+      className="fixed z-[100] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[220px] animate-in fade-in zoom-in-95 duration-150"
       style={{
         left: position.x,
         top: position.y,
@@ -100,7 +127,42 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     >
       <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b mb-1">
         {contextLabel}
+        {singleSuggestedLevel && (
+          <span className="ml-1 text-blue-600">
+            → {singleSuggestedLevel.label}
+          </span>
+        )}
       </div>
+
+      {/* 役職が推定できる場合: 推定役職での追加ボタンを優先表示 */}
+      {hasSuggestion && (
+        <>
+          {allInsertableLevels.map((level) => (
+            <button
+              key={level.level}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-blue-50 transition-colors text-left"
+              onClick={() => {
+                if (!addContext) return;
+                let parentId: string | null = null;
+                if (addContext.type === "node") {
+                  parentId = addContext.position === "below" ? addContext.nodeId : null;
+                } else if (addContext.type === "edge") {
+                  parentId = addContext.sourceId;
+                }
+                onCreateNew(parentId, false, level.level);
+                closeAddPopover();
+              }}
+            >
+              <ChevronRight className="w-4 h-4 text-blue-600" />
+              <span>
+                <span className="font-medium text-blue-700">{level.label}</span>
+                <span className="text-muted-foreground ml-1">を追加</span>
+              </span>
+            </button>
+          ))}
+          <div className="border-t my-1" />
+        </>
+      )}
 
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-blue-50 transition-colors text-left"

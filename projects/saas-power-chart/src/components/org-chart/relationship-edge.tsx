@@ -8,7 +8,7 @@ import {
   EdgeLabelRenderer,
 } from "@xyflow/react";
 import type { RelationshipType } from "@/types/relationship";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 
 const EDGE_STYLES: Record<
@@ -21,6 +21,12 @@ const EDGE_STYLES: Record<
   rivalry: { stroke: "#ef4444", strokeDasharray: "3 3", strokeWidth: 2 },
   informal: { stroke: "#a855f7", strokeDasharray: "8 4", strokeWidth: 1 },
 };
+
+interface RelationshipEdgeData {
+  type?: RelationshipType;
+  label?: string;
+  onDelete?: (edgeId: string, source: string, target: string, relType: RelationshipType) => void;
+}
 
 function RelationshipEdgeComponent(props: EdgeProps) {
   const {
@@ -37,8 +43,10 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     selected,
   } = props;
 
-  const relType = ((data as Record<string, unknown>)?.type as RelationshipType) ?? "reporting";
-  const label = (data as Record<string, unknown>)?.label as string | undefined;
+  const edgeData = data as RelationshipEdgeData | undefined;
+  const relType = edgeData?.type ?? "reporting";
+  const label = edgeData?.label;
+  const onDelete = edgeData?.onDelete;
   const style = EDGE_STYLES[relType];
   const openAddPopover = useUiStore((s) => s.openAddPopover);
 
@@ -61,6 +69,14 @@ function RelationshipEdgeComponent(props: EdgeProps) {
       );
     },
     [source, target, openAddPopover]
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.(id, source, target, relType);
+    },
+    [id, source, target, relType, onDelete]
   );
 
   const isReporting = relType === "reporting";
@@ -87,14 +103,15 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             {label}
           </div>
         )}
-        {/* reporting関係のみ: ライン中間の+ボタン */}
-        {isReporting && (
-          <div
-            className="absolute pointer-events-auto group/edge"
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            }}
-          >
+        {/* エッジ操作ボタン群 */}
+        <div
+          className="absolute pointer-events-auto group/edge flex items-center gap-1"
+          style={{
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+          }}
+        >
+          {/* reporting関係のみ: ライン中間の+ボタン */}
+          {isReporting && (
             <button
               className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
               onClick={handleAddMidpoint}
@@ -102,8 +119,16 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
-          </div>
-        )}
+          )}
+          {/* 削除ボタン */}
+          <button
+            className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10 opacity-0 group-hover/edge:opacity-100"
+            onClick={handleDelete}
+            title="つながりを削除"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </EdgeLabelRenderer>
     </>
   );

@@ -8,9 +8,19 @@ import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS } from "@/lib/mock-data";
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 const EMPTY_RELATIONSHIPS: Relationship[] = [];
 
+/** 案件ごとの組織階層定義（順序 = レベル番号） */
+export interface OrgLevelEntry {
+  level: number;
+  label: string;
+}
+
+const EMPTY_ORG_LEVELS: OrgLevelEntry[] = [];
+
 interface StakeholderState {
   stakeholdersByDeal: Record<string, Stakeholder[]>;
   relationshipsByDeal: Record<string, Relationship[]>;
+  /** 案件ごとの階層定義 */
+  orgLevelConfigByDeal: Record<string, OrgLevelEntry[]>;
 
   addStakeholder: (
     data: Omit<Stakeholder, "id" | "createdAt" | "updatedAt">
@@ -41,6 +51,11 @@ interface StakeholderState {
   importStakeholders: (dealId: string, stakeholders: Stakeholder[]) => void;
   clearDealData: (dealId: string) => void;
 
+  /** 案件の階層定義を取得 */
+  getOrgLevels: (dealId: string) => OrgLevelEntry[];
+  /** 案件の階層定義を丸ごと更新 */
+  setOrgLevels: (dealId: string, levels: OrgLevelEntry[]) => void;
+
   updateNodePosition: (
     id: string,
     dealId: string,
@@ -56,6 +71,7 @@ export const useStakeholderStore = create<StakeholderState>()(
     (set, get) => ({
       stakeholdersByDeal: {},
       relationshipsByDeal: {},
+      orgLevelConfigByDeal: {},
 
       addStakeholder: (data) => {
         const stakeholder: Stakeholder = {
@@ -178,11 +194,26 @@ export const useStakeholderStore = create<StakeholderState>()(
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [dealId]: _r, ...restRelationships } =
             state.relationshipsByDeal;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [dealId]: _l, ...restOrgLevels } =
+            state.orgLevelConfigByDeal;
           return {
             stakeholdersByDeal: restStakeholders,
             relationshipsByDeal: restRelationships,
+            orgLevelConfigByDeal: restOrgLevels,
           };
         }),
+
+      getOrgLevels: (dealId) =>
+        get().orgLevelConfigByDeal[dealId] ?? EMPTY_ORG_LEVELS,
+
+      setOrgLevels: (dealId, levels) =>
+        set((state) => ({
+          orgLevelConfigByDeal: {
+            ...state.orgLevelConfigByDeal,
+            [dealId]: levels,
+          },
+        })),
 
       updateNodePosition: (id, dealId, position) =>
         set((state) => {

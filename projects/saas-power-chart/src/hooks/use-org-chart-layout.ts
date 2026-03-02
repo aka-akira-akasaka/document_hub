@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { getLayoutedElements } from "@/lib/layout-engine";
+import type { RelationshipType } from "@/types/relationship";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
@@ -16,6 +17,20 @@ export function useOrgChartLayout(dealId: string) {
     s.relationshipsByDeal[dealId] ?? EMPTY_R
   );
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
+  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
+
+  // エッジ削除コールバック（安定した参照を保つ）
+  const handleEdgeDelete = useCallback(
+    (edgeId: string, _source: string, target: string, relType: RelationshipType) => {
+      if (relType === "reporting") {
+        updateStakeholder(target, dealId, { parentId: null });
+      } else {
+        deleteRelationship(edgeId, dealId);
+      }
+    },
+    [dealId, updateStakeholder, deleteRelationship]
+  );
 
   const nodes: Node[] = useMemo(
     () =>
@@ -36,7 +51,7 @@ export function useOrgChartLayout(dealId: string) {
         source: s.parentId!,
         target: s.id,
         type: "relationship",
-        data: { type: "reporting" },
+        data: { type: "reporting", onDelete: handleEdgeDelete },
       }));
 
     const relEdges: Edge[] = relationships.map((r) => ({
@@ -44,11 +59,11 @@ export function useOrgChartLayout(dealId: string) {
       source: r.sourceId,
       target: r.targetId,
       type: "relationship",
-      data: { type: r.type, label: r.label },
+      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
     }));
 
     return [...orgEdges, ...relEdges];
-  }, [stakeholders, relationships]);
+  }, [stakeholders, relationships, handleEdgeDelete]);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {

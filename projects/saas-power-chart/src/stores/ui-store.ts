@@ -33,13 +33,15 @@ interface UiState {
   createParentId: string | null;
   /** +ボタン経由で作成した後にリンクし直す子ノードID */
   createChildToRelink: string | null;
+  /** +ボタン経由で作成する際の推定orgLevel */
+  createOrgLevel: number | null;
 
   openSheet: (
     id: string | null,
     mode: "view" | "edit" | "create"
   ) => void;
   /** +ボタン経由でcreateモードを開く（parentIdとchildToRelinkを保持） */
-  openSheetForCreate: (parentId: string | null, childToRelink: string | null) => void;
+  openSheetForCreate: (parentId: string | null, childToRelink: string | null, orgLevel?: number | null) => void;
   closeSheet: () => void;
   openCsvImport: () => void;
   closeCsvImport: () => void;
@@ -62,6 +64,7 @@ export const useUiStore = create<UiState>()((set) => ({
   addPopoverPosition: null,
   createParentId: null,
   createChildToRelink: null,
+  createOrgLevel: null,
 
   openSheet: (id, mode) =>
     set({
@@ -70,14 +73,16 @@ export const useUiStore = create<UiState>()((set) => ({
       sheetMode: mode,
       createParentId: null,
       createChildToRelink: null,
+      createOrgLevel: null,
     }),
-  openSheetForCreate: (parentId, childToRelink) =>
+  openSheetForCreate: (parentId, childToRelink, orgLevel) =>
     set({
       sheetOpen: true,
       selectedStakeholderId: null,
       sheetMode: "create",
       createParentId: parentId,
       createChildToRelink: childToRelink,
+      createOrgLevel: orgLevel ?? null,
     }),
   closeSheet: () =>
     set({
@@ -86,6 +91,7 @@ export const useUiStore = create<UiState>()((set) => ({
       sheetMode: "view",
       createParentId: null,
       createChildToRelink: null,
+      createOrgLevel: null,
     }),
   openCsvImport: () => set({ csvImportDialogOpen: true }),
   closeCsvImport: () => set({ csvImportDialogOpen: false }),
