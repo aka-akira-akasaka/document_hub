@@ -133,12 +133,21 @@ export function useGroupChartLayout(dealId: string) {
    * ReactFlowコールバックの第3引数に全ノードが含まれない問題を回避。
    */
   const findDropTargetGroup = useCallback(
-    (absolutePosition: { x: number; y: number }): string | null => {
+    (absolutePosition: { x: number; y: number }, excludeGroupId?: string): string | null => {
       const cx = absolutePosition.x + GROUP_LAYOUT.nodeWidth / 2;
       const cy = absolutePosition.y + GROUP_LAYOUT.nodeHeight / 2;
 
+      // グループD&D時: 自分自身と子孫を除外（循環参照防止）
+      const excludeIds = new Set<string>();
+      if (excludeGroupId) {
+        excludeIds.add(excludeGroupId);
+        const descendants = useOrgGroupStore.getState().getDescendantIds(excludeGroupId, dealId);
+        for (const id of descendants) excludeIds.add(id);
+      }
+
       const candidates: { groupId: string; area: number }[] = [];
       for (const gb of groupBoundsRef.current) {
+        if (excludeIds.has(gb.groupId)) continue;
         if (
           cx >= gb.x &&
           cx <= gb.x + gb.width &&
@@ -155,7 +164,7 @@ export function useGroupChartLayout(dealId: string) {
       candidates.sort((a, b) => a.area - b.area);
       return candidates[0].groupId;
     },
-    []
+    [dealId]
   );
 
   // D&D中のリアルタイムフィードバック
@@ -163,8 +172,16 @@ export function useGroupChartLayout(dealId: string) {
 
   const onNodeDrag = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (node.type === "orgGroup" || node.type === "addPersonPlaceholder") {
+      if (node.type === "addPersonPlaceholder") {
         setDragOverGroupId(null);
+        return;
+      }
+      if (node.type === "orgGroup") {
+        // グループD&D: 自分自身と子孫を除外してドロップ先を検出
+        const draggedGroupId = node.id.replace(/^group-/, "");
+        const absPos = getNodeAbsolutePosition(node);
+        const targetGroupId = findDropTargetGroup(absPos, draggedGroupId);
+        setDragOverGroupId(targetGroupId);
         return;
       }
       const absPos = getNodeAbsolutePosition(node);
@@ -174,30 +191,50 @@ export function useGroupChartLayout(dealId: string) {
     [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId]
   );
 
+  const updateGroup = useOrgGroupStore((s) => s.updateGroup);
+
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       // ドラッグオーバー状態をリセット
       setDragOverGroupId(null);
 
-      // グループノード・プレースホルダーのドラッグは無視
-      if (node.type === "orgGroup" || node.type === "addPersonPlaceholder") return;
+      // プレースホルダーのドラッグは無視
+      if (node.type === "addPersonPlaceholder") return;
 
-      // ノードの絶対座標を算出（groupBoundsRefベース）
+      // グループノードのD&D: parentGroupIdを更新
+      if (node.type === "orgGroup") {
+        const draggedGroupId = node.id.replace(/^group-/, "");
+        const absPos = getNodeAbsolutePosition(node);
+        const targetGroupId = findDropTargetGroup(absPos, draggedGroupId);
+        const draggedGroup = orgGroups.find((g) => g.id === draggedGroupId);
+        const currentParent = draggedGroup?.parentGroupId ?? null;
+
+        if (targetGroupId === currentParent) return; // 変更なし
+
+        captureSnapshot();
+        updateGroup(draggedGroupId, dealId, { parentGroupId: targetGroupId });
+
+        const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
+        if (targetGroupId && targetGroup) {
+          toast.success(`${draggedGroup?.name ?? ""} を ${targetGroup.name} の配下に移動しました`);
+        } else {
+          toast.success(`${draggedGroup?.name ?? ""} をトップレベルに移動しました`);
+        }
+        return;
+      }
+
+      // ステークホルダーノードのD&D（既存ロジック）
       const absPos = getNodeAbsolutePosition(node);
-
-      // ドロップ先のグループを検出
       const targetGroupId = findDropTargetGroup(absPos);
       const s = stakeholders.find((st) => st.id === node.id);
       const currentGroupId = s?.groupId ?? null;
 
       if (targetGroupId !== currentGroupId) {
-        // グループが変わった: groupIdとdepartmentを更新（レイアウトが再計算される）
         captureSnapshot();
         const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
         const updates: Partial<import("@/types/stakeholder").Stakeholder> = {
           groupId: targetGroupId,
         };
-        // グループに移動した場合はdepartmentも自動更新
         if (targetGroupId && targetGroup) {
           updates.department = targetGroup.name;
         }
@@ -208,12 +245,10 @@ export function useGroupChartLayout(dealId: string) {
           toast.success(`${s?.name ?? ""} をフリーに移動しました`);
         }
       } else if (!targetGroupId) {
-        // フリーフローティングのまま: 位置を保存
         updateNodePosition(node.id, dealId, node.position);
       }
-      // グループ内でのドラッグ完了→何もしない（レイアウトで自動配置されるため）
     },
-    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot, setDragOverGroupId]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, captureSnapshot, setDragOverGroupId]
   );
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
