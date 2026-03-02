@@ -269,7 +269,8 @@ function positionGroupTree(
   };
   if (parentGroupNodeId) {
     groupNode.parentId = parentGroupNodeId;
-    groupNode.extent = "parent" as const;
+    // extent: "parent" はあえて設定しない
+    // → ネストされたグループを親の外にドラッグして別部門へ移動・トップレベルへ取り出しを可能にする
   }
   nodes.push(groupNode);
 
