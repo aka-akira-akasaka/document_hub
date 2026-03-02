@@ -25,6 +25,9 @@ interface OrgGroupState {
 
   /** 指定グループの深さを返す（ルート=0） */
   getGroupDepth: (id: string, dealId: string) => number;
+
+  /** モックデータをシード（仮置き・確認後削除） */
+  seedMockData: () => void;
 }
 
 export const useOrgGroupStore = create<OrgGroupState>()(
@@ -116,6 +119,17 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         }
         return depth;
       },
+
+      seedMockData: () =>
+        set((state) => {
+          if ((state.groupsByDeal[MOCK_DEAL_ID] ?? []).length > 0) return state;
+          return {
+            groupsByDeal: {
+              ...state.groupsByDeal,
+              [MOCK_DEAL_ID]: MOCK_ORG_GROUPS,
+            },
+          };
+        }),
     }),
     {
       name: "power-chart-org-groups",
@@ -129,18 +143,7 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         }
         return _persisted as OrgGroupState;
       },
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        // モックデータがまだ無い場合はシード（set()経由で正しくReactに通知）
-        if ((state.groupsByDeal[MOCK_DEAL_ID] ?? []).length === 0) {
-          useOrgGroupStore.setState({
-            groupsByDeal: {
-              ...state.groupsByDeal,
-              [MOCK_DEAL_ID]: MOCK_ORG_GROUPS,
-            },
-          });
-        }
-      },
+      // モックデータのシードは MockDataSeeder コンポーネントに統一（onRehydrateStorage でのsetState は無限ループの原因になる）
     }
   )
 );

@@ -40,6 +40,11 @@ const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
+// ReactFlowに渡すオプションをモジュールレベルで定義（毎レンダー新オブジェクト生成による無限ループ防止）
+const FIT_VIEW_OPTIONS = { padding: 0.2 };
+const PRO_OPTIONS = { hideAttribution: true };
+const DEFAULT_EDGE_OPTIONS = { deletable: true };
+
 interface OrgChartCanvasProps {
   dealId: string;
 }
@@ -283,11 +288,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={FIT_VIEW_OPTIONS}
         minZoom={0.1}
         maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{ deletable: true }}
+        proOptions={PRO_OPTIONS}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
         {layers.length > 0 && <LayerBackground layers={layers} />}
         <OrgChartToolbar

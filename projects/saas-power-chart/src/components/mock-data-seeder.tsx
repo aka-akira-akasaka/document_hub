@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { useDealStore } from "@/stores/deal-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
 
 export function MockDataSeeder() {
   const seeded = useRef(false);
@@ -16,6 +17,7 @@ export function MockDataSeeder() {
     seeded.current = true;
     useDealStore.getState().seedMockData();
     useStakeholderStore.getState().seedMockData();
+    useOrgGroupStore.getState().seedMockData();
   }, []);
 
   return null;
