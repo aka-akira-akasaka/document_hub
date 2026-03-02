@@ -16,6 +16,7 @@ import "@xyflow/react/dist/style.css";
 import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgGroupNode } from "./org-group-node";
+import { AddPersonPlaceholderNode } from "./add-person-placeholder-node";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
@@ -38,7 +39,7 @@ import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 
-const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode };
+const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 interface OrgChartCanvasProps {
@@ -176,8 +177,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
-      // グループノードのクリックは無視
-      if (node.type === "orgGroup") return;
+      // グループノード・プレースホルダーのクリックは無視
+      if (node.type === "orgGroup" || node.type === "addPersonPlaceholder") return;
       // +ボタンのポップオーバーが開いている場合はクリックを無視
       if (addContext) return;
       openSheet(node.id, "edit");

@@ -150,7 +150,7 @@ export function useGroupChartLayout(dealId: string) {
 
   const onNodeDrag = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (node.type === "orgGroup") {
+      if (node.type === "orgGroup" || node.type === "addPersonPlaceholder") {
         setDragOverGroupId(null);
         return;
       }
@@ -166,8 +166,8 @@ export function useGroupChartLayout(dealId: string) {
       // ドラッグオーバー状態をリセット
       setDragOverGroupId(null);
 
-      // グループノードのドラッグ: 子が自動追従するので何もしない
-      if (node.type === "orgGroup") return;
+      // グループノード・プレースホルダーのドラッグは無視
+      if (node.type === "orgGroup" || node.type === "addPersonPlaceholder") return;
 
       // ノードの絶対座標を算出（groupBoundsRefベース）
       const absPos = getNodeAbsolutePosition(node);

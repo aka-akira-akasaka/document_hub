@@ -166,13 +166,13 @@ function computeGroupSize(node: GroupTreeNode): void {
     computeGroupSize(child);
   }
 
-  const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
+  const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
 
-  // 直属メンバーの高さ
+  // 直属メンバーの高さ（＋プレースホルダー分を含む）
   const memberCount = node.members.length;
   const membersHeight = memberCount > 0
-    ? memberCount * nodeHeight + (memberCount - 1) * nodeGap
-    : 0;
+    ? memberCount * nodeHeight + (memberCount - 1) * nodeGap + nodeGap + placeholderHeight
+    : placeholderHeight;
 
   // サブグループの合計幅と最大高さ
   let subGroupsTotalWidth = 0;
@@ -221,7 +221,7 @@ function positionGroupTree(
   groupBounds: GroupBound[]
 ): void {
   const groupNodeId = `group-${node.group.id}`;
-  const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
+  const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
 
   // グループノード自体を追加（親子関係はグループ同士のみ）
   const groupNode: Node = {
@@ -264,6 +264,20 @@ function positionGroupTree(
     });
     memberY += nodeHeight + nodeGap;
   }
+
+  // 「＋ 人を追加する」プレースホルダーノード
+  nodes.push({
+    id: `placeholder-${node.group.id}`,
+    type: "addPersonPlaceholder",
+    position: { x: memberX, y: memberY },
+    parentId: groupNodeId,
+    zIndex: 5,
+    selectable: false,
+    draggable: false,
+    data: { groupId: node.group.id },
+    style: { width: nodeWidth, height: placeholderHeight },
+  });
+  memberY += placeholderHeight + nodeGap;
 
   // サブグループを配置
   if (node.children.length > 0) {

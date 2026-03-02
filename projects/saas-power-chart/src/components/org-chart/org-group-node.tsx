@@ -3,7 +3,7 @@
 import { memo, useCallback, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { OrgGroup } from "@/types/org-group";
-import { MoreVertical, Plus, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import {
@@ -16,7 +16,6 @@ import { toast } from "sonner";
 
 function OrgGroupNodeComponent({ data }: NodeProps) {
   const group = data as unknown as OrgGroup;
-  const openAddPopover = useUiStore((st) => st.openAddPopover);
   const openGroupFormForChild = useUiStore((st) => st.openGroupFormForChild);
   const openGroupFormForEdit = useUiStore((st) => st.openGroupFormForEdit);
   const deleteGroup = useOrgGroupStore((st) => st.deleteGroup);
@@ -25,20 +24,8 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
 
   const isDropTarget = dragOverGroupId === group.id;
 
-  const handleAddPerson = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      // グループの実IDをコンテキストとして渡す（group-xxx ではなく元のUUID）
-      openAddPopover(
-        { type: "group", groupId: group.id },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [group.id, openAddPopover]
-  );
-
   const handleAddSubGroup = useCallback(
-    (e: Event) => {
+    (e: React.MouseEvent | Event) => {
       e.stopPropagation();
       openGroupFormForChild(group.id);
     },
@@ -61,9 +48,6 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
     },
     [group.id, group.dealId, group.name, deleteGroup]
   );
-
-  // teamレベルの下にはサブ部署追加不可
-  const canAddSubGroup = group.level !== "team";
 
   const groupHandleClass = hovered
     ? "!w-2.5 !h-2.5 !bg-blue-400 !border-2 !border-blue-600 !rounded-full transition-all"
@@ -131,12 +115,10 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[160px]">
-            {canAddSubGroup && (
-              <DropdownMenuItem onSelect={handleAddSubGroup}>
-                <FolderPlus className="w-4 h-4 mr-2" />
-                サブ部署を追加
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem onSelect={handleAddSubGroup}>
+              <FolderPlus className="w-4 h-4 mr-2" />
+              サブ部署を追加
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={handleEdit}>
               <Pencil className="w-4 h-4 mr-2" />
               編集
@@ -152,14 +134,14 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
         </DropdownMenu>
       </div>
 
-      {/* フッター: ＋人を追加する */}
+      {/* フッター: ＋部署を追加する */}
       <div className="absolute bottom-0 left-0 right-0 px-3 py-1.5">
         <button
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors"
-          onClick={handleAddPerson}
+          onClick={handleAddSubGroup as React.MouseEventHandler}
         >
-          <Plus className="w-3 h-3" />
-          <span>人を追加する</span>
+          <FolderPlus className="w-3 h-3" />
+          <span>部署を追加する</span>
         </button>
       </div>
     </div>

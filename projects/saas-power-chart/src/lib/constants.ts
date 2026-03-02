@@ -155,6 +155,9 @@ export const LAYER_LAYOUT = {
   nodeSep: 40,
 } as const;
 
+/** グループの最大ネスト深度 */
+export const MAX_GROUP_DEPTH = 20;
+
 /** グループベースレイアウトの設定定数 */
 export const GROUP_LAYOUT = {
   /** stakeholderノード幅 */
@@ -179,6 +182,8 @@ export const GROUP_LAYOUT = {
   groupAreaY: 200,
   /** フリーフローティングノード間の横間隔 */
   freeFloatGap: 24,
+  /** 「人を追加する」プレースホルダーの高さ */
+  placeholderHeight: 48,
 } as const;
 
 /** 関係線のポジティブ/ネガティブ判定 */

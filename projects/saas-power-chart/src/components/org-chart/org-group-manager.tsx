@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, ChevronRight } from "lucide-react";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import type { OrgGroup } from "@/types/org-group";
-import { ORG_GROUP_LEVEL_LABELS, ORG_GROUP_LEVEL_COLORS } from "@/types/org-group";
 import { OrgGroupForm } from "./org-group-form";
 
 interface OrgGroupManagerProps {
@@ -53,8 +52,6 @@ export function OrgGroupManager({
 
   const renderGroup = (group: OrgGroup, depth: number) => {
     const children = groups.filter((g) => g.parentGroupId === group.id);
-    const colors = ORG_GROUP_LEVEL_COLORS[group.level];
-    const canAddChild = group.level !== "team"; // teamの下には追加不可
 
     return (
       <div key={group.id} style={{ marginLeft: depth * 16 }}>
@@ -66,28 +63,22 @@ export function OrgGroupManager({
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           )}
           <div
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: colors.border }}
+            className="w-2 h-2 rounded-full flex-shrink-0 bg-gray-400"
           />
           <span className="text-sm font-medium flex-1 truncate">
             {group.name}
           </span>
-          <span className="text-xs text-muted-foreground">
-            {ORG_GROUP_LEVEL_LABELS[group.level]}
-          </span>
-          {canAddChild && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddChild(group.id);
-              }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddChild(group.id);
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
         </div>
         {children.map((child) => renderGroup(child, depth + 1))}
       </div>

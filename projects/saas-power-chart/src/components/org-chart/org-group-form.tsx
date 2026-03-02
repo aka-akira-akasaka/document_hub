@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/select";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useHistoryStore } from "@/stores/history-store";
-import type { OrgGroup, OrgGroupLevel } from "@/types/org-group";
-import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
+import type { OrgGroup } from "@/types/org-group";
+import { MAX_GROUP_DEPTH } from "@/lib/constants";
 
 interface OrgGroupFormProps {
   dealId: string;
@@ -30,13 +30,6 @@ interface OrgGroupFormProps {
   editGroup?: OrgGroup | null;
   /** 新規作成時のデフォルト親グループID */
   defaultParentGroupId?: string | null;
-}
-
-/** 親グループのレベルから子グループの適切なレベルを推定 */
-function getChildLevel(parentLevel: OrgGroupLevel | null): OrgGroupLevel {
-  if (!parentLevel) return "division";
-  if (parentLevel === "division") return "section";
-  return "team";
 }
 
 export function OrgGroupForm({
@@ -50,19 +43,11 @@ export function OrgGroupForm({
   const addGroup = useOrgGroupStore((s) => s.addGroup);
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const deleteGroup = useOrgGroupStore((s) => s.deleteGroup);
+  const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
 
-  const parentGroup = defaultParentGroupId
-    ? groups.find((g) => g.id === defaultParentGroupId)
-    : editGroup?.parentGroupId
-    ? groups.find((g) => g.id === editGroup.parentGroupId)
-    : null;
-
   const [name, setName] = useState(editGroup?.name ?? "");
-  const [level, setLevel] = useState<OrgGroupLevel>(
-    editGroup?.level ?? getChildLevel(parentGroup?.level ?? null)
-  );
   const [parentGroupId, setParentGroupId] = useState(
     editGroup?.parentGroupId ?? defaultParentGroupId ?? ""
   );
@@ -75,14 +60,12 @@ export function OrgGroupForm({
     if (isEdit && editGroup) {
       updateGroup(editGroup.id, dealId, {
         name: name.trim(),
-        level,
         parentGroupId: parentGroupId || null,
       });
     } else {
       addGroup({
         dealId,
         name: name.trim(),
-        level,
         parentGroupId: parentGroupId || null,
       });
     }
@@ -97,12 +80,17 @@ export function OrgGroupForm({
   };
 
   // 親グループの選択肢（自分自身と子孫は除外）
-  const parentOptions = groups.filter((g) => {
-    if (editGroup && g.id === editGroup.id) return false;
-    // teamは親になれない
-    if (g.level === "team") return false;
-    return true;
-  });
+  const excludeIds = editGroup
+    ? new Set([editGroup.id, ...useOrgGroupStore.getState().getDescendantIds(editGroup.id, dealId)])
+    : new Set<string>();
+
+  const parentOptions = groups.filter((g) => !excludeIds.has(g.id));
+
+  // 選択中の親グループの深さチェック
+  const selectedParentDepth = parentGroupId
+    ? getGroupDepth(parentGroupId, dealId)
+    : -1;
+  const isTooDeep = selectedParentDepth >= MAX_GROUP_DEPTH - 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -125,29 +113,6 @@ export function OrgGroupForm({
           </div>
 
           <div className="space-y-2">
-            <Label>レベル</Label>
-            <Select
-              value={level}
-              onValueChange={(v) => setLevel(v as OrgGroupLevel)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="division">
-                  {ORG_GROUP_LEVEL_LABELS.division}（部）
-                </SelectItem>
-                <SelectItem value="section">
-                  {ORG_GROUP_LEVEL_LABELS.section}（課）
-                </SelectItem>
-                <SelectItem value="team">
-                  {ORG_GROUP_LEVEL_LABELS.team}（係）
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label>親グループ</Label>
             <Select
               value={parentGroupId || "none"}
@@ -160,11 +125,16 @@ export function OrgGroupForm({
                 <SelectItem value="none">なし（トップレベル）</SelectItem>
                 {parentOptions.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
-                    {g.name}（{ORG_GROUP_LEVEL_LABELS[g.level]}）
+                    {g.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {isTooDeep && (
+              <p className="text-xs text-orange-600">
+                ※ 階層が深すぎます（最大{MAX_GROUP_DEPTH}階層）
+              </p>
+            )}
           </div>
 
           <div className="flex justify-between items-center pt-2">
@@ -188,7 +158,9 @@ export function OrgGroupForm({
               >
                 キャンセル
               </Button>
-              <Button type="submit">{isEdit ? "更新" : "作成"}</Button>
+              <Button type="submit" disabled={isTooDeep}>
+                {isEdit ? "更新" : "作成"}
+              </Button>
             </div>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { OrgGroup, OrgGroupLevel } from "@/types/org-group";
+import type { OrgGroup } from "@/types/org-group";
 import { MOCK_DEAL_ID, MOCK_ORG_GROUPS } from "@/lib/mock-data";
 
 const EMPTY_GROUPS: OrgGroup[] = [];
@@ -11,7 +11,6 @@ interface OrgGroupState {
   addGroup: (data: {
     dealId: string;
     name: string;
-    level: OrgGroupLevel;
     parentGroupId: string | null;
     color?: string;
   }) => OrgGroup;
@@ -23,6 +22,9 @@ interface OrgGroupState {
 
   /** 指定グループの子孫グループIDを全て返す（再帰） */
   getDescendantIds: (id: string, dealId: string) => string[];
+
+  /** 指定グループの深さを返す（ルート=0） */
+  getGroupDepth: (id: string, dealId: string) => number;
 }
 
 export const useOrgGroupStore = create<OrgGroupState>()(
@@ -35,7 +37,6 @@ export const useOrgGroupStore = create<OrgGroupState>()(
           id: crypto.randomUUID(),
           dealId: data.dealId,
           name: data.name,
-          level: data.level,
           parentGroupId: data.parentGroupId,
           color: data.color,
           createdAt: new Date().toISOString(),
@@ -102,10 +103,40 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         }
         return result;
       },
+
+      getGroupDepth: (id, dealId) => {
+        const list = get().groupsByDeal[dealId] ?? [];
+        const groupMap = new Map(list.map((g) => [g.id, g]));
+        let depth = 0;
+        let current = groupMap.get(id);
+        while (current?.parentGroupId) {
+          depth++;
+          current = groupMap.get(current.parentGroupId);
+          if (depth > 100) break; // 循環参照ガード
+        }
+        return depth;
+      },
     }),
     {
       name: "power-chart-org-groups",
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as Record<string, unknown>;
+        const byDeal = (state.groupsByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
+
+        if (version < 2) {
+          // v1→v2: levelフィールドを除去
+          for (const dealId of Object.keys(byDeal)) {
+            byDeal[dealId] = byDeal[dealId].map((g) => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { level, ...rest } = g;
+              return rest;
+            });
+          }
+        }
+
+        return { ...state, groupsByDeal: byDeal } as unknown as OrgGroupState;
+      },
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         // モックデータがまだ無い場合はシード
