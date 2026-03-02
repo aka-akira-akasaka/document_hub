@@ -17,10 +17,23 @@ interface GroupTreeNode {
 export interface GroupLayoutResult {
   nodes: Node[];
   edges: Edge[];
+  /** グループノードの絶対位置とサイズ（ドロップ先検出用） */
+  groupBounds: GroupBound[];
+}
+
+/** グループの絶対位置とサイズ（ドラッグ&ドロップ用） */
+export interface GroupBound {
+  groupId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
  * グループベースレイアウトのメイン関数
+ * stakeholderノードは絶対座標で配置（ドラッグ&ドロップ対応）
+ * グループノードはReactFlowの親子関係でネスト
  */
 export function computeGroupLayout(
   stakeholders: Stakeholder[],
@@ -40,6 +53,7 @@ export function computeGroupLayout(
 
   // Step 4: グループ位置をトップダウンで割り当て
   const nodes: Node[] = [];
+  const groupBounds: GroupBound[] = [];
   let currentX = 0;
 
   // フリーフローティングノードを上部に配置
@@ -49,6 +63,7 @@ export function computeGroupLayout(
       id: s.id,
       type: "stakeholder",
       position: { x: freeX, y: GROUP_LAYOUT.freeFloatY },
+      zIndex: 10,
       data: { ...s },
     });
     freeX += GROUP_LAYOUT.nodeWidth + GROUP_LAYOUT.freeFloatGap;
@@ -56,11 +71,18 @@ export function computeGroupLayout(
 
   // ルートグループ（division）を横並び配置
   for (const root of groupTree) {
-    positionGroupTree(root, currentX, GROUP_LAYOUT.groupAreaY, nodes);
+    positionGroupTree(
+      root,
+      currentX, GROUP_LAYOUT.groupAreaY,  // 相対座標（ルートなので=絶対座標）
+      currentX, GROUP_LAYOUT.groupAreaY,  // 絶対座標
+      null,                                // 親グループなし
+      nodes,
+      groupBounds
+    );
     currentX += root.width + GROUP_LAYOUT.divisionGap;
   }
 
-  return { nodes, edges: reportingEdges };
+  return { nodes, edges: reportingEdges, groupBounds };
 }
 
 /**
@@ -185,46 +207,63 @@ function computeGroupSize(node: GroupTreeNode): void {
 
 /**
  * グループとその中身のReactFlowノードを再帰的に配置
+ * stakeholderノードは絶対座標、グループノードはReactFlow親子関係
  */
 function positionGroupTree(
   node: GroupTreeNode,
-  x: number,
-  y: number,
-  nodes: Node[]
+  relX: number,
+  relY: number,
+  absX: number,
+  absY: number,
+  parentGroupNodeId: string | null,
+  nodes: Node[],
+  groupBounds: GroupBound[]
 ): void {
   const groupNodeId = `group-${node.group.id}`;
   const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
-  // footerHeightはcomputeGroupSizeで使用済み（高さに含まれている）
 
-  // グループノード自体を追加
-  nodes.push({
+  // グループノード自体を追加（親子関係はグループ同士のみ）
+  const groupNode: Node = {
     id: groupNodeId,
     type: "orgGroup",
-    position: { x, y },
+    position: { x: relX, y: relY },
     data: { ...node.group },
     style: {
       width: node.width,
       height: node.height,
     },
+  };
+  if (parentGroupNodeId) {
+    groupNode.parentId = parentGroupNodeId;
+    groupNode.extent = "parent" as const;
+  }
+  nodes.push(groupNode);
+
+  // グループの絶対位置をドロップ先検出用に記録
+  groupBounds.push({
+    groupId: node.group.id,
+    x: absX,
+    y: absY,
+    width: node.width,
+    height: node.height,
   });
 
-  // 直属メンバーを配置（グループ内相対座標）
+  // 直属メンバーを絶対座標で配置（parentIdなし）
   let memberY = headerHeight + innerPadding;
-  const memberX = (node.width - nodeWidth) / 2; // 中央揃え
+  const memberX = (node.width - nodeWidth) / 2;
 
   for (const member of node.members) {
     nodes.push({
       id: member.id,
       type: "stakeholder",
-      position: { x: memberX, y: memberY },
-      parentId: groupNodeId,
-      extent: "parent" as const,
+      position: { x: absX + memberX, y: absY + memberY },
+      zIndex: 10,
       data: { ...member },
     });
     memberY += nodeHeight + nodeGap;
   }
 
-  // サブグループを横並び配置
+  // サブグループを配置
   if (node.children.length > 0) {
     const subGroupY = memberY;
     // サブグループ群を中央揃え
@@ -236,18 +275,16 @@ function positionGroupTree(
     let subGroupX: number = Math.max(innerPadding, (node.width - totalChildWidth) / 2);
 
     for (const child of node.children) {
-      positionGroupTree(child, subGroupX, subGroupY, nodes);
-
-      // 子グループのReactFlowノードにparentIdを設定
-      const childGroupNodeId = `group-${child.group.id}`;
-      const childNode = nodes.find((n) => n.id === childGroupNodeId);
-      if (childNode) {
-        childNode.parentId = groupNodeId;
-        childNode.extent = "parent" as const;
-        // 位置をグループ内の相対座標に修正
-        childNode.position = { x: subGroupX, y: subGroupY };
-      }
-
+      positionGroupTree(
+        child,
+        subGroupX,                    // 親グループ内の相対座標
+        subGroupY,
+        absX + subGroupX,             // 絶対座標
+        absY + subGroupY,
+        groupNodeId,                  // 親グループのReactFlow ID
+        nodes,
+        groupBounds
+      );
       subGroupX += child.width + subGroupGap;
     }
   }

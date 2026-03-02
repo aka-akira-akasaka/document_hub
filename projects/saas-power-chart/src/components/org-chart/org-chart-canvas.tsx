@@ -20,6 +20,7 @@ import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
 import { OrgGroupManager } from "./org-group-manager";
+import { OrgGroupForm } from "./org-group-form";
 import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
@@ -74,7 +75,16 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const groupManagerOpen = useUiStore((s) => s.groupManagerOpen);
   const openGroupManager = useUiStore((s) => s.openGroupManager);
   const closeGroupManager = useUiStore((s) => s.closeGroupManager);
+  const groupFormOpen = useUiStore((s) => s.groupFormOpen);
+  const groupFormEditId = useUiStore((s) => s.groupFormEditId);
+  const groupFormParentId = useUiStore((s) => s.groupFormParentId);
+  const closeGroupForm = useUiStore((s) => s.closeGroupForm);
   const autoLayoutApplied = useRef(false);
+
+  // ⋮メニュー「編集」用: groupFormEditIdからOrgGroupオブジェクトを取得
+  const editGroupObj = groupFormEditId
+    ? orgGroups.find((g) => g.id === groupFormEditId) ?? null
+    : null;
 
   useEffect(() => {
     setNodes(layoutNodes);
@@ -116,7 +126,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       if (node.type === "orgGroup") return;
       // +ボタンのポップオーバーが開いている場合はクリックを無視
       if (addContext) return;
-      openSheet(node.id, "edit");
+      openSheet(node.id, "view");
     },
     [openSheet, addContext]
   );
@@ -130,6 +140,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     (parentId: string | null, suggestedOrgLevel?: number) => {
       const context = useUiStore.getState().addContext;
       if (!context) return;
+
+      // グループコンテキスト: groupIdをストアに設定してcreateモードで開く
+      if (context.type === "group") {
+        useUiStore.setState({ createGroupId: context.groupId });
+        openSheetForCreate(null, null, suggestedOrgLevel);
+        return;
+      }
 
       // 新規作成 → フォームを開く（parentIdとchildToRelinkをストアに保存してから開く）
       let resolvedParentId: string | null = null;
@@ -269,6 +286,15 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         dealId={dealId}
         open={groupManagerOpen}
         onOpenChange={closeGroupManager}
+      />
+
+      {/* ⋮メニューから開くグループ作成/編集フォーム */}
+      <OrgGroupForm
+        dealId={dealId}
+        open={groupFormOpen}
+        onOpenChange={(open) => { if (!open) closeGroupForm(); }}
+        editGroup={editGroupObj}
+        defaultParentGroupId={groupFormParentId}
       />
 
       {/* 部課のリストを開くトグル */}

@@ -25,13 +25,21 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
   const dealOrgLevels = useStakeholderStore(
     (s) => s.orgLevelConfigByDeal[dealId]
   );
+  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
 
-  // 未接続（parentIdがなく、誰の親でもない孤立ノード）の人物を取得
+  const isGroupContext = addContext?.type === "group";
+
+  // グループコンテキスト: グループ未所属の人物
+  const ungroupedPeople = useMemo(() => {
+    if (!addContext || addContext.type !== "group") return [];
+    return stakeholders.filter((s) => !s.groupId);
+  }, [addContext, stakeholders]);
+
+  // 非グループコンテキスト: 未接続（parentIdがなく、誰の親でもない孤立ノード）の人物
   const unconnectedPeople = stakeholders.filter((s) => {
-    if (!addContext) return false;
+    if (!addContext || addContext.type === "group") return false;
     const hasParent = !!s.parentId;
     const isParentOfSomeone = stakeholders.some((c) => c.parentId === s.id);
-    // 自分自身は除外
     if (addContext.type === "node" && s.id === addContext.nodeId) return false;
     if (addContext.type === "edge") {
       if (s.id === addContext.sourceId || s.id === addContext.targetId) return false;
@@ -41,6 +49,10 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     }
     return !hasParent && !isParentOfSomeone;
   });
+
+  // 表示する既存の人物リスト
+  const existingPeople = isGroupContext ? ungroupedPeople : unconnectedPeople;
+  const existingPeopleLabel = isGroupContext ? "作成済みの人を追加" : "未接続の人物を選択";
 
   // エッジ中間追加時: 上下のorgLevelから挿入可能な役職を推定
   const insertableLevels = useMemo(() => {
@@ -88,38 +100,38 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
 
   const handleCreateNew = useCallback(() => {
     if (!addContext) return;
-    let parentId: string | null = null;
-    if (addContext.type === "node") {
-      parentId = addContext.position === "below" ? addContext.nodeId : null;
+    if (addContext.type === "group") {
+      // グループコンテキスト: parentIdなし、groupIdはcanvas側で処理
+      onCreateNew(null);
+    } else if (addContext.type === "node") {
+      onCreateNew(addContext.position === "below" ? addContext.nodeId : null);
     } else if (addContext.type === "edge" || addContext.type === "layer") {
-      parentId = addContext.sourceId;
+      onCreateNew(addContext.sourceId);
     }
-    onCreateNew(parentId);
     closeAddPopover();
   }, [addContext, onCreateNew, closeAddPopover]);
 
   const handleSelectExisting = useCallback(
     (s: Stakeholder) => {
-      onSelectExisting(s.id);
+      if (!addContext) return;
+      if (addContext.type === "group") {
+        // グループコンテキスト: stakeholderのgroupIdを更新
+        updateStakeholder(s.id, dealId, { groupId: addContext.groupId });
+      } else {
+        onSelectExisting(s.id);
+      }
       closeAddPopover();
     },
-    [onSelectExisting, closeAddPopover]
+    [addContext, onSelectExisting, closeAddPopover, updateStakeholder, dealId]
   );
 
   if (!addContext || !position) return null;
 
-  const contextLabel =
-    addContext.type === "node"
-      ? addContext.position === "below"
-        ? "部下を追加"
-        : "上司を追加"
-      : addContext.type === "layer"
-        ? `${layerLevel?.label ?? ""}を追加`
-        : "中間者を追加";
+  const contextLabel = "人を追加する";
 
   // 推定される役職が1つだけの場合はラベルを特定
   const singleSuggestedLevel = allInsertableLevels.length === 1 ? allInsertableLevels[0] : null;
-  const hasSuggestion = allInsertableLevels.length > 0;
+  const hasSuggestion = allInsertableLevels.length > 0 && !isGroupContext;
 
   return (
     <div
@@ -132,7 +144,7 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     >
       <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b mb-1">
         {contextLabel}
-        {singleSuggestedLevel && addContext.type !== "layer" && (
+        {singleSuggestedLevel && addContext.type !== "layer" && addContext.type !== "group" && (
           <span className="ml-1 text-blue-600">
             → {singleSuggestedLevel.label}
           </span>
@@ -177,14 +189,14 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
         <span>新規作成</span>
       </button>
 
-      {unconnectedPeople.length > 0 && (
+      {existingPeople.length > 0 && (
         <>
           <div className="border-t my-1" />
           <div className="px-3 py-1 text-xs font-medium text-muted-foreground">
-            未接続の人物を選択
+            {existingPeopleLabel}
           </div>
           <div className="max-h-[200px] overflow-y-auto">
-            {unconnectedPeople.map((s) => (
+            {existingPeople.map((s) => (
               <button
                 key={s.id}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors text-left"

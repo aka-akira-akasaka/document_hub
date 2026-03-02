@@ -29,6 +29,7 @@ import type {
 } from "@/types/stakeholder";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useUiStore } from "@/stores/ui-store";
 import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
 
 interface StakeholderFormProps {
@@ -61,6 +62,7 @@ export function StakeholderForm({
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const createGroupId = useUiStore((s) => s.createGroupId);
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 
   const [name, setName] = useState(stakeholder?.name ?? "");
@@ -90,7 +92,7 @@ export function StakeholderForm({
     ?? defaultOrgLevel?.toString()
     ?? orgLevelOptions[orgLevelOptions.length - 1].level.toString()
   );
-  const [groupId, setGroupId] = useState(stakeholder?.groupId ?? "");
+  const [groupId, setGroupId] = useState(stakeholder?.groupId ?? createGroupId ?? "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

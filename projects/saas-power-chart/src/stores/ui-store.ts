@@ -23,7 +23,13 @@ export interface AddFromLayerContext {
   orgLevel: number;
 }
 
-export type AddContext = AddFromNodeContext | AddFromEdgeContext | AddFromLayerContext | null;
+/** グループの「＋人を追加する」ボタンから追加する場合のコンテキスト */
+export interface AddFromGroupContext {
+  type: "group";
+  groupId: string;
+}
+
+export type AddContext = AddFromNodeContext | AddFromEdgeContext | AddFromLayerContext | AddFromGroupContext | null;
 
 interface UiState {
   sheetOpen: boolean;
@@ -65,6 +71,17 @@ interface UiState {
   groupManagerOpen: boolean;
   openGroupManager: () => void;
   closeGroupManager: () => void;
+
+  /** グループ作成/編集フォーム（⋮メニューから開く） */
+  groupFormOpen: boolean;
+  groupFormEditId: string | null;
+  groupFormParentId: string | null;
+  openGroupFormForChild: (parentGroupId: string) => void;
+  openGroupFormForEdit: (groupId: string) => void;
+  closeGroupForm: () => void;
+
+  /** +ボタン経由で作成する際のデフォルトgroupId */
+  createGroupId: string | null;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -78,6 +95,7 @@ export const useUiStore = create<UiState>()((set) => ({
   createParentId: null,
   createChildToRelink: null,
   createOrgLevel: null,
+  createGroupId: null,
 
   openSheet: (id, mode) =>
     set({
@@ -87,6 +105,7 @@ export const useUiStore = create<UiState>()((set) => ({
       createParentId: null,
       createChildToRelink: null,
       createOrgLevel: null,
+      createGroupId: null,
     }),
   openSheetForCreate: (parentId, childToRelink, orgLevel) =>
     set({
@@ -105,6 +124,7 @@ export const useUiStore = create<UiState>()((set) => ({
       createParentId: null,
       createChildToRelink: null,
       createOrgLevel: null,
+      createGroupId: null,
     }),
   openCsvImport: () => set({ csvImportDialogOpen: true }),
   closeCsvImport: () => set({ csvImportDialogOpen: false }),
@@ -118,4 +138,14 @@ export const useUiStore = create<UiState>()((set) => ({
   groupManagerOpen: false,
   openGroupManager: () => set({ groupManagerOpen: true }),
   closeGroupManager: () => set({ groupManagerOpen: false }),
+
+  groupFormOpen: false,
+  groupFormEditId: null,
+  groupFormParentId: null,
+  openGroupFormForChild: (parentGroupId) =>
+    set({ groupFormOpen: true, groupFormEditId: null, groupFormParentId: parentGroupId }),
+  openGroupFormForEdit: (groupId) =>
+    set({ groupFormOpen: true, groupFormEditId: groupId, groupFormParentId: null }),
+  closeGroupForm: () =>
+    set({ groupFormOpen: false, groupFormEditId: null, groupFormParentId: null }),
 }));
