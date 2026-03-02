@@ -119,23 +119,13 @@ export const useOrgGroupStore = create<OrgGroupState>()(
     }),
     {
       name: "power-chart-org-groups",
-      version: 2,
-      migrate: (persisted, version) => {
-        const state = persisted as Record<string, unknown>;
-        const byDeal = (state.groupsByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
-
-        if (version < 2) {
-          // v1→v2: levelフィールドを除去
-          for (const dealId of Object.keys(byDeal)) {
-            byDeal[dealId] = byDeal[dealId].map((g) => {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { level, ...rest } = g;
-              return rest;
-            });
-          }
+      version: 3,
+      migrate: (_persisted, version) => {
+        // v2→v3: 古いモックデータをリセット（onRehydrateStorageで再投入される）
+        if (version < 3) {
+          return { groupsByDeal: {} } as unknown as OrgGroupState;
         }
-
-        return { ...state, groupsByDeal: byDeal } as unknown as OrgGroupState;
+        return _persisted as OrgGroupState;
       },
       onRehydrateStorage: () => (state) => {
         if (!state) return;

@@ -54,6 +54,16 @@ export const useDealStore = create<DealState>()(
           return { deals: [...state.deals, MOCK_DEAL] };
         }),
     }),
-    { name: "power-chart-deals" }
+    {
+      name: "power-chart-deals",
+      version: 2,
+      migrate: (_persisted, version) => {
+        // v1→v2: 古いモックデータ（東海ファイナンス等）をリセット
+        if (version < 2) {
+          return { deals: [] } as unknown as DealState;
+        }
+        return _persisted as DealState;
+      },
+    }
   )
 );

@@ -266,34 +266,18 @@ export const useStakeholderStore = create<StakeholderState>()(
     }),
     {
       name: "power-chart-stakeholders",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
-        const state = persisted as Record<string, unknown>;
-        const byDeal = (state.stakeholdersByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
-
-        if (version < 2) {
-          const orgConfigs = (state.orgLevelConfigByDeal ?? {}) as Record<string, { level: number }[]>;
-          for (const dealId of Object.keys(byDeal)) {
-            const levels = orgConfigs[dealId];
-            const maxLevel = levels?.length ? Math.max(...levels.map((l) => l.level)) : 5;
-            byDeal[dealId] = byDeal[dealId].map((s) => {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { isUnknown, ...rest } = s;
-              return { ...rest, orgLevel: rest.orgLevel ?? maxLevel };
-            });
-          }
+        // v3→v4: 古いモックデータをリセット（seedMockDataで再投入される）
+        if (version < 4) {
+          return {
+            stakeholdersByDeal: {},
+            relationshipsByDeal: {},
+            orgLevelConfigByDeal: {},
+          } as unknown as StakeholderState;
         }
 
-        if (version < 3) {
-          for (const dealId of Object.keys(byDeal)) {
-            byDeal[dealId] = byDeal[dealId].map((s) => ({
-              ...s,
-              groupId: s.groupId ?? null,
-            }));
-          }
-        }
-
-        return { ...state, stakeholdersByDeal: byDeal } as unknown as StakeholderState;
+        return persisted as StakeholderState;
       },
     }
   )
