@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { OrgGroup } from "@/types/org-group";
 import { MoreVertical, Plus, FolderPlus, Pencil, Trash2 } from "lucide-react";
@@ -20,6 +20,10 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
   const openGroupFormForChild = useUiStore((st) => st.openGroupFormForChild);
   const openGroupFormForEdit = useUiStore((st) => st.openGroupFormForEdit);
   const deleteGroup = useOrgGroupStore((st) => st.deleteGroup);
+  const dragOverGroupId = useUiStore((st) => st.dragOverGroupId);
+  const [hovered, setHovered] = useState(false);
+
+  const isDropTarget = dragOverGroupId === group.id;
 
   const handleAddPerson = useCallback(
     (e: React.MouseEvent) => {
@@ -61,20 +65,51 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
   // teamレベルの下にはサブ部署追加不可
   const canAddSubGroup = group.level !== "team";
 
+  const groupHandleClass = hovered
+    ? "!w-2.5 !h-2.5 !bg-blue-400 !border-2 !border-blue-600 !rounded-full transition-all"
+    : "!w-4 !h-4 !bg-transparent !border-0 transition-all";
+
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-white/95 shadow-sm"
+      className={`rounded-lg border shadow-sm transition-all duration-200 ${
+        isDropTarget
+          ? "border-blue-400 bg-blue-50/80 shadow-md ring-2 ring-blue-200"
+          : "border-gray-200 bg-white/95"
+      }`}
       style={{
         width: "100%",
         height: "100%",
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* 管掌コネクタの受け口（上部） */}
+      {/* コネクタの受け口（4辺） */}
       <Handle
         type="target"
         position={Position.Top}
         id="group-top"
-        className="!bg-transparent !border-0 !w-4 !h-4"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="group-bottom"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="group-left"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="group-right"
+        className={groupHandleClass}
         isConnectable
       />
 

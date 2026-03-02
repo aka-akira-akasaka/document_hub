@@ -3,7 +3,7 @@
 import { memo, useCallback } from "react";
 import {
   BaseEdge,
-  getStraightPath,
+  getBezierPath,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -27,6 +27,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     sourceY,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
     data,
     selected,
   } = props;
@@ -43,11 +45,13 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const strokeColor = isPositive ? "#3b82f6" : "#ef4444";
   const strokeDash = isPositive ? undefined : "6 4";
 
-  const [edgePath, labelX, labelY] = getStraightPath({
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
   });
 
   const handleDelete = useCallback(

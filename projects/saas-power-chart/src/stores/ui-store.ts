@@ -91,6 +91,10 @@ interface UiState {
   } | null;
   setPendingConnection: (conn: { sourceId: string; targetId: string; targetType: "stakeholder" | "group" }) => void;
   clearPendingConnection: () => void;
+
+  /** D&D時のドラッグオーバー対象グループ */
+  dragOverGroupId: string | null;
+  setDragOverGroupId: (groupId: string | null) => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -161,4 +165,7 @@ export const useUiStore = create<UiState>()((set) => ({
   pendingConnection: null,
   setPendingConnection: (conn) => set({ pendingConnection: conn }),
   clearPendingConnection: () => set({ pendingConnection: null }),
+
+  dragOverGroupId: null,
+  setDragOverGroupId: (groupId) => set({ dragOverGroupId: groupId }),
 }));

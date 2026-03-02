@@ -4,8 +4,10 @@ import { useCallback, useMemo } from "react";
 import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useUiStore } from "@/stores/ui-store";
 import { computeGroupLayout } from "@/lib/group-layout-engine";
 import { GROUP_LAYOUT } from "@/lib/constants";
+import { assignHandlesToEdges } from "@/lib/handle-utils";
 import { useHistoryStore } from "@/stores/history-store";
 import { toast } from "sonner";
 
@@ -70,9 +72,11 @@ export function useGroupChartLayout(dealId: string) {
   // グループベースレイアウト計算
   const { layoutNodes, allEdges } = useMemo(() => {
     const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
+    // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
+    const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     return {
       layoutNodes: result.nodes,
-      allEdges: result.edges,
+      allEdges: edgesWithHandles,
     };
   }, [stakeholders, orgGroups, relEdges]);
 
@@ -131,8 +135,28 @@ export function useGroupChartLayout(dealId: string) {
     []
   );
 
+  // D&D中のリアルタイムフィードバック
+  const setDragOverGroupId = useUiStore((s) => s.setDragOverGroupId);
+
+  const onNodeDrag = useCallback(
+    (_event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+      if (node.type === "orgGroup") {
+        setDragOverGroupId(null);
+        return;
+      }
+      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+      const absPos = getAbsolutePosition(node, nodeMap);
+      const targetGroupId = findDropTargetGroup(absPos, allNodes);
+      setDragOverGroupId(targetGroupId);
+    },
+    [findDropTargetGroup, setDragOverGroupId]
+  );
+
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+      // ドラッグオーバー状態をリセット
+      setDragOverGroupId(null);
+
       // グループノードのドラッグ: 子が自動追従するので何もしない
       if (node.type === "orgGroup") return;
 
@@ -168,7 +192,7 @@ export function useGroupChartLayout(dealId: string) {
       }
       // グループ内でのドラッグ完了→何もしない（レイアウトで自動配置されるため）
     },
-    [dealId, stakeholders, orgGroups, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot]
+    [dealId, stakeholders, orgGroups, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot, setDragOverGroupId]
   );
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
@@ -185,5 +209,5 @@ export function useGroupChartLayout(dealId: string) {
     }
   }, [stakeholders, orgGroups, relEdges, dealId, updateNodePosition]);
 
-  return { nodes, edges: allEdges, onNodeDragStop, applyAutoLayout };
+  return { nodes, edges: allEdges, onNodeDragStop, onNodeDrag, applyAutoLayout };
 }

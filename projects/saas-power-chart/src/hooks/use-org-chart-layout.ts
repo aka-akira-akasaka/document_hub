@@ -5,6 +5,7 @@ import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { getLayerLayout } from "@/lib/layout-engine";
 import { DEFAULT_ORG_LEVELS } from "@/lib/constants";
+import { assignHandlesToEdges } from "@/lib/handle-utils";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
@@ -55,18 +56,18 @@ export function useOrgChartLayout(dealId: string) {
     [layoutNodes, stakeholders]
   );
 
-  // relationship（非reporting）エッジのみ描画
-  const edges: Edge[] = useMemo(() =>
-    relationships.map((r) => ({
+  // relationship（非reporting）エッジのみ描画（最近接ハンドル自動選択付き）
+  const edges: Edge[] = useMemo(() => {
+    const baseEdges = relationships.map((r) => ({
       id: r.id,
       source: r.sourceId,
       target: r.targetId,
       type: "relationship",
       zIndex: 1000,
       data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
-    })),
-    [relationships, handleEdgeDelete]
-  );
+    }));
+    return assignHandlesToEdges(baseEdges, nodes);
+  }, [relationships, handleEdgeDelete, nodes]);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {

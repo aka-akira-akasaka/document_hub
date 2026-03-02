@@ -59,6 +59,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     onNodeDragStop,
     applyAutoLayout,
   } = isGroupMode ? groupLayout : layerLayout;
+  // onNodeDragはグループモードのみ（D&Dの視覚フィードバック用）
+  const onNodeDrag = isGroupMode ? groupLayout.onNodeDrag : undefined;
   const layers = isGroupMode ? [] : (layerLayout.layers ?? []);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
@@ -294,6 +296,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onNodeDragStop={onNodeDragStop}
+        onNodeDrag={onNodeDrag}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

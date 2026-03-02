@@ -29,13 +29,15 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="top"
-        className={handleClass}
-        isConnectable
-      />
+      {/* 各辺に source + target ハンドルを配置（最近接ハンドル自動選択対応） */}
+      <Handle type="target" position={Position.Top} id="target-top" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Top} id="source-top" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Left} id="target-left" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Left} id="source-left" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Right} id="target-right" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Right} id="source-right" className={handleClass} isConnectable />
 
       <div
         className={cn(
@@ -86,28 +88,6 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
           </div>
         </div>
       </div>
-
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        className={handleClass}
-        isConnectable
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        className={handleClass}
-        isConnectable
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        className={handleClass}
-        isConnectable
-      />
 
       {/* 選択時ツールバー */}
       {selected && (
