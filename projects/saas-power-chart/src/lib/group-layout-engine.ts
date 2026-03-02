@@ -144,7 +144,7 @@ function computeGroupSize(node: GroupTreeNode): void {
     computeGroupSize(child);
   }
 
-  const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
+  const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
 
   // 直属メンバーの高さ
   const memberCount = node.members.length;
@@ -170,7 +170,7 @@ function computeGroupSize(node: GroupTreeNode): void {
   );
   node.width = contentWidth + innerPadding * 2;
 
-  // 高さ: ヘッダー + メンバー + サブグループ + パディング
+  // 高さ: ヘッダー + メンバー + サブグループ + フッター + パディング
   let contentHeight = headerHeight + innerPadding;
   if (membersHeight > 0) {
     contentHeight += membersHeight + nodeGap;
@@ -178,7 +178,7 @@ function computeGroupSize(node: GroupTreeNode): void {
   if (subGroupsMaxHeight > 0) {
     contentHeight += subGroupsMaxHeight + nodeGap;
   }
-  contentHeight += innerPadding;
+  contentHeight += footerHeight + innerPadding;
 
   node.height = contentHeight;
 }
@@ -194,6 +194,7 @@ function positionGroupTree(
 ): void {
   const groupNodeId = `group-${node.group.id}`;
   const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap } = GROUP_LAYOUT;
+  // footerHeightはcomputeGroupSizeで使用済み（高さに含まれている）
 
   // グループノード自体を追加
   nodes.push({

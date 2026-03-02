@@ -1,36 +1,60 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { OrgGroup } from "@/types/org-group";
-import { ORG_GROUP_LEVEL_LABELS, ORG_GROUP_LEVEL_COLORS } from "@/types/org-group";
+import { MoreVertical, Plus } from "lucide-react";
+import { useUiStore } from "@/stores/ui-store";
 
-function OrgGroupNodeComponent({ data }: NodeProps) {
+function OrgGroupNodeComponent({ data, id }: NodeProps) {
   const group = data as unknown as OrgGroup;
-  const colors = ORG_GROUP_LEVEL_COLORS[group.level];
-  const levelLabel = ORG_GROUP_LEVEL_LABELS[group.level];
+  const openAddPopover = useUiStore((st) => st.openAddPopover);
+
+  const handleAddPerson = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      // グループIDをコンテキストとして渡して追加メニューを開く
+      openAddPopover(
+        { type: "node", nodeId: id, position: "below" },
+        { x: e.clientX, y: e.clientY }
+      );
+    },
+    [id, openAddPopover]
+  );
 
   return (
     <div
-      className="rounded-lg border-2 border-dashed"
+      className="rounded-lg border border-gray-200 bg-white/95 shadow-sm"
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
       }}
     >
       {/* ヘッダー（ドラッグハンドル） */}
-      <div
-        className="org-group-drag-handle flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-grab active:cursor-grabbing"
-        style={{ backgroundColor: colors.header }}
-      >
-        <span className="font-semibold text-sm text-foreground truncate">
-          {group.name}
-        </span>
-        <span className="text-xs px-1.5 py-0.5 rounded bg-background/60 text-muted-foreground flex-shrink-0">
-          {levelLabel}
-        </span>
+      <div className="org-group-drag-handle flex items-center justify-between px-3 py-2 border-b border-gray-100 cursor-grab active:cursor-grabbing">
+        <div className="flex items-center gap-1">
+          <span className="font-semibold text-sm text-gray-800 truncate">
+            {group.name}
+          </span>
+          <span className="text-gray-400 text-sm">:</span>
+        </div>
+        <button
+          className="text-gray-400 hover:text-gray-600 p-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* フッター: ＋人を追加する */}
+      <div className="absolute bottom-0 left-0 right-0 px-3 py-1.5">
+        <button
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors"
+          onClick={handleAddPerson}
+        >
+          <Plus className="w-3 h-3" />
+          <span>人を追加する</span>
+        </button>
       </div>
     </div>
   );

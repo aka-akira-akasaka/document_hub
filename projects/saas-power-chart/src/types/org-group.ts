@@ -28,18 +28,18 @@ export const ORG_GROUP_LEVEL_COLORS: Record<
   { bg: string; border: string; header: string }
 > = {
   division: {
-    bg: "rgba(100, 116, 139, 0.06)",
-    border: "rgba(100, 116, 139, 0.25)",
-    header: "rgba(100, 116, 139, 0.12)",
+    bg: "rgba(255, 255, 255, 0.95)",
+    border: "rgba(209, 213, 219, 0.6)",
+    header: "rgba(249, 250, 251, 1)",
   },
   section: {
-    bg: "rgba(59, 130, 246, 0.04)",
-    border: "rgba(59, 130, 246, 0.20)",
-    header: "rgba(59, 130, 246, 0.08)",
+    bg: "rgba(255, 255, 255, 0.95)",
+    border: "rgba(209, 213, 219, 0.6)",
+    header: "rgba(249, 250, 251, 1)",
   },
   team: {
-    bg: "rgba(16, 185, 129, 0.04)",
-    border: "rgba(16, 185, 129, 0.20)",
-    header: "rgba(16, 185, 129, 0.08)",
+    bg: "rgba(255, 255, 255, 0.95)",
+    border: "rgba(209, 213, 219, 0.6)",
+    header: "rgba(249, 250, 251, 1)",
   },
 };

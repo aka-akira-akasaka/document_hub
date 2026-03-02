@@ -8,26 +8,14 @@ import {
   EdgeLabelRenderer,
 } from "@xyflow/react";
 import type { RelationshipType } from "@/types/relationship";
-import type { PassthroughLayer } from "@/lib/layout-engine";
-import { Plus, X } from "lucide-react";
-import { useUiStore } from "@/stores/ui-store";
-
-const EDGE_STYLES: Record<
-  RelationshipType,
-  { stroke: string; strokeDasharray?: string; strokeWidth: number }
-> = {
-  reporting: { stroke: "#6b7280", strokeWidth: 2 },
-  influence: { stroke: "#3b82f6", strokeDasharray: "5 5", strokeWidth: 1.5 },
-  alliance: { stroke: "#22c55e", strokeWidth: 2.5 },
-  rivalry: { stroke: "#ef4444", strokeDasharray: "3 3", strokeWidth: 2 },
-  informal: { stroke: "#a855f7", strokeDasharray: "8 4", strokeWidth: 1 },
-};
+import { isPositiveRelationship, RELATIONSHIP_EDGE_LABELS } from "@/lib/constants";
+import { ArrowRight, Copy, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface RelationshipEdgeData {
   type?: RelationshipType;
   label?: string;
   onDelete?: (edgeId: string, source: string, target: string, relType: RelationshipType) => void;
-  passthroughLayers?: PassthroughLayer[];
 }
 
 function RelationshipEdgeComponent(props: EdgeProps) {
@@ -46,12 +34,16 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   } = props;
 
   const edgeData = data as RelationshipEdgeData | undefined;
-  const relType = edgeData?.type ?? "reporting";
-  const label = edgeData?.label;
+  const relType = edgeData?.type ?? "informal";
+  const customLabel = edgeData?.label;
   const onDelete = edgeData?.onDelete;
-  const passthroughLayers = edgeData?.passthroughLayers ?? [];
-  const style = EDGE_STYLES[relType];
-  const openAddPopover = useUiStore((s) => s.openAddPopover);
+
+  const isPositive = isPositiveRelationship(relType);
+  const edgeLabel = RELATIONSHIP_EDGE_LABELS[relType];
+
+  // エッジのスタイル: ポジティブ=青実線、ネガティブ=赤破線
+  const strokeColor = isPositive ? "#3b82f6" : "#ef4444";
+  const strokeDash = isPositive ? undefined : "6 4";
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
@@ -60,19 +52,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
-    borderRadius: 0,
+    borderRadius: 16,
   });
-
-  const handleAddMidpoint = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openAddPopover(
-        { type: "edge", sourceId: source, targetId: target },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [source, target, openAddPopover]
-  );
 
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
@@ -82,76 +63,54 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     [id, source, target, relType, onDelete]
   );
 
-  const isReporting = relType === "reporting";
-
   return (
     <>
       <BaseEdge
         id={id}
         path={edgePath}
         style={{
-          ...style,
-          stroke: selected ? "#2563eb" : style.stroke,
+          stroke: selected ? (isPositive ? "#2563eb" : "#dc2626") : strokeColor,
+          strokeWidth: 2,
+          strokeDasharray: strokeDash,
         }}
       />
       <EdgeLabelRenderer>
-        {/* ラベル（存在する場合） */}
-        {label && (
-          <div
-            className="absolute bg-white px-1.5 py-0.5 rounded text-xs border shadow-sm pointer-events-auto"
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px,${label ? labelY - 16 : labelY}px)`,
-            }}
-          >
-            {label}
-          </div>
-        )}
-        {/* エッジ操作ボタン群 */}
+        {/* ダークピルラベル */}
         <div
-          className="absolute pointer-events-auto group/edge flex items-center gap-1"
+          className="absolute pointer-events-auto flex flex-col items-center gap-1"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
           }}
         >
-          {/* reporting関係のみ: ライン中間の+ボタン */}
-          {isReporting && (
+          {/* メインピル */}
+          <div className="flex items-center gap-1.5 bg-gray-800 text-white rounded-full px-3 py-1 text-xs whitespace-nowrap shadow-md">
+            <span className="font-medium">ー{edgeLabel}ー</span>
+            <ArrowRight className="w-3 h-3 text-gray-300" />
+            <Copy className="w-3 h-3 text-gray-300 cursor-pointer hover:text-white" />
+            {/* 削除ボタン */}
             <button
-              className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
-              onClick={handleAddMidpoint}
-              title="中間者を追加"
+              className="ml-0.5 text-gray-400 hover:text-red-400 transition-colors"
+              onClick={handleDelete}
+              title="削除"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
+          </div>
+
+          {/* カスタムラベルバッジ */}
+          {customLabel && (
+            <span
+              className={cn(
+                "text-[10px] font-medium px-2 py-0.5 rounded-sm",
+                isPositive
+                  ? "bg-blue-500 text-white"
+                  : "bg-red-500 text-white"
+              )}
+            >
+              {customLabel}
+            </span>
           )}
-          {/* 削除ボタン */}
-          <button
-            className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10 opacity-0 group-hover/edge:opacity-100"
-            onClick={handleDelete}
-            title="つながりを削除"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
         </div>
-        {/* 通過レイヤーの+ボタン */}
-        {isReporting && passthroughLayers.map((pt) => (
-            <button
-              key={`pt-${pt.level}`}
-              className="absolute w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10 opacity-60 hover:opacity-100"
-              style={{
-                transform: `translate(-50%, -50%) translate(${pt.x}px,${pt.y}px)`,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                openAddPopover(
-                  { type: "layer", sourceId: source, targetId: target, orgLevel: pt.level },
-                  { x: e.clientX, y: e.clientY }
-                );
-              }}
-              title={`${pt.label}を追加`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-        ))}
       </EdgeLabelRenderer>
     </>
   );

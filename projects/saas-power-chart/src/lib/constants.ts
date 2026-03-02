@@ -4,32 +4,52 @@ import type { RelationshipType } from "@/types/relationship";
 
 export const ATTITUDE_COLORS: Record<
   Attitude,
-  { bg: string; text: string; border: string }
+  { bg: string; text: string; border: string; cardBg: string; stripColor: string; avatarBg: string; avatarText: string }
 > = {
   promoter: {
     bg: "bg-green-100",
     text: "text-green-800",
     border: "border-green-400",
+    cardBg: "bg-green-50",
+    stripColor: "bg-green-400",
+    avatarBg: "bg-green-100",
+    avatarText: "text-green-600",
   },
   supportive: {
     bg: "bg-blue-100",
     text: "text-blue-800",
     border: "border-blue-400",
+    cardBg: "bg-blue-50",
+    stripColor: "bg-blue-400",
+    avatarBg: "bg-blue-100",
+    avatarText: "text-blue-600",
   },
   neutral: {
     bg: "bg-gray-100",
     text: "text-gray-800",
-    border: "border-gray-400",
+    border: "border-gray-300",
+    cardBg: "bg-white",
+    stripColor: "",
+    avatarBg: "bg-gray-100",
+    avatarText: "text-gray-400",
   },
   cautious: {
     bg: "bg-orange-100",
     text: "text-orange-800",
     border: "border-orange-400",
+    cardBg: "bg-white",
+    stripColor: "",
+    avatarBg: "bg-gray-100",
+    avatarText: "text-gray-400",
   },
   opposed: {
     bg: "bg-red-100",
     text: "text-red-800",
     border: "border-red-400",
+    cardBg: "bg-white",
+    stripColor: "",
+    avatarBg: "bg-gray-100",
+    avatarText: "text-gray-400",
   },
 };
 
@@ -125,8 +145,8 @@ export const RELATIONSHIP_TYPE_OPTIONS: RelationshipType[] = [
 
 /** レイヤーベースレイアウトの設定定数 */
 export const LAYER_LAYOUT = {
-  nodeWidth: 220,
-  nodeHeight: 120,
+  nodeWidth: 180,
+  nodeHeight: 72,
   /** レイヤーの上下余白 */
   layerPadding: 40,
   /** 同レイヤー内の水平ノード間隔 */
@@ -136,26 +156,42 @@ export const LAYER_LAYOUT = {
 /** グループベースレイアウトの設定定数 */
 export const GROUP_LAYOUT = {
   /** stakeholderノード幅 */
-  nodeWidth: 200,
+  nodeWidth: 180,
   /** stakeholderノード高さ */
-  nodeHeight: 100,
+  nodeHeight: 72,
   /** グループヘッダーの高さ */
-  headerHeight: 36,
+  headerHeight: 40,
+  /** グループフッターの高さ（＋人を追加する） */
+  footerHeight: 32,
   /** グループ内部のパディング */
-  innerPadding: 16,
+  innerPadding: 12,
   /** ノード間の縦間隔 */
-  nodeGap: 12,
+  nodeGap: 8,
   /** サブグループ間の横間隔 */
-  subGroupGap: 20,
+  subGroupGap: 16,
   /** division間の横間隔 */
-  divisionGap: 40,
+  divisionGap: 32,
   /** フリーフローティング領域のY起点 */
   freeFloatY: 0,
   /** グループ領域のY起点 */
-  groupAreaY: 250,
+  groupAreaY: 200,
   /** フリーフローティングノード間の横間隔 */
-  freeFloatGap: 30,
+  freeFloatGap: 24,
 } as const;
+
+/** 関係線のポジティブ/ネガティブ判定 */
+export function isPositiveRelationship(type: RelationshipType): boolean {
+  return type === "alliance" || type === "influence" || type === "informal";
+}
+
+/** 関係線の表示ラベル（ピル内テキスト） */
+export const RELATIONSHIP_EDGE_LABELS: Record<RelationshipType, string> = {
+  reporting: "上下関係",
+  influence: "ポジティブな関係",
+  alliance: "ポジティブな関係",
+  rivalry: "ネガティブな関係",
+  informal: "ポジティブな関係",
+};
 
 /**
  * デフォルト組織階層（新規案件や未設定時に使用）

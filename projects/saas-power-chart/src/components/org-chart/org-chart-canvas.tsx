@@ -270,6 +270,18 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         open={groupManagerOpen}
         onOpenChange={closeGroupManager}
       />
+
+      {/* 部課のリストを開くトグル */}
+      {isGroupMode && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <button
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            onClick={openGroupManager}
+          >
+            部課のリストを開く ▽
+          </button>
+        </div>
+      )}
     </div>
   );
 }

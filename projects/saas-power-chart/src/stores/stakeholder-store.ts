@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
-import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS } from "@/lib/mock-data";
+import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS, MOCK_RELATIONSHIPS } from "@/lib/mock-data";
 
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 const EMPTY_RELATIONSHIPS: Relationship[] = [];
@@ -235,6 +235,10 @@ export const useStakeholderStore = create<StakeholderState>()(
             stakeholdersByDeal: {
               ...state.stakeholdersByDeal,
               [MOCK_DEAL_ID]: MOCK_STAKEHOLDERS,
+            },
+            relationshipsByDeal: {
+              ...state.relationshipsByDeal,
+              [MOCK_DEAL_ID]: MOCK_RELATIONSHIPS,
             },
           };
         }),

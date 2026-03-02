@@ -1,125 +1,108 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { ATTITUDE_COLORS, ROLE_LABELS, INFLUENCE_LABELS } from "@/lib/constants";
-import type { Stakeholder, InfluenceLevel } from "@/types/stakeholder";
+import { ATTITUDE_COLORS } from "@/lib/constants";
+import type { Stakeholder } from "@/types/stakeholder";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
-import { useUiStore } from "@/stores/ui-store";
+import { User } from "lucide-react";
 
 type StakeholderNodeData = Stakeholder & { label?: string };
 
-function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
+/** 態度に応じてカード左端のカラーストリップを表示するか */
+function hasColorStrip(attitude: string): boolean {
+  return attitude === "promoter" || attitude === "supportive";
+}
+
+function StakeholderNodeComponent({ data, selected }: NodeProps) {
   const s = data as unknown as StakeholderNodeData;
   const colors = ATTITUDE_COLORS[s.attitude];
-  const influenceWidth = ((s.influenceLevel as number) / 5) * 100;
-  const openAddPopover = useUiStore((st) => st.openAddPopover);
-
-  const handleAddAbove = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openAddPopover(
-        { type: "node", nodeId: id, position: "above" },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [id, openAddPopover]
-  );
-
-  const handleAddBelow = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openAddPopover(
-        { type: "node", nodeId: id, position: "below" },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [id, openAddPopover]
-  );
+  const showStrip = hasColorStrip(s.attitude);
 
   return (
     <>
-      {/* 上方向追加ボタン */}
-      <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
-          onClick={handleAddAbove}
-          title="上司を追加"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
+        className="!bg-transparent !border-0 !w-3 !h-3"
         isConnectable
       />
 
       <div
         className={cn(
-          "rounded-lg shadow-sm border-2 p-3 w-[200px] cursor-pointer transition-shadow group",
-          "bg-white",
-          colors.border,
-          selected && "ring-2 ring-blue-500 shadow-md"
+          "rounded-lg shadow-sm border bg-white w-[180px] cursor-pointer transition-all overflow-hidden",
+          "border-gray-200",
+          selected && "ring-2 ring-blue-400 shadow-md",
+          showStrip && colors.cardBg
         )}
       >
-        <div className="flex items-start justify-between mb-1">
-          <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{s.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{s.title}</p>
+        <div className="flex items-center">
+          {/* カラーストリップ（左端） */}
+          {showStrip && (
+            <div className={cn("w-1 self-stretch rounded-l-lg", colors.stripColor)} />
+          )}
+
+          {/* アバター + テキスト */}
+          <div className="flex items-center gap-2.5 px-3 py-2.5 min-w-0">
+            {/* 丸アバター */}
+            <div
+              className={cn(
+                "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+                showStrip ? colors.avatarBg : "bg-gray-100"
+              )}
+            >
+              <User
+                className={cn(
+                  "w-5 h-5",
+                  showStrip ? colors.avatarText : "text-gray-400"
+                )}
+              />
+            </div>
+
+            {/* 名前 + 肩書 */}
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-gray-900 truncate leading-tight">
+                {s.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">
+                {s.title}
+              </p>
+              {/* 担当の場合は追加バッジ */}
+              {s.notes && s.attitude === "supportive" && (
+                <p className="text-[10px] text-blue-500 truncate mt-0.5">
+                  {s.notes}
+                </p>
+              )}
+            </div>
           </div>
-          <span
-            className={cn(
-              "shrink-0 inline-block w-2.5 h-2.5 rounded-full mt-1",
-              colors.bg,
-              colors.border,
-              "border"
-            )}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {s.department}
-        </p>
-        {s.mission && (
-          <p className="text-xs text-blue-600 truncate mb-1">{s.mission}</p>
-        )}
-        {!s.mission && <div className="mb-1" />}
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {ROLE_LABELS[s.roleInDeal]}
-          </span>
-          <span className="text-muted-foreground">
-            影響力: {INFLUENCE_LABELS[s.influenceLevel as InfluenceLevel]}
-          </span>
-        </div>
-        <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={cn("h-full rounded-full", colors.bg.replace("100", "400"))}
-            style={{ width: `${influenceWidth}%` }}
-          />
         </div>
       </div>
 
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
+        className="!bg-transparent !border-0 !w-3 !h-3"
         isConnectable
       />
-      {/* 下方向追加ボタン */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
-          onClick={handleAddBelow}
-          title="部下を追加"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
+
+      {/* 選択時ツールバー */}
+      {selected && (
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+          {NODE_TOOLBAR_ITEMS.map((item) => (
+            <button
+              key={item}
+              className="px-2 py-1 text-[10px] text-gray-600 hover:bg-blue-50 hover:text-blue-600 whitespace-nowrap border-r border-gray-100 last:border-r-0 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
     </>
   );
 }
+
+const NODE_TOOLBAR_ITEMS = ["不明", "なし", "未選択", "非表示", "詳細"] as const;
 
 export const StakeholderNode = memo(StakeholderNodeComponent);
