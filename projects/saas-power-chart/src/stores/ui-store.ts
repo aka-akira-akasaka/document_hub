@@ -23,7 +23,13 @@ export interface AddFromLayerContext {
   orgLevel: number;
 }
 
-export type AddContext = AddFromNodeContext | AddFromEdgeContext | AddFromLayerContext | null;
+/** グループの「＋人を追加する」ボタンから追加する場合のコンテキスト */
+export interface AddFromGroupContext {
+  type: "group";
+  groupId: string;
+}
+
+export type AddContext = AddFromNodeContext | AddFromEdgeContext | AddFromLayerContext | AddFromGroupContext | null;
 
 interface UiState {
   sheetOpen: boolean;
@@ -60,6 +66,35 @@ interface UiState {
   openAddPopover: (context: NonNullable<AddContext>, position: { x: number; y: number }) => void;
   /** 追加ポップオーバーを閉じる */
   closeAddPopover: () => void;
+
+  /** グループ管理パネル */
+  groupManagerOpen: boolean;
+  openGroupManager: () => void;
+  closeGroupManager: () => void;
+
+  /** グループ作成/編集フォーム（⋮メニューから開く） */
+  groupFormOpen: boolean;
+  groupFormEditId: string | null;
+  groupFormParentId: string | null;
+  openGroupFormForChild: (parentGroupId: string | null) => void;
+  openGroupFormForEdit: (groupId: string) => void;
+  closeGroupForm: () => void;
+
+  /** +ボタン経由で作成する際のデフォルトgroupId */
+  createGroupId: string | null;
+
+  /** コネクタ接続後のタイプ選択ダイアログ用 */
+  pendingConnection: {
+    sourceId: string;
+    targetId: string;
+    targetType: "stakeholder" | "group";
+  } | null;
+  setPendingConnection: (conn: { sourceId: string; targetId: string; targetType: "stakeholder" | "group" }) => void;
+  clearPendingConnection: () => void;
+
+  /** D&D時のドラッグオーバー対象グループ */
+  dragOverGroupId: string | null;
+  setDragOverGroupId: (groupId: string | null) => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -73,6 +108,7 @@ export const useUiStore = create<UiState>()((set) => ({
   createParentId: null,
   createChildToRelink: null,
   createOrgLevel: null,
+  createGroupId: null,
 
   openSheet: (id, mode) =>
     set({
@@ -82,6 +118,7 @@ export const useUiStore = create<UiState>()((set) => ({
       createParentId: null,
       createChildToRelink: null,
       createOrgLevel: null,
+      createGroupId: null,
     }),
   openSheetForCreate: (parentId, childToRelink, orgLevel) =>
     set({
@@ -100,6 +137,7 @@ export const useUiStore = create<UiState>()((set) => ({
       createParentId: null,
       createChildToRelink: null,
       createOrgLevel: null,
+      createGroupId: null,
     }),
   openCsvImport: () => set({ csvImportDialogOpen: true }),
   closeCsvImport: () => set({ csvImportDialogOpen: false }),
@@ -109,4 +147,25 @@ export const useUiStore = create<UiState>()((set) => ({
     set({ addContext: context, addPopoverPosition: position }),
   closeAddPopover: () =>
     set({ addContext: null, addPopoverPosition: null }),
+
+  groupManagerOpen: false,
+  openGroupManager: () => set({ groupManagerOpen: true }),
+  closeGroupManager: () => set({ groupManagerOpen: false }),
+
+  groupFormOpen: false,
+  groupFormEditId: null,
+  groupFormParentId: null,
+  openGroupFormForChild: (parentGroupId) =>
+    set({ groupFormOpen: true, groupFormEditId: null, groupFormParentId: parentGroupId }),
+  openGroupFormForEdit: (groupId) =>
+    set({ groupFormOpen: true, groupFormEditId: groupId, groupFormParentId: null }),
+  closeGroupForm: () =>
+    set({ groupFormOpen: false, groupFormEditId: null, groupFormParentId: null }),
+
+  pendingConnection: null,
+  setPendingConnection: (conn) => set({ pendingConnection: conn }),
+  clearPendingConnection: () => set({ pendingConnection: null }),
+
+  dragOverGroupId: null,
+  setDragOverGroupId: (groupId) => set({ dragOverGroupId: groupId }),
 }));

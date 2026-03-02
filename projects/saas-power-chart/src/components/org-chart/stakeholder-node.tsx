@@ -1,124 +1,107 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { ATTITUDE_COLORS, ROLE_LABELS, INFLUENCE_LABELS } from "@/lib/constants";
-import type { Stakeholder, InfluenceLevel } from "@/types/stakeholder";
+import { ATTITUDE_COLORS, ROLE_LABELS } from "@/lib/constants";
+import type { RoleInDeal, Stakeholder } from "@/types/stakeholder";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
-import { useUiStore } from "@/stores/ui-store";
+import { User } from "lucide-react";
 
 type StakeholderNodeData = Stakeholder & { label?: string };
 
-function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
+/** 態度に応じてカード左端のカラーストリップを表示するか */
+function hasColorStrip(attitude: string): boolean {
+  return attitude !== "neutral";
+}
+
+/** 左肩ラベルを表示する役割 */
+const ROLE_BADGE_STYLES: Partial<Record<RoleInDeal, { bg: string; text: string }>> = {
+  decision_maker: { bg: "bg-red-500", text: "text-white" },
+  approver: { bg: "bg-amber-500", text: "text-white" },
+  initiator: { bg: "bg-blue-500", text: "text-white" },
+};
+
+function StakeholderNodeComponent({ data, selected }: NodeProps) {
   const s = data as unknown as StakeholderNodeData;
   const colors = ATTITUDE_COLORS[s.attitude];
-  const influenceWidth = ((s.influenceLevel as number) / 5) * 100;
-  const openAddPopover = useUiStore((st) => st.openAddPopover);
+  const showStrip = hasColorStrip(s.attitude);
+  const roleBadge = ROLE_BADGE_STYLES[s.roleInDeal];
+  const [hovered, setHovered] = useState(false);
 
-  const handleAddAbove = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openAddPopover(
-        { type: "node", nodeId: id, position: "above" },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [id, openAddPopover]
-  );
-
-  const handleAddBelow = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openAddPopover(
-        { type: "node", nodeId: id, position: "below" },
-        { x: e.clientX, y: e.clientY }
-      );
-    },
-    [id, openAddPopover]
-  );
+  const handleClass = hovered
+    ? "!w-2.5 !h-2.5 !bg-blue-400 !border-2 !border-blue-600 !rounded-full transition-all"
+    : "!w-3 !h-3 !bg-transparent !border-0 !pointer-events-none transition-all";
 
   return (
-    <>
-      {/* 上方向追加ボタン */}
-      <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
-          onClick={handleAddAbove}
-          title="上司を追加"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
-        isConnectable
-      />
+    <div
+      className="relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* 各辺に source + target ハンドルを配置（最近接ハンドル自動選択対応） */}
+      <Handle type="target" position={Position.Top} id="target-top" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Top} id="source-top" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Left} id="target-left" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Left} id="source-left" className={handleClass} isConnectable />
+      <Handle type="target" position={Position.Right} id="target-right" className={handleClass} isConnectable />
+      <Handle type="source" position={Position.Right} id="source-right" className={handleClass} isConnectable />
+
+      {/* 役割ラベル（左肩） */}
+      {roleBadge && (
+        <div className={cn(
+          "absolute -top-2.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none shadow-sm",
+          roleBadge.bg, roleBadge.text
+        )}>
+          {ROLE_LABELS[s.roleInDeal]}
+        </div>
+      )}
 
       <div
         className={cn(
-          "rounded-lg shadow-sm border-2 p-3 w-[200px] cursor-pointer transition-shadow group",
-          "bg-white",
-          colors.border,
-          selected && "ring-2 ring-blue-500 shadow-md"
+          "rounded-lg shadow-sm border bg-white w-[180px] h-[72px] cursor-pointer transition-all overflow-hidden",
+          "border-gray-200",
+          selected && "ring-2 ring-blue-400 shadow-md",
+          showStrip && colors.cardBg
         )}
       >
-        <div className="flex items-start justify-between mb-1">
-          <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{s.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{s.title}</p>
-          </div>
-          <span
-            className={cn(
-              "shrink-0 inline-block w-2.5 h-2.5 rounded-full mt-1",
-              colors.bg,
-              colors.border,
-              "border"
-            )}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {s.department}
-        </p>
-        {s.mission && (
-          <p className="text-xs text-blue-600 truncate mb-1">{s.mission}</p>
-        )}
-        {!s.mission && <div className="mb-1" />}
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {ROLE_LABELS[s.roleInDeal]}
-          </span>
-          <span className="text-muted-foreground">
-            影響力: {INFLUENCE_LABELS[s.influenceLevel as InfluenceLevel]}
-          </span>
-        </div>
-        <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={cn("h-full rounded-full", colors.bg.replace("100", "400"))}
-            style={{ width: `${influenceWidth}%` }}
-          />
-        </div>
-      </div>
+        <div className="flex items-center h-full">
+          {/* カラーストリップ（左端） */}
+          {showStrip && (
+            <div className={cn("w-1 self-stretch rounded-l-lg", colors.stripColor)} />
+          )}
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-gray-400 !w-3 !h-3 hover:!bg-blue-500 hover:!w-4 hover:!h-4 !transition-all"
-        isConnectable
-      />
-      {/* 下方向追加ボタン */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <button
-          className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10"
-          onClick={handleAddBelow}
-          title="部下を追加"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+          {/* アバター + テキスト */}
+          <div className="flex items-center gap-2.5 px-3 min-w-0">
+            {/* 丸アバター */}
+            <div
+              className={cn(
+                "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+                showStrip ? colors.avatarBg : "bg-gray-100"
+              )}
+            >
+              <User
+                className={cn(
+                  "w-5 h-5",
+                  showStrip ? colors.avatarText : "text-gray-400"
+                )}
+              />
+            </div>
+
+            {/* 名前 + 肩書 */}
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-gray-900 truncate leading-tight">
+                {s.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">
+                {s.title}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 

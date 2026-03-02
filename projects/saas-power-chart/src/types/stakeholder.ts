@@ -33,6 +33,8 @@ export interface Stakeholder {
   notes: string;
   /** 組織階層レベル（1=役員, 2=部長, 3=課長, 4=係長/主任 ...） */
   orgLevel: number;
+  /** 所属するOrgGroupのID。nullならフリーフローティング */
+  groupId: string | null;
   position?: { x: number; y: number };
   createdAt: string;
   updatedAt: string;

@@ -5,7 +5,7 @@ import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { getLayerLayout } from "@/lib/layout-engine";
 import { DEFAULT_ORG_LEVELS } from "@/lib/constants";
-import type { RelationshipType } from "@/types/relationship";
+import { assignHandlesToEdges } from "@/lib/handle-utils";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
@@ -21,48 +21,37 @@ export function useOrgChartLayout(dealId: string) {
     s.orgLevelConfigByDeal[dealId]
   );
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
-  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
+  const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
 
   const orgLevels = orgLevelConfig && orgLevelConfig.length > 0
     ? orgLevelConfig
     : DEFAULT_ORG_LEVELS;
 
-  // エッジ削除コールバック
+  // エッジ削除コールバック（relationship専用、reportingエッジは描画しない）
   const handleEdgeDelete = useCallback(
-    (edgeId: string, _source: string, target: string, relType: RelationshipType) => {
-      if (relType === "reporting") {
-        updateStakeholder(target, dealId, { parentId: null });
-      } else {
-        deleteRelationship(edgeId, dealId);
-      }
+    (edgeId: string) => {
+      deleteRelationship(edgeId, dealId);
     },
-    [dealId, updateStakeholder, deleteRelationship]
+    [dealId, deleteRelationship]
   );
 
-  // reportingエッジの生成
-  const reportingEdges: Edge[] = useMemo(() =>
-    stakeholders
-      .filter((s) => s.parentId)
-      .map((s) => ({
-        id: `org-${s.parentId}-${s.id}`,
-        source: s.parentId!,
-        target: s.id,
-        type: "relationship",
-        data: { type: "reporting", onDelete: handleEdgeDelete },
-      })),
-    [stakeholders, handleEdgeDelete]
+  // エッジ更新コールバック
+  const handleEdgeUpdate = useCallback(
+    (edgeId: string, data: { label?: string }) => {
+      updateRelationship(edgeId, dealId, data);
+    },
+    [dealId, updateRelationship]
   );
 
-  // レイヤーベースレイアウト計算
-  const { layoutNodes, layers, passthroughByEdge } = useMemo(() => {
-    const result = getLayerLayout(stakeholders, orgLevels, reportingEdges);
+  // レイヤーベースレイアウト計算（reportingエッジなし）
+  const { layoutNodes, layers } = useMemo(() => {
+    const result = getLayerLayout(stakeholders, orgLevels, []);
     return {
       layoutNodes: result.nodes,
       layers: result.layers,
-      passthroughByEdge: result.passthroughByEdge,
     };
-  }, [stakeholders, orgLevels, reportingEdges]);
+  }, [stakeholders, orgLevels]);
 
   // position保存済みならそちらを優先、未保存ならレイアウト計算結果を使用
   const nodes: Node[] = useMemo(() =>
@@ -76,26 +65,18 @@ export function useOrgChartLayout(dealId: string) {
     [layoutNodes, stakeholders]
   );
 
-  // reportingエッジにpassthroughLayersを付与 + その他のrelationshipエッジ
+  // relationship（非reporting）エッジのみ描画（最近接ハンドル自動選択付き）
   const edges: Edge[] = useMemo(() => {
-    const orgEdges: Edge[] = reportingEdges.map((e) => ({
-      ...e,
-      data: {
-        ...e.data,
-        passthroughLayers: passthroughByEdge.get(e.id) ?? [],
-      },
-    }));
-
-    const relEdges: Edge[] = relationships.map((r) => ({
+    const baseEdges = relationships.map((r) => ({
       id: r.id,
       source: r.sourceId,
       target: r.targetId,
       type: "relationship",
-      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
+      zIndex: 1000,
+      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
     }));
-
-    return [...orgEdges, ...relEdges];
-  }, [reportingEdges, relationships, handleEdgeDelete, passthroughByEdge]);
+    return assignHandlesToEdges(baseEdges, nodes);
+  }, [relationships, handleEdgeDelete, handleEdgeUpdate, nodes]);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -106,11 +87,11 @@ export function useOrgChartLayout(dealId: string) {
 
   // 自動レイアウト: レイヤー計算結果を全ノードに適用
   const applyAutoLayout = useCallback(() => {
-    const result = getLayerLayout(stakeholders, orgLevels, reportingEdges);
+    const result = getLayerLayout(stakeholders, orgLevels, []);
     result.nodes.forEach((n) => {
       updateNodePosition(n.id, dealId, n.position);
     });
-  }, [stakeholders, orgLevels, reportingEdges, dealId, updateNodePosition]);
+  }, [stakeholders, orgLevels, dealId, updateNodePosition]);
 
   return { nodes, edges, layers, onNodeDragStop, applyAutoLayout };
 }

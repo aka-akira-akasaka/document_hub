@@ -4,24 +4,37 @@ import { useReactFlow } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  Building2,
   Layers,
   Maximize2,
   Minus,
   Network,
   Plus,
+  Redo2,
+  Undo2,
   UserPlus,
 } from "lucide-react";
 
 interface OrgChartToolbarProps {
   onAutoLayout: () => void;
   onAddNode: () => void;
+  onAddGroup: () => void;
   onOpenLevelEditor: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export function OrgChartToolbar({
   onAutoLayout,
   onAddNode,
+  onAddGroup,
   onOpenLevelEditor,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: OrgChartToolbarProps) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
@@ -77,6 +90,38 @@ export function OrgChartToolbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
+            onClick={onUndo}
+            disabled={!canUndo}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">元に戻す (⌘Z)</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onRedo}
+            disabled={!canRedo}
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">やり直し (⌘⇧Z)</TooltipContent>
+      </Tooltip>
+
+      <div className="border-t my-0.5" />
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={onAutoLayout}
           >
             <Network className="h-4 w-4" />
@@ -105,12 +150,26 @@ export function OrgChartToolbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
+            onClick={onAddGroup}
+          >
+            <Building2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">部署を追加する</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={onOpenLevelEditor}
           >
             <Layers className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">階層設定</TooltipContent>
+        <TooltipContent side="right">役職の階層設定</TooltipContent>
       </Tooltip>
     </div>
   );

@@ -10,6 +10,7 @@ import { StakeholderForm } from "./stakeholder-form";
 import { StakeholderDetail } from "./stakeholder-detail";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useHistoryStore } from "@/stores/history-store";
 import { toast } from "sonner";
 import type { Stakeholder } from "@/types/stakeholder";
 
@@ -37,11 +38,13 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
   );
   const deleteStakeholder = useStakeholderStore((s) => s.deleteStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
   const parentOptions = stakeholders.map((s) => ({ id: s.id, name: s.name }));
 
   const handleDelete = () => {
     if (stakeholder) {
+      captureSnapshot();
       // 削除対象の子ノードを親に繋ぎ直し
       const children = stakeholders.filter((s) => s.parentId === stakeholder.id);
       for (const child of children) {

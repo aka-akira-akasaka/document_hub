@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
-import type { Relationship } from "@/types/relationship";
+import type { Relationship, RelationshipTargetType } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
-import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS } from "@/lib/mock-data";
+import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS, MOCK_RELATIONSHIPS } from "@/lib/mock-data";
 
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 const EMPTY_RELATIONSHIPS: Relationship[] = [];
@@ -44,8 +44,16 @@ interface StakeholderState {
     type: RelationshipType;
     label?: string;
     bidirectional: boolean;
+    targetType?: RelationshipTargetType;
+    sourceHandle?: string;
+    targetHandle?: string;
   }) => Relationship;
   deleteRelationship: (id: string, dealId: string) => void;
+  updateRelationship: (
+    id: string,
+    dealId: string,
+    data: Partial<Pick<Relationship, "type" | "label" | "bidirectional">>
+  ) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];
 
   importStakeholders: (dealId: string, stakeholders: Stakeholder[]) => void;
@@ -160,6 +168,19 @@ export const useStakeholderStore = create<StakeholderState>()(
           };
         }),
 
+      updateRelationship: (id, dealId, data) =>
+        set((state) => {
+          const list = state.relationshipsByDeal[dealId] ?? [];
+          return {
+            relationshipsByDeal: {
+              ...state.relationshipsByDeal,
+              [dealId]: list.map((r) =>
+                r.id === id ? { ...r, ...data } : r
+              ),
+            },
+          };
+        }),
+
       getRelationshipsByDeal: (dealId) =>
         get().relationshipsByDeal[dealId] ?? EMPTY_RELATIONSHIPS,
 
@@ -236,16 +257,21 @@ export const useStakeholderStore = create<StakeholderState>()(
               ...state.stakeholdersByDeal,
               [MOCK_DEAL_ID]: MOCK_STAKEHOLDERS,
             },
+            relationshipsByDeal: {
+              ...state.relationshipsByDeal,
+              [MOCK_DEAL_ID]: MOCK_RELATIONSHIPS,
+            },
           };
         }),
     }),
     {
       name: "power-chart-stakeholders",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
+        const state = persisted as Record<string, unknown>;
+        const byDeal = (state.stakeholdersByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
+
         if (version < 2) {
-          const state = persisted as Record<string, unknown>;
-          const byDeal = (state.stakeholdersByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
           const orgConfigs = (state.orgLevelConfigByDeal ?? {}) as Record<string, { level: number }[]>;
           for (const dealId of Object.keys(byDeal)) {
             const levels = orgConfigs[dealId];
@@ -256,9 +282,18 @@ export const useStakeholderStore = create<StakeholderState>()(
               return { ...rest, orgLevel: rest.orgLevel ?? maxLevel };
             });
           }
-          return { ...state, stakeholdersByDeal: byDeal };
         }
-        return persisted as StakeholderState;
+
+        if (version < 3) {
+          for (const dealId of Object.keys(byDeal)) {
+            byDeal[dealId] = byDeal[dealId].map((s) => ({
+              ...s,
+              groupId: s.groupId ?? null,
+            }));
+          }
+        }
+
+        return { ...state, stakeholdersByDeal: byDeal } as unknown as StakeholderState;
       },
     }
   )

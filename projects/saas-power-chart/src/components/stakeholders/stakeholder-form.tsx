@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,10 @@ import type {
   InfluenceLevel,
 } from "@/types/stakeholder";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useHistoryStore } from "@/stores/history-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useUiStore } from "@/stores/ui-store";
+import { TitleCombobox } from "@/components/org-chart/title-combobox";
 
 interface StakeholderFormProps {
   dealId: string;
@@ -57,11 +61,19 @@ export function StakeholderForm({
   const isEdit = !!stakeholder;
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
+  const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const createGroupId = useUiStore((s) => s.createGroupId);
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 
+  // groupIdが設定されている場合、対応グループ名をdepartmentのデフォルトにする
+  const effectiveGroupId = stakeholder?.groupId ?? createGroupId ?? null;
+  const matchingGroup = effectiveGroupId ? orgGroups.find(g => g.id === effectiveGroupId) : null;
+
   const [name, setName] = useState(stakeholder?.name ?? "");
-  const [department, setDepartment] = useState(stakeholder?.department ?? "");
+  const [department, setDepartment] = useState(stakeholder?.department ?? matchingGroup?.name ?? "");
   const [title, setTitle] = useState(stakeholder?.title ?? "");
   const [roleInDeal, setRoleInDeal] = useState<RoleInDeal>(
     stakeholder?.roleInDeal ?? "unknown"
@@ -87,6 +99,27 @@ export function StakeholderForm({
     ?? defaultOrgLevel?.toString()
     ?? orgLevelOptions[orgLevelOptions.length - 1].level.toString()
   );
+  const [groupId, setGroupId] = useState(stakeholder?.groupId ?? createGroupId ?? "");
+
+  // 役職選択時: titleとorgLevelの両方を更新
+  const handleTitleChange = useCallback((newOrgLevel: string, label: string) => {
+    setOrgLevel(newOrgLevel);
+    setTitle(label);
+  }, []);
+
+  // 新しい役職をマスタに追加
+  const handleAddTitle = useCallback((label: string) => {
+    const currentLevels = [...orgLevelOptions];
+    const maxLevel = currentLevels.length > 0
+      ? Math.max(...currentLevels.map((l) => l.level))
+      : 0;
+    const newLevel = maxLevel + 1;
+    const newLevels = [...currentLevels, { level: newLevel, label }];
+    setOrgLevels(dealId, newLevels);
+    // 新しく追加した役職を選択
+    setOrgLevel(newLevel.toString());
+    setTitle(label);
+  }, [orgLevelOptions, setOrgLevels, dealId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,8 +140,10 @@ export function StakeholderForm({
       phone: phone.trim(),
       notes: notes.trim(),
       orgLevel: Number(orgLevel),
+      groupId: groupId || null,
     };
 
+    captureSnapshot();
     if (isEdit && stakeholder) {
       updateStakeholder(stakeholder.id, dealId, data);
     } else {
@@ -147,12 +182,12 @@ export function StakeholderForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="sh-title">役職</Label>
-          <Input
-            id="sh-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例: 部長"
+          <Label>役職 *</Label>
+          <TitleCombobox
+            value={orgLevel}
+            onValueChange={handleTitleChange}
+            options={orgLevelOptions}
+            onAddOption={handleAddTitle}
           />
         </div>
       </div>
@@ -208,6 +243,31 @@ export function StakeholderForm({
         </Select>
       </div>
 
+      {orgGroups.length > 0 && (
+        <div className="space-y-2">
+          <Label>所属部門グループ</Label>
+          <Select
+            value={groupId || "none"}
+            onValueChange={(v) => setGroupId(v === "none" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="なし（フリー配置）" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">なし（フリー配置）</SelectItem>
+              {orgGroups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            部門グループボックス内に配置します
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label>上司</Label>
         <Select
@@ -228,28 +288,6 @@ export function StakeholderForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>組織階層レベル *</Label>
-        <Select
-          value={orgLevel}
-          onValueChange={(v) => setOrgLevel(v)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {orgLevelOptions.map((opt) => (
-              <SelectItem key={opt.level} value={opt.level.toString()}>
-                L{opt.level}: {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          同じレベルの人物が同じ高さに配置されます
-        </p>
       </div>
 
       <div className="space-y-2">
