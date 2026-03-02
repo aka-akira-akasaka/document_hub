@@ -26,7 +26,7 @@ function AddPersonPlaceholderNodeComponent({ data }: NodeProps) {
 
   return (
     <button
-      className="w-[180px] h-[48px] rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer"
+      className="w-[180px] h-[32px] rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer"
       onClick={handleClick}
     >
       <Plus className="w-3.5 h-3.5" />

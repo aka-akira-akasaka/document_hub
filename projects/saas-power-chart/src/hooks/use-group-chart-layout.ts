@@ -56,7 +56,7 @@ export function useGroupChartLayout(dealId: string) {
       target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
       zIndex: 1000,
-      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
+      data: { type: r.type, label: r.label, targetType: r.targetType, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
     })),
     [relationships, handleEdgeDelete, handleEdgeUpdate]
   );

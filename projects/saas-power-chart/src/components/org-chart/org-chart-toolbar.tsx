@@ -4,7 +4,6 @@ import { useReactFlow } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  FolderTree,
   Layers,
   Maximize2,
   Minus,
@@ -19,7 +18,6 @@ interface OrgChartToolbarProps {
   onAutoLayout: () => void;
   onAddNode: () => void;
   onOpenLevelEditor: () => void;
-  onOpenGroupManager: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -30,7 +28,6 @@ export function OrgChartToolbar({
   onAutoLayout,
   onAddNode,
   onOpenLevelEditor,
-  onOpenGroupManager,
   onUndo,
   onRedo,
   canUndo,
@@ -156,20 +153,6 @@ export function OrgChartToolbar({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">階層設定</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onOpenGroupManager}
-          >
-            <FolderTree className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">部門グループ管理</TooltipContent>
       </Tooltip>
     </div>
   );

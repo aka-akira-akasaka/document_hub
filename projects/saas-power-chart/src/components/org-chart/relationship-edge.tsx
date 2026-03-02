@@ -4,6 +4,7 @@ import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   getBezierPath,
+  getSmoothStepPath,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface RelationshipEdgeData {
   type?: RelationshipType;
   label?: string;
+  targetType?: "stakeholder" | "group";
   onDelete?: (edgeId: string) => void;
   onUpdate?: (edgeId: string, data: { label?: string }) => void;
 }
@@ -34,24 +36,22 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const edgeData = data as RelationshipEdgeData | undefined;
   const relType = edgeData?.type ?? "informal";
   const customLabel = edgeData?.label;
+  const targetType = edgeData?.targetType ?? "stakeholder";
   const onDelete = edgeData?.onDelete;
   const onUpdate = edgeData?.onUpdate;
 
+  const isGroupEdge = targetType === "group";
   const isPositive = isPositiveRelationship(relType);
 
-  const strokeColor = isPositive ? "#3b82f6" : "#ef4444";
-  const strokeDash = isPositive ? undefined : "6 4";
+  // 部署向けコネクタ: グレー角線、それ以外: 従来のベジェ
+  const strokeColor = isGroupEdge ? "#9ca3af" : (isPositive ? "#3b82f6" : "#ef4444");
+  const strokeDash = isGroupEdge ? undefined : (isPositive ? undefined : "6 4");
 
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  });
+  const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
+  const [edgePath, labelX, labelY] = isGroupEdge
+    ? getSmoothStepPath(pathParams)
+    : getBezierPath(pathParams);
 
-  const [hovered, setHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(customLabel ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,8 +112,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             zIndex: 10000,
           }}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
         >
           {isEditing ? (
             /* 編集モード */
@@ -144,34 +142,35 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               </button>
             </div>
           ) : (
-            /* 通常表示: ラベル + ホバー時に鉛筆アイコン */
-            <div
-              className="flex items-center justify-center gap-1"
-              style={{ minWidth: 24, minHeight: 24 }}
-            >
+            /* 通常表示: ラベル + 常時表示の鉛筆・ゴミ箱 */
+            <div className="flex items-center gap-1">
               {customLabel && (
                 <span
                   className={cn(
                     "text-[10px] font-medium px-2 py-0.5 rounded-sm whitespace-nowrap",
-                    isPositive
-                      ? "bg-blue-500 text-white"
-                      : "bg-red-500 text-white"
+                    isGroupEdge
+                      ? "bg-gray-500 text-white"
+                      : isPositive
+                        ? "bg-blue-500 text-white"
+                        : "bg-red-500 text-white"
                   )}
                 >
                   {customLabel}
                 </span>
               )}
               <button
-                className={cn(
-                  "p-1 rounded-full transition-all",
-                  hovered
-                    ? "opacity-100 bg-white shadow-sm border border-gray-200 text-gray-600 hover:text-blue-600"
-                    : "opacity-0"
-                )}
+                className="p-0.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                 onClick={handleStartEdit}
                 title="編集"
               >
                 <Pencil className="w-3 h-3" />
+              </button>
+              <button
+                className="p-0.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                onClick={handleDelete}
+                title="削除"
+              >
+                <Trash2 className="w-3 h-3" />
               </button>
             </div>
           )}

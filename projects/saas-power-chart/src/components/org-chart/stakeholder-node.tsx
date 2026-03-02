@@ -11,7 +11,7 @@ type StakeholderNodeData = Stakeholder & { label?: string };
 
 /** 態度に応じてカード左端のカラーストリップを表示するか */
 function hasColorStrip(attitude: string): boolean {
-  return attitude === "promoter" || attitude === "supportive";
+  return attitude !== "neutral";
 }
 
 function StakeholderNodeComponent({ data, selected }: NodeProps) {

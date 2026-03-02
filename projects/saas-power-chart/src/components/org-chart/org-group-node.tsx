@@ -141,7 +141,7 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
           onClick={handleAddSubGroup as React.MouseEventHandler}
         >
           <Plus className="w-3 h-3" />
-          <span>この部署の中に部署を追加する</span>
+          <span>サブ部署を追加</span>
         </button>
       </div>
     </div>

@@ -20,7 +20,6 @@ import { AddPersonPlaceholderNode } from "./add-person-placeholder-node";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
-import { OrgGroupManager } from "./org-group-manager";
 import { OrgGroupForm } from "./org-group-form";
 import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
@@ -76,9 +75,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   );
 
   const [levelEditorOpen, setLevelEditorOpen] = useState(false);
-  const groupManagerOpen = useUiStore((s) => s.groupManagerOpen);
-  const openGroupManager = useUiStore((s) => s.openGroupManager);
-  const closeGroupManager = useUiStore((s) => s.closeGroupManager);
   const groupFormOpen = useUiStore((s) => s.groupFormOpen);
   const groupFormEditId = useUiStore((s) => s.groupFormEditId);
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
@@ -290,7 +286,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
-          onOpenGroupManager={openGroupManager}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -319,13 +314,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onOpenChange={setLevelEditorOpen}
       />
 
-      {/* 部門グループ管理パネル */}
-      <OrgGroupManager
-        dealId={dealId}
-        open={groupManagerOpen}
-        onOpenChange={closeGroupManager}
-      />
-
       {/* ⋮メニューから開くグループ作成/編集フォーム */}
       <OrgGroupForm
         dealId={dealId}
@@ -335,17 +323,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         defaultParentGroupId={groupFormParentId}
       />
 
-      {/* 部課のリストを開くトグル */}
-      {isGroupMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-          <button
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            onClick={openGroupManager}
-          >
-            部課のリストを開く ▽
-          </button>
-        </div>
-      )}
     </div>
   );
 }

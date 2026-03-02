@@ -34,22 +34,22 @@ export const ATTITUDE_COLORS: Record<
     avatarText: "text-gray-400",
   },
   cautious: {
-    bg: "bg-orange-100",
-    text: "text-orange-800",
-    border: "border-orange-400",
-    cardBg: "bg-white",
-    stripColor: "",
-    avatarBg: "bg-gray-100",
-    avatarText: "text-gray-400",
+    bg: "bg-amber-100",
+    text: "text-amber-800",
+    border: "border-amber-400",
+    cardBg: "bg-amber-50",
+    stripColor: "bg-amber-400",
+    avatarBg: "bg-amber-100",
+    avatarText: "text-amber-600",
   },
   opposed: {
     bg: "bg-red-100",
     text: "text-red-800",
     border: "border-red-400",
-    cardBg: "bg-white",
-    stripColor: "",
-    avatarBg: "bg-gray-100",
-    avatarText: "text-gray-400",
+    cardBg: "bg-red-50",
+    stripColor: "bg-red-400",
+    avatarBg: "bg-red-100",
+    avatarText: "text-red-600",
   },
 };
 
@@ -183,7 +183,7 @@ export const GROUP_LAYOUT = {
   /** フリーフローティングノード間の横間隔 */
   freeFloatGap: 24,
   /** 「人を追加する」プレースホルダーの高さ */
-  placeholderHeight: 48,
+  placeholderHeight: 32,
 } as const;
 
 /** 関係線のポジティブ/ネガティブ判定 */
