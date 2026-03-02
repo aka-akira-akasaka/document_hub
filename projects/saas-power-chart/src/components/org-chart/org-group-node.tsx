@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import type { NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { OrgGroup } from "@/types/org-group";
 import { MoreVertical, Plus, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
@@ -69,6 +69,15 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
         height: "100%",
       }}
     >
+      {/* 管掌コネクタの受け口（上部） */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="group-top"
+        className="!bg-transparent !border-0 !w-4 !h-4"
+        isConnectable
+      />
+
       {/* ヘッダー（ドラッグハンドル） */}
       <div className="org-group-drag-handle flex items-center justify-between px-3 py-2 border-b border-gray-100 cursor-grab active:cursor-grabbing">
         <div className="flex items-center gap-1">

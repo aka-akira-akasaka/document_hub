@@ -133,6 +133,7 @@ export const RELATIONSHIP_TYPE_LABELS: Record<RelationshipType, string> = {
   alliance: "同盟関係",
   rivalry: "対立関係",
   informal: "非公式",
+  oversight: "管掌",
 };
 
 export const RELATIONSHIP_TYPE_OPTIONS: RelationshipType[] = [
@@ -141,6 +142,7 @@ export const RELATIONSHIP_TYPE_OPTIONS: RelationshipType[] = [
   "alliance",
   "rivalry",
   "informal",
+  "oversight",
 ];
 
 /** レイヤーベースレイアウトの設定定数 */
@@ -181,7 +183,7 @@ export const GROUP_LAYOUT = {
 
 /** 関係線のポジティブ/ネガティブ判定 */
 export function isPositiveRelationship(type: RelationshipType): boolean {
-  return type === "alliance" || type === "influence" || type === "informal";
+  return type === "alliance" || type === "influence" || type === "informal" || type === "oversight";
 }
 
 /** 関係線の表示ラベル（ピル内テキスト） */
@@ -191,6 +193,7 @@ export const RELATIONSHIP_EDGE_LABELS: Record<RelationshipType, string> = {
   alliance: "ポジティブな関係",
   rivalry: "ネガティブな関係",
   informal: "ポジティブな関係",
+  oversight: "管掌",
 };
 
 /**

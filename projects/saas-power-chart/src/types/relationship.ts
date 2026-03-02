@@ -3,7 +3,11 @@ export type RelationshipType =
   | "influence"
   | "alliance"
   | "rivalry"
-  | "informal";
+  | "informal"
+  | "oversight";
+
+/** 接続先の種類 */
+export type RelationshipTargetType = "stakeholder" | "group";
 
 export interface Relationship {
   id: string;
@@ -13,5 +17,7 @@ export interface Relationship {
   type: RelationshipType;
   label?: string;
   bidirectional: boolean;
+  /** 接続先の種類（省略時は "stakeholder"） */
+  targetType?: RelationshipTargetType;
   createdAt: string;
 }

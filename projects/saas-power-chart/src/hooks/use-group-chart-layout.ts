@@ -11,6 +11,24 @@ import { toast } from "sonner";
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
 const EMPTY_R: import("@/types/relationship").Relationship[] = [];
 
+/**
+ * ノードの絶対座標を算出（parent chain を辿る）
+ */
+function getAbsolutePosition(
+  node: Node,
+  nodeMap: Map<string, Node>
+): { x: number; y: number } {
+  let x = node.position.x;
+  let y = node.position.y;
+  let current = node.parentId ? nodeMap.get(node.parentId) : undefined;
+  while (current) {
+    x += current.position.x;
+    y += current.position.y;
+    current = current.parentId ? nodeMap.get(current.parentId) : undefined;
+  }
+  return { x, y };
+}
+
 export function useGroupChartLayout(dealId: string) {
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY_S
@@ -33,12 +51,12 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, deleteRelationship]
   );
 
-  // relationshipエッジのみ描画
+  // relationshipエッジを描画（targetTypeに応じてtarget IDを変換）
   const relEdges: Edge[] = useMemo(() =>
     relationships.map((r) => ({
       id: r.id,
       source: r.sourceId,
-      target: r.targetId,
+      target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
       data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
     })),
@@ -56,15 +74,15 @@ export function useGroupChartLayout(dealId: string) {
   }, [stakeholders, orgGroups, relEdges]);
 
   // フリーフローティングノードは保存済み位置を優先
-  // グループ内stakeholderはレイアウト計算の絶対座標を使用
+  // グループ内stakeholderはレイアウト計算の相対座標を使用
   const nodes: Node[] = useMemo(() =>
     layoutNodes.map((n) => {
       // グループノードはレイアウト結果をそのまま使用
       if (n.type === "orgGroup") return n;
-      // stakeholderノード: groupIdがあればレイアウト位置、なければ保存位置を優先
+      // stakeholderノード: groupIdがあればレイアウト位置（相対座標）、なければ保存位置を優先
       const s = stakeholders.find((st) => st.id === n.id);
       if (s?.groupId) {
-        // グループ所属: レイアウトエンジンの絶対座標をそのまま使用
+        // グループ所属: レイアウトエンジンの相対座標をそのまま使用
         return n;
       }
       // フリーフローティング: 保存済み位置があればそちらを優先
@@ -78,13 +96,13 @@ export function useGroupChartLayout(dealId: string) {
 
   /**
    * ドロップ先のグループを検出
-   * ノードの中心座標がグループBBox内にあるか判定
+   * ノードの絶対中心座標がグループBBox内にあるか判定
    * 最も深い（最内側の）グループを返す
    */
   const findDropTargetGroup = useCallback(
-    (nodePosition: { x: number; y: number }): string | null => {
-      const cx = nodePosition.x + GROUP_LAYOUT.nodeWidth / 2;
-      const cy = nodePosition.y + GROUP_LAYOUT.nodeHeight / 2;
+    (absolutePosition: { x: number; y: number }): string | null => {
+      const cx = absolutePosition.x + GROUP_LAYOUT.nodeWidth / 2;
+      const cy = absolutePosition.y + GROUP_LAYOUT.nodeHeight / 2;
 
       // 全グループの中から、ノード中心を含むものをフィルタ
       const candidates: GroupBound[] = groupBounds.filter(
@@ -110,19 +128,30 @@ export function useGroupChartLayout(dealId: string) {
   );
 
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      // グループノードのドラッグは位置保存しない（レイアウトで自動計算）
+    (_event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+      // グループノードのドラッグ: 子が自動追従するので何もしない
       if (node.type === "orgGroup") return;
 
-      // ドロップ先のグループを検出
-      const targetGroupId = findDropTargetGroup(node.position);
+      // ノードの絶対座標を算出（parentId chain を辿る）
+      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+      const absPos = getAbsolutePosition(node, nodeMap);
+
+      // ドロップ先のグループを検出（絶対座標ベース）
+      const targetGroupId = findDropTargetGroup(absPos);
       const s = stakeholders.find((st) => st.id === node.id);
       const currentGroupId = s?.groupId ?? null;
 
       if (targetGroupId !== currentGroupId) {
-        // グループが変わった: groupIdを更新（レイアウトが再計算される）
-        updateStakeholder(node.id, dealId, { groupId: targetGroupId });
+        // グループが変わった: groupIdとdepartmentを更新（レイアウトが再計算される）
         const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
+        const updates: Partial<import("@/types/stakeholder").Stakeholder> = {
+          groupId: targetGroupId,
+        };
+        // グループに移動した場合はdepartmentも自動更新
+        if (targetGroupId && targetGroup) {
+          updates.department = targetGroup.name;
+        }
+        updateStakeholder(node.id, dealId, updates);
         if (targetGroupId) {
           toast.success(`${s?.name ?? ""} を ${targetGroup?.name ?? ""}に移動しました`);
         } else {

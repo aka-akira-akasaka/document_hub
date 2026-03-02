@@ -207,7 +207,8 @@ function computeGroupSize(node: GroupTreeNode): void {
 
 /**
  * グループとその中身のReactFlowノードを再帰的に配置
- * stakeholderノードは絶対座標、グループノードはReactFlow親子関係
+ * stakeholderノードはグループの子ノード（相対座標 + parentId）
+ * グループノードはReactFlowの親子関係でネスト
  */
 function positionGroupTree(
   node: GroupTreeNode,
@@ -248,7 +249,7 @@ function positionGroupTree(
     height: node.height,
   });
 
-  // 直属メンバーを絶対座標で配置（parentIdなし）
+  // 直属メンバーをグループの子ノードとして配置（相対座標 + parentId）
   let memberY = headerHeight + innerPadding;
   const memberX = (node.width - nodeWidth) / 2;
 
@@ -256,7 +257,8 @@ function positionGroupTree(
     nodes.push({
       id: member.id,
       type: "stakeholder",
-      position: { x: absX + memberX, y: absY + memberY },
+      position: { x: memberX, y: memberY },
+      parentId: groupNodeId,
       zIndex: 10,
       data: { ...member },
     });

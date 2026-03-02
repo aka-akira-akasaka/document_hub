@@ -24,6 +24,7 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
         className="!bg-transparent !border-0 !w-3 !h-3"
         isConnectable
       />
@@ -81,6 +82,21 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
       <Handle
         type="source"
         position={Position.Bottom}
+        id="bottom"
+        className="!bg-transparent !border-0 !w-3 !h-3"
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        className="!bg-transparent !border-0 !w-3 !h-3"
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
         className="!bg-transparent !border-0 !w-3 !h-3"
         isConnectable
       />

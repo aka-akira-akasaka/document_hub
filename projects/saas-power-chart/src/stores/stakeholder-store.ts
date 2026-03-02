@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
-import type { Relationship } from "@/types/relationship";
+import type { Relationship, RelationshipTargetType } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
 import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS, MOCK_RELATIONSHIPS } from "@/lib/mock-data";
 
@@ -44,6 +44,7 @@ interface StakeholderState {
     type: RelationshipType;
     label?: string;
     bidirectional: boolean;
+    targetType?: RelationshipTargetType;
   }) => Relationship;
   deleteRelationship: (id: string, dealId: string) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];

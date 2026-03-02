@@ -82,6 +82,15 @@ interface UiState {
 
   /** +ボタン経由で作成する際のデフォルトgroupId */
   createGroupId: string | null;
+
+  /** コネクタ接続後のタイプ選択ダイアログ用 */
+  pendingConnection: {
+    sourceId: string;
+    targetId: string;
+    targetType: "stakeholder" | "group";
+  } | null;
+  setPendingConnection: (conn: { sourceId: string; targetId: string; targetType: "stakeholder" | "group" }) => void;
+  clearPendingConnection: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -148,4 +157,8 @@ export const useUiStore = create<UiState>()((set) => ({
     set({ groupFormOpen: true, groupFormEditId: groupId, groupFormParentId: null }),
   closeGroupForm: () =>
     set({ groupFormOpen: false, groupFormEditId: null, groupFormParentId: null }),
+
+  pendingConnection: null,
+  setPendingConnection: (conn) => set({ pendingConnection: conn }),
+  clearPendingConnection: () => set({ pendingConnection: null }),
 }));

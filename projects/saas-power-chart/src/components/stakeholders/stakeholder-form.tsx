@@ -65,8 +65,12 @@ export function StakeholderForm({
   const createGroupId = useUiStore((s) => s.createGroupId);
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 
+  // groupIdが設定されている場合、対応グループ名をdepartmentのデフォルトにする
+  const effectiveGroupId = stakeholder?.groupId ?? createGroupId ?? null;
+  const matchingGroup = effectiveGroupId ? orgGroups.find(g => g.id === effectiveGroupId) : null;
+
   const [name, setName] = useState(stakeholder?.name ?? "");
-  const [department, setDepartment] = useState(stakeholder?.department ?? "");
+  const [department, setDepartment] = useState(stakeholder?.department ?? matchingGroup?.name ?? "");
   const [title, setTitle] = useState(stakeholder?.title ?? "");
   const [roleInDeal, setRoleInDeal] = useState<RoleInDeal>(
     stakeholder?.roleInDeal ?? "unknown"
