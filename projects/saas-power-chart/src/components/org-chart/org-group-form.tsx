@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,22 @@ export function OrgGroupForm({
     editGroup?.parentGroupId ?? defaultParentGroupId ?? ""
   );
 
+  // ダイアログが開くたびにフォーム状態をリセット
+  const prevOpenRef = useRef(false);
+  if (open && !prevOpenRef.current) {
+    // open が false→true に変わった瞬間
+    if (!isEdit) {
+      // 新規作成時: defaultParentGroupIdを反映
+      if ((defaultParentGroupId ?? "") !== parentGroupId) {
+        setParentGroupId(defaultParentGroupId ?? "");
+      }
+      if (name !== "") {
+        setName("");
+      }
+    }
+  }
+  prevOpenRef.current = open;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -97,12 +113,12 @@ export function OrgGroupForm({
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "グループ編集" : "グループ作成"}
+            {isEdit ? "部署編集" : "部署作成"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="group-name">グループ名 *</Label>
+            <Label htmlFor="group-name">部署名 *</Label>
             <Input
               id="group-name"
               value={name}
@@ -113,7 +129,7 @@ export function OrgGroupForm({
           </div>
 
           <div className="space-y-2">
-            <Label>親グループ</Label>
+            <Label>親部署</Label>
             <Select
               value={parentGroupId || "none"}
               onValueChange={(v) => setParentGroupId(v === "none" ? "" : v)}

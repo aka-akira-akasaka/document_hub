@@ -3,7 +3,7 @@
 import { memo, useCallback, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { OrgGroup } from "@/types/org-group";
-import { MoreVertical, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, FolderPlus, Plus, Pencil, Trash2 } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import {
@@ -134,14 +134,14 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
         </DropdownMenu>
       </div>
 
-      {/* フッター: ＋部署を追加する */}
+      {/* フッター: この部署の中に部署を追加する */}
       <div className="absolute bottom-0 left-0 right-0 px-3 py-1.5">
         <button
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors"
           onClick={handleAddSubGroup as React.MouseEventHandler}
         >
-          <FolderPlus className="w-3 h-3" />
-          <span>+サブ部署を追加する</span>
+          <Plus className="w-3 h-3" />
+          <span>この部署の中に部署を追加する</span>
         </button>
       </div>
     </div>

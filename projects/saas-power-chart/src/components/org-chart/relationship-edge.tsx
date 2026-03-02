@@ -56,7 +56,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const [editLabel, setEditLabel] = useState(customLabel ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 編集モード開始時にフォーカス
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -104,7 +103,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
           stroke: strokeColor,
           strokeWidth: 2,
           strokeDasharray: strokeDash,
-          zIndex: 1000,
         }}
       />
       <EdgeLabelRenderer>
@@ -112,6 +110,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
           className="absolute pointer-events-auto"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            zIndex: 10000,
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -145,12 +144,15 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               </button>
             </div>
           ) : (
-            /* 通常表示 */
-            <div className="flex items-center gap-1">
+            /* 通常表示: ラベル + ホバー時に鉛筆アイコン */
+            <div
+              className="flex items-center justify-center gap-1"
+              style={{ minWidth: 24, minHeight: 24 }}
+            >
               {customLabel && (
                 <span
                   className={cn(
-                    "text-[10px] font-medium px-2 py-0.5 rounded-sm",
+                    "text-[10px] font-medium px-2 py-0.5 rounded-sm whitespace-nowrap",
                     isPositive
                       ? "bg-blue-500 text-white"
                       : "bg-red-500 text-white"
@@ -159,13 +161,12 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                   {customLabel}
                 </span>
               )}
-              {/* ホバー時に鉛筆アイコンを表示 */}
               <button
                 className={cn(
                   "p-1 rounded-full transition-all",
                   hovered
                     ? "opacity-100 bg-white shadow-sm border border-gray-200 text-gray-600 hover:text-blue-600"
-                    : "opacity-0 pointer-events-none"
+                    : "opacity-0"
                 )}
                 onClick={handleStartEdit}
                 title="編集"
