@@ -10,6 +10,7 @@ import { BatchAddDialog } from "@/components/stakeholders/batch-add-dialog";
 import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export default function DealLayout({
   children,
@@ -18,6 +19,7 @@ export default function DealLayout({
 }) {
   const params = useParams();
   const router = useRouter();
+  const hydrated = useHydrated();
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.getDealById(dealId));
   const openCsvImport = useUiStore((s) => s.openCsvImport);
@@ -28,12 +30,12 @@ export default function DealLayout({
   });
 
   useEffect(() => {
-    if (!deal) {
+    if (hydrated && !deal) {
       router.push("/");
     }
-  }, [deal, router]);
+  }, [hydrated, deal, router]);
 
-  if (!deal) return null;
+  if (!hydrated || !deal) return null;
 
   return (
     <div className="flex-1 bg-gray-50 flex flex-col">

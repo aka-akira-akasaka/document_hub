@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Deal, DealStage } from "@/types/deal";
-import { MOCK_DEAL } from "@/lib/mock-data";
 
 interface DealState {
   deals: Deal[];
@@ -16,8 +15,6 @@ interface DealState {
   updateDeal: (id: string, updates: Partial<Deal>) => void;
   deleteDeal: (id: string) => void;
   getDealById: (id: string) => Deal | undefined;
-  /** モックデータをシード（仮置き・確認後削除） */
-  seedMockData: () => void;
 }
 
 export const useDealStore = create<DealState>()(
@@ -47,19 +44,12 @@ export const useDealStore = create<DealState>()(
           deals: state.deals.filter((d) => d.id !== id),
         })),
       getDealById: (id) => get().deals.find((d) => d.id === id),
-
-      seedMockData: () =>
-        set((state) => {
-          if (state.deals.some((d) => d.id === MOCK_DEAL.id)) return state;
-          return { deals: [...state.deals, MOCK_DEAL] };
-        }),
     }),
     {
       name: "power-chart-deals",
-      version: 2,
+      version: 3,
       migrate: (_persisted, version) => {
-        // v1→v2: 古いモックデータ（東海ファイナンス等）をリセット
-        if (typeof version !== "number" || version < 2) {
+        if (typeof version !== "number" || version < 3) {
           return { deals: [] } as unknown as DealState;
         }
         return _persisted as DealState;

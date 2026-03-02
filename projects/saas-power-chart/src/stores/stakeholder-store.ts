@@ -3,7 +3,6 @@ import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship, RelationshipTargetType } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
-import { MOCK_DEAL_ID, MOCK_STAKEHOLDERS, MOCK_RELATIONSHIPS } from "@/lib/mock-data";
 
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 const EMPTY_RELATIONSHIPS: Relationship[] = [];
@@ -69,9 +68,6 @@ interface StakeholderState {
     dealId: string,
     position: { x: number; y: number }
   ) => void;
-
-  /** モックデータをシード（仮置き・確認後削除） */
-  seedMockData: () => void;
 }
 
 export const useStakeholderStore = create<StakeholderState>()(
@@ -248,35 +244,18 @@ export const useStakeholderStore = create<StakeholderState>()(
             },
           };
         }),
-
-      seedMockData: () =>
-        set((state) => {
-          if ((state.stakeholdersByDeal[MOCK_DEAL_ID] ?? []).length > 0) return state;
-          return {
-            stakeholdersByDeal: {
-              ...state.stakeholdersByDeal,
-              [MOCK_DEAL_ID]: MOCK_STAKEHOLDERS,
-            },
-            relationshipsByDeal: {
-              ...state.relationshipsByDeal,
-              [MOCK_DEAL_ID]: MOCK_RELATIONSHIPS,
-            },
-          };
-        }),
     }),
     {
       name: "power-chart-stakeholders",
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
-        // v3→v4: 古いモックデータをリセット（seedMockDataで再投入される）
-        if (typeof version !== "number" || version < 4) {
+        if (typeof version !== "number" || version < 5) {
           return {
             stakeholdersByDeal: {},
             relationshipsByDeal: {},
             orgLevelConfigByDeal: {},
           } as unknown as StakeholderState;
         }
-
         return persisted as StakeholderState;
       },
     }
