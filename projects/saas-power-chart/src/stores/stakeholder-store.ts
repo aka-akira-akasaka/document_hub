@@ -269,7 +269,7 @@ export const useStakeholderStore = create<StakeholderState>()(
       version: 4,
       migrate: (persisted, version) => {
         // v3→v4: 古いモックデータをリセット（seedMockDataで再投入される）
-        if (version < 4) {
+        if (typeof version !== "number" || version < 4) {
           return {
             stakeholdersByDeal: {},
             relationshipsByDeal: {},

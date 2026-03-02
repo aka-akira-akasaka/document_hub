@@ -121,20 +121,24 @@ export const useOrgGroupStore = create<OrgGroupState>()(
       name: "power-chart-org-groups",
       version: 3,
       migrate: (_persisted, version) => {
-        // v2→v3: 古いモックデータをリセット（onRehydrateStorageで再投入される）
-        if (version < 3) {
-          return { groupsByDeal: {} } as unknown as OrgGroupState;
+        // v2→v3: 古いモックデータをリセットし、最新モックデータで再投入
+        if (typeof version !== "number" || version < 3) {
+          return {
+            groupsByDeal: { [MOCK_DEAL_ID]: MOCK_ORG_GROUPS },
+          } as unknown as OrgGroupState;
         }
         return _persisted as OrgGroupState;
       },
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        // モックデータがまだ無い場合はシード
+        // モックデータがまだ無い場合はシード（set()経由で正しくReactに通知）
         if ((state.groupsByDeal[MOCK_DEAL_ID] ?? []).length === 0) {
-          state.groupsByDeal = {
-            ...state.groupsByDeal,
-            [MOCK_DEAL_ID]: MOCK_ORG_GROUPS,
-          };
+          useOrgGroupStore.setState({
+            groupsByDeal: {
+              ...state.groupsByDeal,
+              [MOCK_DEAL_ID]: MOCK_ORG_GROUPS,
+            },
+          });
         }
       },
     }
