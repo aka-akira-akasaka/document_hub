@@ -24,6 +24,7 @@ import { OrgGroupForm } from "./org-group-form";
 import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
+import { useAutoGroupSeed } from "@/hooks/use-auto-group-seed";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
@@ -51,6 +52,9 @@ interface OrgChartCanvasProps {
 }
 
 export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
+  // グループ未設定の案件で、部署情報があるステークホルダーがいれば自動グループ生成
+  useAutoGroupSeed(dealId);
+
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const isGroupMode = orgGroups.length > 0;
 
