@@ -24,6 +24,9 @@ interface OrgGroupState {
 
   /** 指定グループの深さを返す（ルート=0） */
   getGroupDepth: (id: string, dealId: string) => number;
+
+  /** 兄弟グループ内での表示順序を変更する（D&D横並び入れ替え用） */
+  reorderGroup: (id: string, dealId: string, newIndex: number) => void;
 }
 
 export const useOrgGroupStore = create<OrgGroupState>()(
@@ -32,21 +35,27 @@ export const useOrgGroupStore = create<OrgGroupState>()(
       groupsByDeal: {},
 
       addGroup: (data) => {
+        const existing = get().groupsByDeal[data.dealId] ?? [];
+        // 兄弟グループ内の最大sortOrderを算出し、末尾に追加
+        const siblings = existing.filter((g) => g.parentGroupId === data.parentGroupId);
+        const maxOrder = siblings.reduce((max, g) => Math.max(max, g.sortOrder ?? 0), -1);
+
         const group: OrgGroup = {
           id: crypto.randomUUID(),
           dealId: data.dealId,
           name: data.name,
           parentGroupId: data.parentGroupId,
           color: data.color,
+          sortOrder: maxOrder + 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
         set((state) => {
-          const existing = state.groupsByDeal[data.dealId] ?? [];
+          const list = state.groupsByDeal[data.dealId] ?? [];
           return {
             groupsByDeal: {
               ...state.groupsByDeal,
-              [data.dealId]: [...existing, group],
+              [data.dealId]: [...list, group],
             },
           };
         });
@@ -115,13 +124,70 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         }
         return depth;
       },
+
+      reorderGroup: (id, dealId, newIndex) =>
+        set((state) => {
+          const list = state.groupsByDeal[dealId] ?? [];
+          const group = list.find((g) => g.id === id);
+          if (!group) return state;
+
+          // 同じ親を持つ兄弟をsortOrder順で取得
+          const siblings = list
+            .filter((g) => g.parentGroupId === group.parentGroupId)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+          // 対象を除外して新しい位置に挿入
+          const filtered = siblings.filter((g) => g.id !== id);
+          const clampedIndex = Math.max(0, Math.min(newIndex, filtered.length));
+          filtered.splice(clampedIndex, 0, group);
+
+          // sortOrderを0始まりで振り直す
+          const orderMap = new Map<string, number>();
+          filtered.forEach((g, i) => orderMap.set(g.id, i));
+
+          const now = new Date().toISOString();
+          return {
+            groupsByDeal: {
+              ...state.groupsByDeal,
+              [dealId]: list.map((g) => {
+                const newOrder = orderMap.get(g.id);
+                if (newOrder !== undefined && newOrder !== g.sortOrder) {
+                  return { ...g, sortOrder: newOrder, updatedAt: now };
+                }
+                return g;
+              }),
+            },
+          };
+        }),
     }),
     {
       name: "power-chart-org-groups",
-      version: 4,
+      version: 5,
       migrate: (_persisted, version) => {
         if (typeof version !== "number" || version < 4) {
           return { groupsByDeal: {} } as unknown as OrgGroupState;
+        }
+        if (version === 4) {
+          // v4→v5: sortOrderフィールドを追加（兄弟グループごとに連番を振る）
+          const state = _persisted as { groupsByDeal: Record<string, OrgGroup[]> };
+          const newGroupsByDeal: Record<string, OrgGroup[]> = {};
+          for (const [dealId, groups] of Object.entries(state.groupsByDeal)) {
+            const byParent = new Map<string | null, OrgGroup[]>();
+            for (const g of groups) {
+              const key = g.parentGroupId ?? null;
+              if (!byParent.has(key)) byParent.set(key, []);
+              byParent.get(key)!.push(g);
+            }
+            const orderMap = new Map<string, number>();
+            for (const siblings of byParent.values()) {
+              siblings.forEach((g, i) => orderMap.set(g.id, i));
+            }
+            newGroupsByDeal[dealId] = groups.map((g) => ({
+              ...g,
+              sortOrder: orderMap.get(g.id) ?? 0,
+            }));
+          }
+          return { ...state, groupsByDeal: newGroupsByDeal } as unknown as OrgGroupState;
         }
         return _persisted as OrgGroupState;
       },

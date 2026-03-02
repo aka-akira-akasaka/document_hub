@@ -7,6 +7,8 @@ export interface OrgGroup {
   parentGroupId: string | null;
   /** グループの色（オプション） */
   color?: string;
+  /** 同一親グループ内での表示順序（横並びD&D入れ替え用） */
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }

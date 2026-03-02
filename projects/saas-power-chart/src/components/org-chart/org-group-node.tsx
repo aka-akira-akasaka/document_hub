@@ -98,12 +98,12 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
       />
 
       {/* ヘッダー（ドラッグハンドル） */}
-      <div className="org-group-drag-handle flex items-center justify-between px-3 py-2 border-b border-gray-100 cursor-grab active:cursor-grabbing">
-        <div className="flex items-center gap-1">
+      <div className="org-group-drag-handle flex items-center justify-between gap-1 px-3 py-2 border-b border-gray-100 cursor-grab active:cursor-grabbing">
+        <div className="flex items-center gap-1 min-w-0 flex-1">
           <span className="font-semibold text-sm text-gray-800 truncate">
             {group.name}
           </span>
-          <span className="text-gray-400 text-sm">:</span>
+          <span className="text-gray-400 text-sm shrink-0">:</span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

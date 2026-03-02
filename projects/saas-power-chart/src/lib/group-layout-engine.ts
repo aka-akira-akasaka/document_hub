@@ -113,6 +113,12 @@ function buildGroupTree(orgGroups: OrgGroup[]): GroupTreeNode[] {
     }
   }
 
+  // sortOrder順にソート（横並びの表示順序を制御）
+  roots.sort((a, b) => (a.group.sortOrder ?? 0) - (b.group.sortOrder ?? 0));
+  for (const node of nodeMap.values()) {
+    node.children.sort((a, b) => (a.group.sortOrder ?? 0) - (b.group.sortOrder ?? 0));
+  }
+
   return roots;
 }
 

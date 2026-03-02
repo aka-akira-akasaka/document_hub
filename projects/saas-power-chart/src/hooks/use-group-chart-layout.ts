@@ -192,6 +192,7 @@ export function useGroupChartLayout(dealId: string) {
   );
 
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
+  const reorderGroup = useOrgGroupStore((s) => s.reorderGroup);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -201,7 +202,7 @@ export function useGroupChartLayout(dealId: string) {
       // プレースホルダーのドラッグは無視
       if (node.type === "addPersonPlaceholder") return;
 
-      // グループノードのD&D: parentGroupIdを更新
+      // グループノードのD&D: parentGroupId変更 or 兄弟間並び替え
       if (node.type === "orgGroup") {
         const draggedGroupId = node.id.replace(/^group-/, "");
         const absPos = getNodeAbsolutePosition(node);
@@ -209,17 +210,53 @@ export function useGroupChartLayout(dealId: string) {
         const draggedGroup = orgGroups.find((g) => g.id === draggedGroupId);
         const currentParent = draggedGroup?.parentGroupId ?? null;
 
-        if (targetGroupId === currentParent) return; // 変更なし
+        if (targetGroupId !== currentParent) {
+          // 親グループが変わる → 移動（末尾に追加）
+          captureSnapshot();
+          const newSiblings = orgGroups.filter(
+            (g) => g.parentGroupId === targetGroupId && g.id !== draggedGroupId
+          );
+          const maxOrder = newSiblings.reduce((max, g) => Math.max(max, g.sortOrder ?? 0), -1);
+          updateGroup(draggedGroupId, dealId, {
+            parentGroupId: targetGroupId,
+            sortOrder: maxOrder + 1,
+          });
+
+          const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
+          if (targetGroupId && targetGroup) {
+            toast.success(`${draggedGroup?.name ?? ""} を ${targetGroup.name} の配下に移動しました`);
+          } else {
+            toast.success(`${draggedGroup?.name ?? ""} をトップレベルに移動しました`);
+          }
+          return;
+        }
+
+        // 同じ親 → 兄弟間の横並び順序を入れ替え
+        const siblings = orgGroups
+          .filter((g) => g.parentGroupId === currentParent && g.dealId === dealId)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+        if (siblings.length <= 1) return;
+
+        // ドラッグしたグループの幅をgroupBoundsから取得
+        const draggedBound = groupBoundsRef.current.find((gb) => gb.groupId === draggedGroupId);
+        const dragCenterX = absPos.x + (draggedBound?.width ?? GROUP_LAYOUT.nodeWidth) / 2;
+
+        // 兄弟（自分以外）のcenterX一覧と比較して新しいインデックスを算出
+        const otherSiblings = siblings.filter((g) => g.id !== draggedGroupId);
+        let newIndex = 0;
+        for (const sib of otherSiblings) {
+          const bound = groupBoundsRef.current.find((gb) => gb.groupId === sib.id);
+          const sibCenterX = bound ? bound.x + bound.width / 2 : Infinity;
+          if (sibCenterX < dragCenterX) newIndex++;
+        }
+
+        const currentIndex = siblings.findIndex((g) => g.id === draggedGroupId);
+        if (newIndex === currentIndex) return; // 順序変更なし
 
         captureSnapshot();
-        updateGroup(draggedGroupId, dealId, { parentGroupId: targetGroupId });
-
-        const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
-        if (targetGroupId && targetGroup) {
-          toast.success(`${draggedGroup?.name ?? ""} を ${targetGroup.name} の配下に移動しました`);
-        } else {
-          toast.success(`${draggedGroup?.name ?? ""} をトップレベルに移動しました`);
-        }
+        reorderGroup(draggedGroupId, dealId, newIndex);
+        toast.success(`${draggedGroup?.name ?? ""} の順序を変更しました`);
         return;
       }
 
@@ -248,7 +285,7 @@ export function useGroupChartLayout(dealId: string) {
         updateNodePosition(node.id, dealId, node.position);
       }
     },
-    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, captureSnapshot, setDragOverGroupId]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId]
   );
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
