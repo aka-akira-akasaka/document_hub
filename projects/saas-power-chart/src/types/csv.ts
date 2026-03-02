@@ -12,7 +12,6 @@ export interface CsvRow {
   email: string;
   phone: string;
   notes: string;
-  is_unknown: string;
   org_level: string;
 }
 
@@ -30,7 +29,6 @@ export const CSV_COLUMNS: (keyof CsvRow)[] = [
   "email",
   "phone",
   "notes",
-  "is_unknown",
   "org_level",
 ];
 
@@ -49,7 +47,6 @@ export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
   email: "メール",
   phone: "電話番号",
   notes: "備考",
-  is_unknown: "不明フラグ",
   org_level: "組織階層レベル",
 };
 
@@ -73,6 +70,5 @@ export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
   email: "yamada@example.com",
   phone: "03-1234-5678",
   notes: "最終決裁者",
-  is_unknown: "",
   org_level: "2",
 };

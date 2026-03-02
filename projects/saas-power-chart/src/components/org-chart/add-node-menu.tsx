@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
-import { UserPlus, HelpCircle, Users, ChevronRight } from "lucide-react";
+import { UserPlus, Users, ChevronRight } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { getInsertableLevels } from "@/lib/constants";
@@ -9,7 +9,7 @@ import type { Stakeholder } from "@/types/stakeholder";
 
 interface AddNodeMenuProps {
   dealId: string;
-  onCreateNew: (parentId: string | null, isUnknown?: boolean, suggestedOrgLevel?: number) => void;
+  onCreateNew: (parentId: string | null, suggestedOrgLevel?: number) => void;
   onSelectExisting: (stakeholderId: string) => void;
 }
 
@@ -36,6 +36,9 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     if (addContext.type === "edge") {
       if (s.id === addContext.sourceId || s.id === addContext.targetId) return false;
     }
+    if (addContext.type === "layer") {
+      if (s.id === addContext.sourceId || s.id === addContext.targetId) return false;
+    }
     return !hasParent && !isParentOfSomeone;
   });
 
@@ -56,7 +59,19 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     return getInsertableLevels(parentNode?.orgLevel, currentNode?.orgLevel, dealOrgLevels);
   }, [addContext, stakeholders, dealOrgLevels]);
 
-  const allInsertableLevels = addContext?.type === "edge" ? insertableLevels : insertableLevelsForAbove;
+  // 通過レイヤーの+ボタンからの場合: orgLevelが確定
+  const layerLevel = useMemo(() => {
+    if (!addContext || addContext.type !== "layer") return null;
+    const levels = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : [];
+    const found = levels.find((l) => l.level === addContext.orgLevel);
+    return found ?? { level: addContext.orgLevel, label: `L${addContext.orgLevel}` };
+  }, [addContext, dealOrgLevels]);
+
+  const allInsertableLevels = addContext?.type === "edge"
+    ? insertableLevels
+    : addContext?.type === "layer" && layerLevel
+      ? [layerLevel]
+      : insertableLevelsForAbove;
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -76,22 +91,10 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     let parentId: string | null = null;
     if (addContext.type === "node") {
       parentId = addContext.position === "below" ? addContext.nodeId : null;
-    } else if (addContext.type === "edge") {
+    } else if (addContext.type === "edge" || addContext.type === "layer") {
       parentId = addContext.sourceId;
     }
     onCreateNew(parentId);
-    closeAddPopover();
-  }, [addContext, onCreateNew, closeAddPopover]);
-
-  const handleCreateUnknown = useCallback(() => {
-    if (!addContext) return;
-    let parentId: string | null = null;
-    if (addContext.type === "node") {
-      parentId = addContext.position === "below" ? addContext.nodeId : null;
-    } else if (addContext.type === "edge") {
-      parentId = addContext.sourceId;
-    }
-    onCreateNew(parentId, true);
     closeAddPopover();
   }, [addContext, onCreateNew, closeAddPopover]);
 
@@ -110,7 +113,9 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
       ? addContext.position === "below"
         ? "部下を追加"
         : "上司を追加"
-      : "中間者を追加";
+      : addContext.type === "layer"
+        ? `${layerLevel?.label ?? ""}を追加`
+        : "中間者を追加";
 
   // 推定される役職が1つだけの場合はラベルを特定
   const singleSuggestedLevel = allInsertableLevels.length === 1 ? allInsertableLevels[0] : null;
@@ -127,7 +132,7 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
     >
       <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b mb-1">
         {contextLabel}
-        {singleSuggestedLevel && (
+        {singleSuggestedLevel && addContext.type !== "layer" && (
           <span className="ml-1 text-blue-600">
             → {singleSuggestedLevel.label}
           </span>
@@ -146,10 +151,10 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
                 let parentId: string | null = null;
                 if (addContext.type === "node") {
                   parentId = addContext.position === "below" ? addContext.nodeId : null;
-                } else if (addContext.type === "edge") {
+                } else if (addContext.type === "edge" || addContext.type === "layer") {
                   parentId = addContext.sourceId;
                 }
-                onCreateNew(parentId, false, level.level);
+                onCreateNew(parentId, level.level);
                 closeAddPopover();
               }}
             >
@@ -170,14 +175,6 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
       >
         <UserPlus className="w-4 h-4 text-blue-600" />
         <span>新規作成</span>
-      </button>
-
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-orange-50 transition-colors text-left"
-        onClick={handleCreateUnknown}
-      >
-        <HelpCircle className="w-4 h-4 text-orange-500" />
-        <span>不明人物として追加</span>
       </button>
 
       {unconnectedPeople.length > 0 && (

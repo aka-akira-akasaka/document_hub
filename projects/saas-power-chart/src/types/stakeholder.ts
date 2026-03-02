@@ -31,10 +31,8 @@ export interface Stakeholder {
   email: string;
   phone: string;
   notes: string;
-  /** 名前不明の人物（役職は存在するが特定できていない） */
-  isUnknown?: boolean;
   /** 組織階層レベル（1=役員, 2=部長, 3=課長, 4=係長/主任 ...） */
-  orgLevel?: number;
+  orgLevel: number;
   position?: { x: number; y: number };
   createdAt: string;
   updatedAt: string;

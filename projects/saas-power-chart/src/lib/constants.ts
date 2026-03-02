@@ -123,6 +123,16 @@ export const RELATIONSHIP_TYPE_OPTIONS: RelationshipType[] = [
   "informal",
 ];
 
+/** レイヤーベースレイアウトの設定定数 */
+export const LAYER_LAYOUT = {
+  nodeWidth: 220,
+  nodeHeight: 120,
+  /** レイヤーの上下余白 */
+  layerPadding: 40,
+  /** 同レイヤー内の水平ノード間隔 */
+  nodeSep: 40,
+} as const;
+
 /**
  * デフォルト組織階層（新規案件や未設定時に使用）
  */

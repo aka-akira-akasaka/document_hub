@@ -8,6 +8,7 @@ import {
   EdgeLabelRenderer,
 } from "@xyflow/react";
 import type { RelationshipType } from "@/types/relationship";
+import type { PassthroughLayer } from "@/lib/layout-engine";
 import { Plus, X } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -26,6 +27,7 @@ interface RelationshipEdgeData {
   type?: RelationshipType;
   label?: string;
   onDelete?: (edgeId: string, source: string, target: string, relType: RelationshipType) => void;
+  passthroughLayers?: PassthroughLayer[];
 }
 
 function RelationshipEdgeComponent(props: EdgeProps) {
@@ -47,6 +49,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const relType = edgeData?.type ?? "reporting";
   const label = edgeData?.label;
   const onDelete = edgeData?.onDelete;
+  const passthroughLayers = edgeData?.passthroughLayers ?? [];
   const style = EDGE_STYLES[relType];
   const openAddPopover = useUiStore((s) => s.openAddPopover);
 
@@ -129,6 +132,26 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+        {/* 通過レイヤーの+ボタン */}
+        {isReporting && passthroughLayers.map((pt) => (
+            <button
+              key={`pt-${pt.level}`}
+              className="absolute w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm hover:scale-125 transition-transform z-10 opacity-60 hover:opacity-100"
+              style={{
+                transform: `translate(-50%, -50%) translate(${pt.x}px,${pt.y}px)`,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openAddPopover(
+                  { type: "layer", sourceId: source, targetId: target, orgLevel: pt.level },
+                  { x: e.clientX, y: e.clientY }
+                );
+              }}
+              title={`${pt.label}を追加`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+        ))}
       </EdgeLabelRenderer>
     </>
   );

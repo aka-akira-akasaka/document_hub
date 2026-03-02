@@ -15,7 +15,15 @@ export interface AddFromEdgeContext {
   targetId: string;
 }
 
-export type AddContext = AddFromNodeContext | AddFromEdgeContext | null;
+/** 通過レイヤーの+ボタンから追加する場合のコンテキスト */
+export interface AddFromLayerContext {
+  type: "layer";
+  sourceId: string;
+  targetId: string;
+  orgLevel: number;
+}
+
+export type AddContext = AddFromNodeContext | AddFromEdgeContext | AddFromLayerContext | null;
 
 interface UiState {
   sheetOpen: boolean;

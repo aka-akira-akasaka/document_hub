@@ -18,6 +18,7 @@ import { RelationshipEdge } from "./relationship-edge";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
+import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
@@ -40,6 +41,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const {
     nodes: layoutNodes,
     edges: layoutEdges,
+    layers,
     onNodeDragStop,
     applyAutoLayout,
   } = useOrgChartLayout(dealId);
@@ -51,7 +53,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const openSheetForCreate = useUiStore((s) => s.openSheetForCreate);
   const addContext = useUiStore((s) => s.addContext);
   const closeAddPopover = useUiStore((s) => s.closeAddPopover);
-  const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
@@ -118,54 +119,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   // +ボタン → 「新規作成」を選択した場合
   const handleCreateFromContext = useCallback(
-    (parentId: string | null, isUnknown?: boolean, suggestedOrgLevel?: number) => {
+    (parentId: string | null, suggestedOrgLevel?: number) => {
       const context = useUiStore.getState().addContext;
       if (!context) return;
-
-      if (isUnknown) {
-        // 不明人物を即座に追加
-        let resolvedParentId = parentId;
-        let childToRelink: string | null = null;
-
-        if (context.type === "edge") {
-          resolvedParentId = context.sourceId;
-          childToRelink = context.targetId;
-        } else if (context.type === "node" && context.position === "above") {
-          // 上司として追加: 現在のノードの親を新ノードの親に、現在のノードの親を新ノードに
-          const currentNode = stakeholders.find((s) => s.id === context.nodeId);
-          resolvedParentId = currentNode?.parentId ?? null;
-          childToRelink = context.nodeId;
-        }
-
-        const newStakeholder = addStakeholder({
-          dealId,
-          name: "不明",
-          department: "",
-          title: "",
-          roleInDeal: "unknown",
-          influenceLevel: 3,
-          attitude: "neutral",
-          mission: "",
-          relationshipOwner: "",
-          parentId: resolvedParentId,
-          email: "",
-          phone: "",
-          notes: "",
-          isUnknown: true,
-        });
-
-        // エッジ中間 or 上司追加の場合、元の子を新ノードの下に付け替え
-        if (childToRelink) {
-          updateStakeholder(childToRelink, dealId, {
-            parentId: newStakeholder.id,
-          });
-        }
-
-        toast.success("不明人物を追加しました");
-        // 追加後すぐに編集ダイアログを開く
-        openSheet(newStakeholder.id, "edit");
-        return;
-      }
 
       // 新規作成 → フォームを開く（parentIdとchildToRelinkをストアに保存してから開く）
       let resolvedParentId: string | null = null;
@@ -179,14 +135,14 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           resolvedParentId = currentNode?.parentId ?? null;
           childToRelink = context.nodeId;
         }
-      } else if (context.type === "edge") {
+      } else if (context.type === "edge" || context.type === "layer") {
         resolvedParentId = context.sourceId;
         childToRelink = context.targetId;
       }
 
       openSheetForCreate(resolvedParentId, childToRelink, suggestedOrgLevel);
     },
-    [dealId, stakeholders, addStakeholder, updateStakeholder, openSheet, openSheetForCreate]
+    [stakeholders, openSheetForCreate]
   );
 
   // +ボタン → 「既存の人物を選択」した場合
@@ -213,7 +169,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
             parentId: stakeholderId,
           });
         }
-      } else if (context.type === "edge") {
+      } else if (context.type === "edge" || context.type === "layer") {
         // 中間者として挿入: source→選択した人物→target
         updateStakeholder(stakeholderId, dealId, {
           parentId: context.sourceId,
@@ -270,6 +226,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{ deletable: true }}
       >
+        <LayerBackground layers={layers} />
         <OrgChartToolbar
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}

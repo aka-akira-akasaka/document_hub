@@ -5,7 +5,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { ATTITUDE_COLORS, ROLE_LABELS, INFLUENCE_LABELS } from "@/lib/constants";
 import type { Stakeholder, InfluenceLevel } from "@/types/stakeholder";
 import { cn } from "@/lib/utils";
-import { Plus, HelpCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 
 type StakeholderNodeData = Stakeholder & { label?: string };
@@ -14,7 +14,6 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
   const s = data as unknown as StakeholderNodeData;
   const colors = ATTITUDE_COLORS[s.attitude];
   const influenceWidth = ((s.influenceLevel as number) / 5) * 100;
-  const isUnknown = s.isUnknown;
   const openAddPopover = useUiStore((st) => st.openAddPopover);
 
   const handleAddAbove = useCallback(
@@ -61,30 +60,21 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
       <div
         className={cn(
           "rounded-lg shadow-sm border-2 p-3 w-[200px] cursor-pointer transition-shadow group",
-          isUnknown
-            ? "bg-gray-50 border-dashed border-orange-300"
-            : cn("bg-white", colors.border),
+          "bg-white",
+          colors.border,
           selected && "ring-2 ring-blue-500 shadow-md"
         )}
       >
         <div className="flex items-start justify-between mb-1">
           <div className="min-w-0">
-            {isUnknown ? (
-              <div className="flex items-center gap-1">
-                <HelpCircle className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <p className="font-semibold text-sm truncate text-orange-600">
-                  {s.name || "不明"}
-                </p>
-              </div>
-            ) : (
-              <p className="font-semibold text-sm truncate">{s.name}</p>
-            )}
+            <p className="font-semibold text-sm truncate">{s.name}</p>
             <p className="text-xs text-muted-foreground truncate">{s.title}</p>
           </div>
           <span
             className={cn(
               "shrink-0 inline-block w-2.5 h-2.5 rounded-full mt-1",
-              isUnknown ? "bg-orange-200 border-orange-400" : cn(colors.bg, colors.border),
+              colors.bg,
+              colors.border,
               "border"
             )}
           />
@@ -106,10 +96,7 @@ function StakeholderNodeComponent({ data, selected, id }: NodeProps) {
         </div>
         <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className={cn(
-              "h-full rounded-full",
-              isUnknown ? "bg-orange-300" : colors.bg.replace("100", "400")
-            )}
+            className={cn("h-full rounded-full", colors.bg.replace("100", "400"))}
             style={{ width: `${influenceWidth}%` }}
           />
         </div>

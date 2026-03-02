@@ -25,6 +25,7 @@ import {
   ATTITUDE_LABELS,
   ATTITUDE_COLORS,
   INFLUENCE_LABELS,
+  DEFAULT_ORG_LEVELS,
 } from "@/lib/constants";
 import type {
   RoleInDeal,
@@ -90,6 +91,10 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
     const validRows = rows.filter((r) => r.name.trim());
     if (validRows.length === 0) return;
 
+    const dealOrgLevels = useStakeholderStore.getState().orgLevelConfigByDeal[dealId];
+    const orgLevels = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
+    const defaultOrgLevel = orgLevels[orgLevels.length - 1].level;
+
     for (const row of validRows) {
       addStakeholder({
         dealId,
@@ -105,6 +110,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
         email: "",
         phone: "",
         notes: "",
+        orgLevel: defaultOrgLevel,
       });
     }
 

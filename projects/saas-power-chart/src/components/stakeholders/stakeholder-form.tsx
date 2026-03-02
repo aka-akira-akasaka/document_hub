@@ -83,12 +83,14 @@ export function StakeholderForm({
   const [phone, setPhone] = useState(stakeholder?.phone ?? "");
   const [notes, setNotes] = useState(stakeholder?.notes ?? "");
   const [orgLevel, setOrgLevel] = useState(
-    stakeholder?.orgLevel?.toString() ?? defaultOrgLevel?.toString() ?? ""
+    stakeholder?.orgLevel?.toString()
+    ?? defaultOrgLevel?.toString()
+    ?? orgLevelOptions[orgLevelOptions.length - 1].level.toString()
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !orgLevel) return;
 
     const data = {
       dealId,
@@ -104,7 +106,7 @@ export function StakeholderForm({
       email: email.trim(),
       phone: phone.trim(),
       notes: notes.trim(),
-      orgLevel: orgLevel ? Number(orgLevel) : undefined,
+      orgLevel: Number(orgLevel),
     };
 
     if (isEdit && stakeholder) {
@@ -229,16 +231,15 @@ export function StakeholderForm({
       </div>
 
       <div className="space-y-2">
-        <Label>組織階層レベル</Label>
+        <Label>組織階層レベル *</Label>
         <Select
-          value={orgLevel || "none"}
-          onValueChange={(v) => setOrgLevel(v === "none" ? "" : v)}
+          value={orgLevel}
+          onValueChange={(v) => setOrgLevel(v)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="未設定" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">未設定</SelectItem>
             {orgLevelOptions.map((opt) => (
               <SelectItem key={opt.level} value={opt.level.toString()}>
                 L{opt.level}: {opt.label}
