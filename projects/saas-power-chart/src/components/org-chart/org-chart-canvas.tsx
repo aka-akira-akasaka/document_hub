@@ -22,7 +22,6 @@ import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
 import { OrgGroupManager } from "./org-group-manager";
 import { OrgGroupForm } from "./org-group-form";
-import { ConnectionTypeDialog } from "./connection-type-dialog";
 import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
@@ -34,7 +33,6 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Stakeholder } from "@/types/stakeholder";
-import type { RelationshipType } from "@/types/relationship";
 import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
@@ -85,9 +83,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const groupFormEditId = useUiStore((s) => s.groupFormEditId);
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
   const closeGroupForm = useUiStore((s) => s.closeGroupForm);
-  const pendingConnection = useUiStore((s) => s.pendingConnection);
-  const setPendingConnection = useUiStore((s) => s.setPendingConnection);
-  const clearPendingConnection = useUiStore((s) => s.clearPendingConnection);
   const autoLayoutApplied = useRef(false);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const undo = useHistoryStore((s) => s.undo);
@@ -132,47 +127,29 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  // ノード接続: ドラッグでコネクタを引いた後、タイプ選択ダイアログを開く
+  // ノード接続: ドラッグでコネクタを引いたら即座にリレーションシップ作成
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
       if (connection.source === connection.target) return;
 
-      // 接続先がグループノードか判定
       const isGroupTarget = connection.target.startsWith("group-");
       const targetId = isGroupTarget
         ? connection.target.replace(/^group-/, "")
         : connection.target;
 
-      setPendingConnection({
-        sourceId: connection.source,
-        targetId,
-        targetType: isGroupTarget ? "group" : "stakeholder",
-      });
-    },
-    [setPendingConnection]
-  );
-
-  // 接続タイプダイアログで確定
-  const handleConnectionConfirm = useCallback(
-    (type: RelationshipType, label: string, bidirectional: boolean) => {
-      const conn = useUiStore.getState().pendingConnection;
-      if (!conn) return;
-
       captureSnapshot();
       addRelationship({
         dealId,
-        sourceId: conn.sourceId,
-        targetId: conn.targetId,
-        type,
-        label: label || undefined,
-        bidirectional,
-        targetType: conn.targetType,
+        sourceId: connection.source,
+        targetId,
+        type: isGroupTarget ? "oversight" : "informal",
+        bidirectional: !isGroupTarget,
+        targetType: isGroupTarget ? "group" : "stakeholder",
       });
       toast.success("関係性を作成しました");
-      clearPendingConnection();
     },
-    [dealId, addRelationship, clearPendingConnection, captureSnapshot]
+    [dealId, addRelationship, captureSnapshot]
   );
 
   const onNodeClick: NodeMouseHandler = useCallback(
@@ -356,14 +333,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onOpenChange={(open) => { if (!open) closeGroupForm(); }}
         editGroup={editGroupObj}
         defaultParentGroupId={groupFormParentId}
-      />
-
-      {/* コネクタ接続後のタイプ選択ダイアログ */}
-      <ConnectionTypeDialog
-        open={!!pendingConnection}
-        targetType={pendingConnection?.targetType ?? "stakeholder"}
-        onConfirm={handleConnectionConfirm}
-        onCancel={clearPendingConnection}
       />
 
       {/* 部課のリストを開くトグル */}

@@ -22,6 +22,7 @@ export function useOrgChartLayout(dealId: string) {
   );
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
+  const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
 
   const orgLevels = orgLevelConfig && orgLevelConfig.length > 0
     ? orgLevelConfig
@@ -33,6 +34,14 @@ export function useOrgChartLayout(dealId: string) {
       deleteRelationship(edgeId, dealId);
     },
     [dealId, deleteRelationship]
+  );
+
+  // エッジ更新コールバック
+  const handleEdgeUpdate = useCallback(
+    (edgeId: string, data: { label?: string }) => {
+      updateRelationship(edgeId, dealId, data);
+    },
+    [dealId, updateRelationship]
   );
 
   // レイヤーベースレイアウト計算（reportingエッジなし）
@@ -64,10 +73,10 @@ export function useOrgChartLayout(dealId: string) {
       target: r.targetId,
       type: "relationship",
       zIndex: 1000,
-      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
+      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
     }));
     return assignHandlesToEdges(baseEdges, nodes);
-  }, [relationships, handleEdgeDelete, nodes]);
+  }, [relationships, handleEdgeDelete, handleEdgeUpdate, nodes]);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {

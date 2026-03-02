@@ -27,6 +27,7 @@ export function useGroupChartLayout(dealId: string) {
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
+  const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
   // エッジ削除コールバック（relationship専用）
@@ -38,6 +39,15 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, deleteRelationship, captureSnapshot]
   );
 
+  // エッジ更新コールバック
+  const handleEdgeUpdate = useCallback(
+    (edgeId: string, data: { label?: string }) => {
+      captureSnapshot();
+      updateRelationship(edgeId, dealId, data);
+    },
+    [dealId, updateRelationship, captureSnapshot]
+  );
+
   // relationshipエッジを描画（targetTypeに応じてtarget IDを変換）
   const relEdges: Edge[] = useMemo(() =>
     relationships.map((r) => ({
@@ -46,9 +56,9 @@ export function useGroupChartLayout(dealId: string) {
       target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
       zIndex: 1000,
-      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
+      data: { type: r.type, label: r.label, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
     })),
-    [relationships, handleEdgeDelete]
+    [relationships, handleEdgeDelete, handleEdgeUpdate]
   );
 
   // グループベースレイアウト計算

@@ -47,6 +47,11 @@ interface StakeholderState {
     targetType?: RelationshipTargetType;
   }) => Relationship;
   deleteRelationship: (id: string, dealId: string) => void;
+  updateRelationship: (
+    id: string,
+    dealId: string,
+    data: Partial<Pick<Relationship, "type" | "label" | "bidirectional">>
+  ) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];
 
   importStakeholders: (dealId: string, stakeholders: Stakeholder[]) => void;
@@ -157,6 +162,19 @@ export const useStakeholderStore = create<StakeholderState>()(
             relationshipsByDeal: {
               ...state.relationshipsByDeal,
               [dealId]: list.filter((r) => r.id !== id),
+            },
+          };
+        }),
+
+      updateRelationship: (id, dealId, data) =>
+        set((state) => {
+          const list = state.relationshipsByDeal[dealId] ?? [];
+          return {
+            relationshipsByDeal: {
+              ...state.relationshipsByDeal,
+              [dealId]: list.map((r) =>
+                r.id === id ? { ...r, ...data } : r
+              ),
             },
           };
         }),
