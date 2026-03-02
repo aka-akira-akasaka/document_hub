@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { ATTITUDE_COLORS } from "@/lib/constants";
 import type { Stakeholder } from "@/types/stakeholder";
@@ -18,14 +18,22 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
   const s = data as unknown as StakeholderNodeData;
   const colors = ATTITUDE_COLORS[s.attitude];
   const showStrip = hasColorStrip(s.attitude);
+  const [hovered, setHovered] = useState(false);
+
+  const handleClass = hovered
+    ? "!w-2.5 !h-2.5 !bg-blue-400 !border-2 !border-blue-600 !rounded-full transition-all"
+    : "!w-3 !h-3 !bg-transparent !border-0 transition-all";
 
   return (
-    <>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <Handle
         type="target"
         position={Position.Top}
         id="top"
-        className="!bg-transparent !border-0 !w-3 !h-3"
+        className={handleClass}
         isConnectable
       />
 
@@ -83,21 +91,21 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
         type="source"
         position={Position.Bottom}
         id="bottom"
-        className="!bg-transparent !border-0 !w-3 !h-3"
+        className={handleClass}
         isConnectable
       />
       <Handle
         type="source"
         position={Position.Left}
         id="left"
-        className="!bg-transparent !border-0 !w-3 !h-3"
+        className={handleClass}
         isConnectable
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className="!bg-transparent !border-0 !w-3 !h-3"
+        className={handleClass}
         isConnectable
       />
 
@@ -115,7 +123,7 @@ function StakeholderNodeComponent({ data, selected }: NodeProps) {
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 

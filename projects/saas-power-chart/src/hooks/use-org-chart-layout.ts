@@ -62,6 +62,7 @@ export function useOrgChartLayout(dealId: string) {
       source: r.sourceId,
       target: r.targetId,
       type: "relationship",
+      zIndex: 1000,
       data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
     })),
     [relationships, handleEdgeDelete]

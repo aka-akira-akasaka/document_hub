@@ -28,6 +28,7 @@ import type {
   InfluenceLevel,
 } from "@/types/stakeholder";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useHistoryStore } from "@/stores/history-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useUiStore } from "@/stores/ui-store";
 import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
@@ -60,6 +61,7 @@ export function StakeholderForm({
   const isEdit = !!stakeholder;
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
   const createGroupId = useUiStore((s) => s.createGroupId);
@@ -120,6 +122,7 @@ export function StakeholderForm({
       groupId: groupId || null,
     };
 
+    captureSnapshot();
     if (isEdit && stakeholder) {
       updateStakeholder(stakeholder.id, dealId, data);
     } else {

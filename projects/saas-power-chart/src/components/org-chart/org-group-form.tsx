@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useHistoryStore } from "@/stores/history-store";
 import type { OrgGroup, OrgGroupLevel } from "@/types/org-group";
 import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
 
@@ -49,6 +50,7 @@ export function OrgGroupForm({
   const addGroup = useOrgGroupStore((s) => s.addGroup);
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const deleteGroup = useOrgGroupStore((s) => s.deleteGroup);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
 
   const parentGroup = defaultParentGroupId
@@ -69,6 +71,7 @@ export function OrgGroupForm({
     e.preventDefault();
     if (!name.trim()) return;
 
+    captureSnapshot();
     if (isEdit && editGroup) {
       updateGroup(editGroup.id, dealId, {
         name: name.trim(),
@@ -88,6 +91,7 @@ export function OrgGroupForm({
 
   const handleDelete = () => {
     if (!editGroup) return;
+    captureSnapshot();
     deleteGroup(editGroup.id, dealId);
     onOpenChange(false);
   };

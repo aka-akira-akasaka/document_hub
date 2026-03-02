@@ -28,6 +28,7 @@ import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useHistoryStore } from "@/stores/history-store";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const setPendingConnection = useUiStore((s) => s.setPendingConnection);
   const clearPendingConnection = useUiStore((s) => s.clearPendingConnection);
   const autoLayoutApplied = useRef(false);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
+  const canUndo = useHistoryStore((s) => s.canUndo());
+  const canRedo = useHistoryStore((s) => s.canRedo());
 
   // ⋮メニュー「編集」用: groupFormEditIdからOrgGroupオブジェクトを取得
   const editGroupObj = groupFormEditId
@@ -106,6 +112,22 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       applyAutoLayout();
     }
   }, [stakeholders, applyAutoLayout]);
+
+  // Undo/Redo キーボードショートカット
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   // ノード接続: ドラッグでコネクタを引いた後、タイプ選択ダイアログを開く
   const onConnect = useCallback(
@@ -134,6 +156,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       const conn = useUiStore.getState().pendingConnection;
       if (!conn) return;
 
+      captureSnapshot();
       addRelationship({
         dealId,
         sourceId: conn.sourceId,
@@ -146,7 +169,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       toast.success("関係性を作成しました");
       clearPendingConnection();
     },
-    [dealId, addRelationship, clearPendingConnection]
+    [dealId, addRelationship, clearPendingConnection, captureSnapshot]
   );
 
   const onNodeClick: NodeMouseHandler = useCallback(
@@ -205,6 +228,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       const context = useUiStore.getState().addContext;
       if (!context) return;
 
+      captureSnapshot();
       if (context.type === "node") {
         if (context.position === "below") {
           // 選択した人物をこのノードの部下に
@@ -235,7 +259,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
       toast.success("人物を接続しました");
     },
-    [dealId, stakeholders, updateStakeholder]
+    [dealId, stakeholders, updateStakeholder, captureSnapshot]
   );
 
   // キャンバスクリックでポップオーバーを閉じる
@@ -286,6 +310,10 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           onAddNode={handleAddNode}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
           onOpenGroupManager={openGroupManager}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
         <MiniMap
           nodeStrokeWidth={3}

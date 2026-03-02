@@ -4,8 +4,9 @@ import { useCallback, useMemo } from "react";
 import type { Node, Edge } from "@xyflow/react";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
-import { computeGroupLayout, type GroupBound } from "@/lib/group-layout-engine";
+import { computeGroupLayout } from "@/lib/group-layout-engine";
 import { GROUP_LAYOUT } from "@/lib/constants";
+import { useHistoryStore } from "@/stores/history-store";
 import { toast } from "sonner";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
@@ -42,13 +43,15 @@ export function useGroupChartLayout(dealId: string) {
   const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
   // エッジ削除コールバック（relationship専用）
   const handleEdgeDelete = useCallback(
     (edgeId: string) => {
+      captureSnapshot();
       deleteRelationship(edgeId, dealId);
     },
-    [dealId, deleteRelationship]
+    [dealId, deleteRelationship, captureSnapshot]
   );
 
   // relationshipエッジを描画（targetTypeに応じてtarget IDを変換）
@@ -58,18 +61,18 @@ export function useGroupChartLayout(dealId: string) {
       source: r.sourceId,
       target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
+      zIndex: 1000,
       data: { type: r.type, label: r.label, onDelete: handleEdgeDelete },
     })),
     [relationships, handleEdgeDelete]
   );
 
   // グループベースレイアウト計算
-  const { layoutNodes, allEdges, groupBounds } = useMemo(() => {
+  const { layoutNodes, allEdges } = useMemo(() => {
     const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
     return {
       layoutNodes: result.nodes,
       allEdges: result.edges,
-      groupBounds: result.groupBounds,
     };
   }, [stakeholders, orgGroups, relEdges]);
 
@@ -96,35 +99,36 @@ export function useGroupChartLayout(dealId: string) {
 
   /**
    * ドロップ先のグループを検出
-   * ノードの絶対中心座標がグループBBox内にあるか判定
-   * 最も深い（最内側の）グループを返す
+   * allNodesから現在のグループ位置をリアルタイムに算出し、
+   * ノードの絶対中心座標がグループBBox内にあるか判定。
+   * 最も深い（最内側の）グループを返す。
    */
   const findDropTargetGroup = useCallback(
-    (absolutePosition: { x: number; y: number }): string | null => {
+    (absolutePosition: { x: number; y: number }, allNodes: Node[]): string | null => {
       const cx = absolutePosition.x + GROUP_LAYOUT.nodeWidth / 2;
       const cy = absolutePosition.y + GROUP_LAYOUT.nodeHeight / 2;
 
-      // 全グループの中から、ノード中心を含むものをフィルタ
-      const candidates: GroupBound[] = groupBounds.filter(
-        (gb) =>
-          cx >= gb.x &&
-          cx <= gb.x + gb.width &&
-          cy >= gb.y &&
-          cy <= gb.y + gb.height
-      );
+      const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+      const groupNodes = allNodes.filter((n) => n.type === "orgGroup");
+
+      const candidates: { groupId: string; area: number }[] = [];
+      for (const gn of groupNodes) {
+        const abs = getAbsolutePosition(gn, nodeMap);
+        const w = (gn.style?.width as number) ?? gn.measured?.width ?? 0;
+        const h = (gn.style?.height as number) ?? gn.measured?.height ?? 0;
+        if (w === 0 || h === 0) continue;
+        if (cx >= abs.x && cx <= abs.x + w && cy >= abs.y && cy <= abs.y + h) {
+          candidates.push({ groupId: gn.id.replace(/^group-/, ""), area: w * h });
+        }
+      }
 
       if (candidates.length === 0) return null;
 
       // 最も面積が小さいグループ（最内側）を選択
-      let smallest = candidates[0];
-      for (const c of candidates) {
-        if (c.width * c.height < smallest.width * smallest.height) {
-          smallest = c;
-        }
-      }
-      return smallest.groupId;
+      candidates.sort((a, b) => a.area - b.area);
+      return candidates[0].groupId;
     },
-    [groupBounds]
+    []
   );
 
   const onNodeDragStop = useCallback(
@@ -136,13 +140,14 @@ export function useGroupChartLayout(dealId: string) {
       const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
       const absPos = getAbsolutePosition(node, nodeMap);
 
-      // ドロップ先のグループを検出（絶対座標ベース）
-      const targetGroupId = findDropTargetGroup(absPos);
+      // ドロップ先のグループを検出（allNodesの現在位置ベース）
+      const targetGroupId = findDropTargetGroup(absPos, allNodes);
       const s = stakeholders.find((st) => st.id === node.id);
       const currentGroupId = s?.groupId ?? null;
 
       if (targetGroupId !== currentGroupId) {
         // グループが変わった: groupIdとdepartmentを更新（レイアウトが再計算される）
+        captureSnapshot();
         const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
         const updates: Partial<import("@/types/stakeholder").Stakeholder> = {
           groupId: targetGroupId,
@@ -163,7 +168,7 @@ export function useGroupChartLayout(dealId: string) {
       }
       // グループ内でのドラッグ完了→何もしない（レイアウトで自動配置されるため）
     },
-    [dealId, stakeholders, orgGroups, findDropTargetGroup, updateStakeholder, updateNodePosition]
+    [dealId, stakeholders, orgGroups, findDropTargetGroup, updateStakeholder, updateNodePosition, captureSnapshot]
   );
 
   // 自動レイアウト: 全フリーフローティングノードの位置をリセット
