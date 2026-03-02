@@ -19,5 +19,9 @@ export interface Relationship {
   bidirectional: boolean;
   /** 接続先の種類（省略時は "stakeholder"） */
   targetType?: RelationshipTargetType;
+  /** ユーザーが接続操作で指定したソースハンドルID */
+  sourceHandle?: string;
+  /** ユーザーが接続操作で指定したターゲットハンドルID */
+  targetHandle?: string;
   createdAt: string;
 }

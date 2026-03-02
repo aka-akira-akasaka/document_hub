@@ -172,6 +172,8 @@ export const GROUP_LAYOUT = {
   innerPadding: 12,
   /** ノード間の縦間隔 */
   nodeGap: 8,
+  /** 同階層ノード間の横間隔 */
+  nodeHGap: 12,
   /** サブグループ間の横間隔 */
   subGroupGap: 16,
   /** division間の横間隔 */

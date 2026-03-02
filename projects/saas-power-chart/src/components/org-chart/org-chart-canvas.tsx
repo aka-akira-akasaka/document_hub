@@ -142,6 +142,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         type: isGroupTarget ? "oversight" : "informal",
         bidirectional: !isGroupTarget,
         targetType: isGroupTarget ? "group" : "stakeholder",
+        sourceHandle: connection.sourceHandle ?? undefined,
+        targetHandle: connection.targetHandle ?? undefined,
       });
       toast.success("関係性を作成しました");
     },
@@ -162,6 +164,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const handleAddNode = useCallback(() => {
     openSheet(null, "create");
   }, [openSheet]);
+
+  const openGroupFormForChild = useUiStore((s) => s.openGroupFormForChild);
+  const handleAddGroup = useCallback(() => {
+    openGroupFormForChild(null);
+  }, [openGroupFormForChild]);
 
   // +ボタン → 「新規作成」を選択した場合
   const handleCreateFromContext = useCallback(
@@ -285,6 +292,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         <OrgChartToolbar
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
+          onAddGroup={handleAddGroup}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
           onUndo={undo}
           onRedo={redo}

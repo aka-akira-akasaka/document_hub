@@ -118,6 +118,9 @@ export function assignHandlesToEdges(
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
   return edges.map((edge) => {
+    // ユーザーが手動指定したハンドルはそのまま維持
+    if (edge.sourceHandle && edge.targetHandle) return edge;
+
     const srcNode = nodeMap.get(edge.source);
     const tgtNode = nodeMap.get(edge.target);
     if (!srcNode || !tgtNode) return edge;

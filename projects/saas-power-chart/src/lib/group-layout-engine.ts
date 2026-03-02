@@ -158,7 +158,27 @@ function assignStakeholders(
 }
 
 /**
+ * メンバーをorgLevelごとにグループ化（同orgLevel → 横並び）
+ * 前提: membersはorgLevel昇順でソート済み
+ */
+function groupMembersByLevel(members: Stakeholder[]): Stakeholder[][] {
+  if (members.length === 0) return [];
+  const rows: Stakeholder[][] = [];
+  let currentLevel = -Infinity;
+  for (const m of members) {
+    if (m.orgLevel !== currentLevel) {
+      rows.push([m]);
+      currentLevel = m.orgLevel;
+    } else {
+      rows[rows.length - 1].push(m);
+    }
+  }
+  return rows;
+}
+
+/**
  * グループサイズをボトムアップで計算
+ * 同orgLevelのメンバーは横並びで配置するため、行ごとの最大幅で計算
  */
 function computeGroupSize(node: GroupTreeNode): void {
   // 子グループを先に計算
@@ -166,13 +186,23 @@ function computeGroupSize(node: GroupTreeNode): void {
     computeGroupSize(child);
   }
 
-  const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
+  const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, nodeHGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
 
-  // 直属メンバーの高さ（＋プレースホルダー分を含む）
-  const memberCount = node.members.length;
-  const membersHeight = memberCount > 0
-    ? memberCount * nodeHeight + (memberCount - 1) * nodeGap + nodeGap + placeholderHeight
+  // メンバーをorgLevelごとにグループ化
+  const levelRows = groupMembersByLevel(node.members);
+  const rowCount = levelRows.length;
+
+  // メンバー領域の高さ（行数ベース）
+  const membersHeight = rowCount > 0
+    ? rowCount * nodeHeight + (rowCount - 1) * nodeGap + nodeGap + placeholderHeight
     : placeholderHeight;
+
+  // 最大行幅（同orgLevelの横並び幅）
+  let maxRowWidth: number = nodeWidth;
+  for (const row of levelRows) {
+    const rowWidth = row.length * nodeWidth + (row.length - 1) * nodeHGap;
+    maxRowWidth = Math.max(maxRowWidth, rowWidth);
+  }
 
   // サブグループの合計幅と最大高さ
   let subGroupsTotalWidth = 0;
@@ -185,11 +215,8 @@ function computeGroupSize(node: GroupTreeNode): void {
     subGroupsTotalWidth += (node.children.length - 1) * subGroupGap;
   }
 
-  // 幅: メンバー幅とサブグループ幅の大きい方 + パディング
-  const contentWidth = Math.max(
-    nodeWidth,
-    subGroupsTotalWidth
-  );
+  // 幅: 最大行幅とサブグループ幅の大きい方 + パディング
+  const contentWidth = Math.max(maxRowWidth, subGroupsTotalWidth);
   node.width = contentWidth + innerPadding * 2;
 
   // 高さ: ヘッダー + メンバー + サブグループ + フッター + パディング
@@ -221,7 +248,7 @@ function positionGroupTree(
   groupBounds: GroupBound[]
 ): void {
   const groupNodeId = `group-${node.group.id}`;
-  const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
+  const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, nodeHGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
 
   // グループノード自体を追加（親子関係はグループ同士のみ）
   const groupNode: Node = {
@@ -249,27 +276,33 @@ function positionGroupTree(
     height: node.height,
   });
 
-  // 直属メンバーをグループの子ノードとして配置（相対座標 + parentId）
+  // 直属メンバーをorgLevelごとに横並び配置（相対座標 + parentId）
+  const levelRows = groupMembersByLevel(node.members);
   let memberY = headerHeight + innerPadding;
-  const memberX = (node.width - nodeWidth) / 2;
 
-  for (const member of node.members) {
-    nodes.push({
-      id: member.id,
-      type: "stakeholder",
-      position: { x: memberX, y: memberY },
-      parentId: groupNodeId,
-      zIndex: 10,
-      data: { ...member },
-    });
+  for (const row of levelRows) {
+    const rowWidth = row.length * nodeWidth + (row.length - 1) * nodeHGap;
+    const startX = (node.width - rowWidth) / 2;
+
+    for (let i = 0; i < row.length; i++) {
+      nodes.push({
+        id: row[i].id,
+        type: "stakeholder",
+        position: { x: startX + i * (nodeWidth + nodeHGap), y: memberY },
+        parentId: groupNodeId,
+        zIndex: 10,
+        data: { ...row[i] },
+      });
+    }
     memberY += nodeHeight + nodeGap;
   }
 
   // 「＋ 人を追加する」プレースホルダーノード
+  const placeholderX = (node.width - nodeWidth) / 2;
   nodes.push({
     id: `placeholder-${node.group.id}`,
     type: "addPersonPlaceholder",
-    position: { x: memberX, y: memberY },
+    position: { x: placeholderX, y: memberY },
     parentId: groupNodeId,
     zIndex: 5,
     selectable: false,

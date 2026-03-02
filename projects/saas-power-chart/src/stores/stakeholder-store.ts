@@ -45,6 +45,8 @@ interface StakeholderState {
     label?: string;
     bidirectional: boolean;
     targetType?: RelationshipTargetType;
+    sourceHandle?: string;
+    targetHandle?: string;
   }) => Relationship;
   deleteRelationship: (id: string, dealId: string) => void;
   updateRelationship: (

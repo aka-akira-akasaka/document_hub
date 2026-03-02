@@ -76,7 +76,7 @@ interface UiState {
   groupFormOpen: boolean;
   groupFormEditId: string | null;
   groupFormParentId: string | null;
-  openGroupFormForChild: (parentGroupId: string) => void;
+  openGroupFormForChild: (parentGroupId: string | null) => void;
   openGroupFormForEdit: (groupId: string) => void;
   closeGroupForm: () => void;
 
