@@ -241,11 +241,12 @@ export const useStakeholderStore = create<StakeholderState>()(
     }),
     {
       name: "power-chart-stakeholders",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
+        const state = persisted as Record<string, unknown>;
+        const byDeal = (state.stakeholdersByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
+
         if (version < 2) {
-          const state = persisted as Record<string, unknown>;
-          const byDeal = (state.stakeholdersByDeal ?? {}) as Record<string, Record<string, unknown>[]>;
           const orgConfigs = (state.orgLevelConfigByDeal ?? {}) as Record<string, { level: number }[]>;
           for (const dealId of Object.keys(byDeal)) {
             const levels = orgConfigs[dealId];
@@ -256,9 +257,18 @@ export const useStakeholderStore = create<StakeholderState>()(
               return { ...rest, orgLevel: rest.orgLevel ?? maxLevel };
             });
           }
-          return { ...state, stakeholdersByDeal: byDeal };
         }
-        return persisted as StakeholderState;
+
+        if (version < 3) {
+          for (const dealId of Object.keys(byDeal)) {
+            byDeal[dealId] = byDeal[dealId].map((s) => ({
+              ...s,
+              groupId: s.groupId ?? null,
+            }));
+          }
+        }
+
+        return { ...state, stakeholdersByDeal: byDeal } as unknown as StakeholderState;
       },
     }
   )

@@ -17,6 +17,7 @@
  */
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Deal } from "@/types/deal";
+import type { OrgGroup } from "@/types/org-group";
 
 export const MOCK_DEAL_ID = "mock-deal-001";
 
@@ -49,6 +50,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "inoue@tokai-mf.example.co.jp",
     phone: "052-000-0001",
     notes: "最終承認者。DX投資に前向きだが、ROI確認を重視。",
+    groupId: null,
     orgLevel: 1,
     createdAt: "2026-02-01T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -69,6 +71,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "fujiwara@tokai-mf.example.co.jp",
     phone: "052-000-0010",
     notes: "実質的な意思決定者。中期経営計画でDX推進を掲げており本件を牽引。",
+    groupId: "grp-keiei",
     orgLevel: 2,
     createdAt: "2026-02-01T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -88,6 +91,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "yoshida@tokai-mf.example.co.jp",
     phone: "052-000-0020",
     notes: "技術選定の責任者。セキュリティ基準と既存基幹システムとの連携を重視。",
+    groupId: "grp-jouhou",
     orgLevel: 2,
     createdAt: "2026-02-01T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -107,6 +111,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "ishii@tokai-mf.example.co.jp",
     phone: "052-000-0030",
     notes: "既存の紙ベース運用に満足。コスト増を懸念し導入に消極的。",
+    groupId: "grp-soumu",
     orgLevel: 3,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -126,6 +131,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kimura@tokai-mf.example.co.jp",
     phone: "",
     notes: "現場で月次締め作業に追われており、自動化を強く希望。導入後の主要ユーザー。",
+    groupId: "grp-keiri",
     orgLevel: 4,
     createdAt: "2026-02-10T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -146,6 +152,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kobayashi@tokai-mf.example.co.jp",
     phone: "052-000-0011",
     notes: "本案件の起案者・推進リーダー。競合製品の比較検討も担当。",
+    groupId: "grp-dx",
     orgLevel: 4,
     createdAt: "2026-02-01T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -165,6 +172,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "matsumoto@tokai-mf.example.co.jp",
     phone: "052-000-0012",
     notes: "費用対効果の分析を担当。数字で判断するタイプ。",
+    groupId: "grp-kikaku",
     orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -185,6 +193,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "yamaguchi@tokai-mf.example.co.jp",
     phone: "052-000-0021",
     notes: "ネットワーク・サーバ管理を統括。クラウド移行に慎重。",
+    groupId: "grp-infra",
     orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -204,6 +213,7 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "kato@tokai-mf.example.co.jp",
     phone: "052-000-0022",
     notes: "API連携・技術検証を担当。SaaS連携の実績あり、導入に前向き。",
+    groupId: "grp-kaihatsu",
     orgLevel: 4,
     createdAt: "2026-02-05T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
@@ -224,8 +234,87 @@ export const MOCK_STAKEHOLDERS: Stakeholder[] = [
     email: "watanabe@tokai-mf.example.co.jp",
     phone: "",
     notes: "PoCの実務担当。現行業務フローを最も詳しく把握している。",
+    groupId: "grp-dx",
     orgLevel: 5,
     createdAt: "2026-02-10T09:00:00.000Z",
     updatedAt: "2026-02-28T16:00:00.000Z",
+  },
+];
+
+// ── OrgGroups モックデータ ──
+export const MOCK_ORG_GROUPS: OrgGroup[] = [
+  // 部 (division)
+  {
+    id: "grp-keiei",
+    dealId: MOCK_DEAL_ID,
+    name: "経営企画部",
+    level: "division",
+    parentGroupId: null,
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-jouhou",
+    dealId: MOCK_DEAL_ID,
+    name: "情報システム部",
+    level: "division",
+    parentGroupId: null,
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-soumu",
+    dealId: MOCK_DEAL_ID,
+    name: "総務部",
+    level: "division",
+    parentGroupId: null,
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-keiri",
+    dealId: MOCK_DEAL_ID,
+    name: "経理部",
+    level: "division",
+    parentGroupId: null,
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  // 課 (section)
+  {
+    id: "grp-dx",
+    dealId: MOCK_DEAL_ID,
+    name: "DX推進課",
+    level: "section",
+    parentGroupId: "grp-keiei",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-kikaku",
+    dealId: MOCK_DEAL_ID,
+    name: "企画課",
+    level: "section",
+    parentGroupId: "grp-keiei",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-infra",
+    dealId: MOCK_DEAL_ID,
+    name: "インフラ課",
+    level: "section",
+    parentGroupId: "grp-jouhou",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
+  },
+  {
+    id: "grp-kaihatsu",
+    dealId: MOCK_DEAL_ID,
+    name: "開発課",
+    level: "section",
+    parentGroupId: "grp-jouhou",
+    createdAt: "2026-02-01T09:00:00.000Z",
+    updatedAt: "2026-02-01T09:00:00.000Z",
   },
 ];

@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
+import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
 import {
   ROLE_OPTIONS,
   ROLE_LABELS,
@@ -42,6 +44,7 @@ interface RowData {
   roleInDeal: RoleInDeal;
   influenceLevel: InfluenceLevel;
   attitude: Attitude;
+  groupId: string;
 }
 
 function createEmptyRow(): RowData {
@@ -52,6 +55,7 @@ function createEmptyRow(): RowData {
     roleInDeal: "unknown",
     influenceLevel: 3,
     attitude: "neutral",
+    groupId: "",
   };
 }
 
@@ -63,6 +67,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
   const open = useUiStore((s) => s.batchAddDialogOpen);
   const closeBatchAdd = useUiStore((s) => s.closeBatchAdd);
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
 
   const [rows, setRows] = useState<RowData[]>(() => [
     createEmptyRow(),
@@ -111,6 +116,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
         phone: "",
         notes: "",
         orgLevel: defaultOrgLevel,
+        groupId: row.groupId || null,
       });
     }
 
@@ -157,6 +163,11 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
                 <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[130px]">
                   態度
                 </th>
+                {orgGroups.length > 0 && (
+                  <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap min-w-[140px]">
+                    所属グループ
+                  </th>
+                )}
                 <th className="w-10 px-1" />
               </tr>
             </thead>
@@ -251,6 +262,26 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
                       </SelectContent>
                     </Select>
                   </td>
+                  {orgGroups.length > 0 && (
+                    <td className="px-2 py-1.5 align-middle">
+                      <Select
+                        value={row.groupId || "none"}
+                        onValueChange={(v) => updateRow(i, "groupId", v === "none" ? "" : v)}
+                      >
+                        <SelectTrigger className="h-9 text-sm border-gray-200 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">なし</SelectItem>
+                          {orgGroups.map((g) => (
+                            <SelectItem key={g.id} value={g.id}>
+                              {g.name}（{ORG_GROUP_LEVEL_LABELS[g.level]}）
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
                   <td className="px-1 py-1.5 align-middle">
                     <Button
                       variant="ghost"

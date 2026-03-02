@@ -47,6 +47,7 @@ const csvRowSchema = z.object({
   phone: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   org_level: z.string().optional().default(""),
+  group_id: z.string().optional().default(""),
 });
 
 export interface ParseError {
@@ -104,6 +105,7 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
       phone: d.phone ?? "",
       notes: d.notes ?? "",
       orgLevel: d.org_level ? Number(d.org_level) : 5,
+      groupId: d.group_id || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -129,6 +131,7 @@ export function stakeholderToCsvRow(s: Stakeholder): CsvRow {
     phone: s.phone,
     notes: s.notes,
     org_level: String(s.orgLevel),
+    group_id: s.groupId ?? "",
   };
 }
 

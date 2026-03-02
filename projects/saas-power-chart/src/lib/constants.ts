@@ -133,6 +133,30 @@ export const LAYER_LAYOUT = {
   nodeSep: 40,
 } as const;
 
+/** グループベースレイアウトの設定定数 */
+export const GROUP_LAYOUT = {
+  /** stakeholderノード幅 */
+  nodeWidth: 200,
+  /** stakeholderノード高さ */
+  nodeHeight: 100,
+  /** グループヘッダーの高さ */
+  headerHeight: 36,
+  /** グループ内部のパディング */
+  innerPadding: 16,
+  /** ノード間の縦間隔 */
+  nodeGap: 12,
+  /** サブグループ間の横間隔 */
+  subGroupGap: 20,
+  /** division間の横間隔 */
+  divisionGap: 40,
+  /** フリーフローティング領域のY起点 */
+  freeFloatY: 0,
+  /** グループ領域のY起点 */
+  groupAreaY: 250,
+  /** フリーフローティングノード間の横間隔 */
+  freeFloatGap: 30,
+} as const;
+
 /**
  * デフォルト組織階層（新規案件や未設定時に使用）
  */

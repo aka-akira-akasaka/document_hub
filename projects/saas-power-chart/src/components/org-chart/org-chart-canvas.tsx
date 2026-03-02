@@ -15,13 +15,17 @@ import "@xyflow/react/dist/style.css";
 
 import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
+import { OrgGroupNode } from "./org-group-node";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
+import { OrgGroupManager } from "./org-group-manager";
 import { LayerBackground } from "./layer-background";
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
+import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,7 +34,7 @@ import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 
-const nodeTypes = { stakeholder: StakeholderNode };
+const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 interface OrgChartCanvasProps {
@@ -38,13 +42,20 @@ interface OrgChartCanvasProps {
 }
 
 export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const isGroupMode = orgGroups.length > 0;
+
+  // フォールバック: グループなし→レイヤーレイアウト、グループあり→グループレイアウト
+  const layerLayout = useOrgChartLayout(dealId);
+  const groupLayout = useGroupChartLayout(dealId);
+
   const {
     nodes: layoutNodes,
     edges: layoutEdges,
-    layers,
     onNodeDragStop,
     applyAutoLayout,
-  } = useOrgChartLayout(dealId);
+  } = isGroupMode ? groupLayout : layerLayout;
+  const layers = isGroupMode ? [] : (layerLayout.layers ?? []);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -59,6 +70,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   );
 
   const [levelEditorOpen, setLevelEditorOpen] = useState(false);
+  const groupManagerOpen = useUiStore((s) => s.groupManagerOpen);
+  const openGroupManager = useUiStore((s) => s.openGroupManager);
+  const closeGroupManager = useUiStore((s) => s.closeGroupManager);
   const autoLayoutApplied = useRef(false);
 
   useEffect(() => {
@@ -106,6 +120,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
+      // グループノードのクリックは無視
+      if (node.type === "orgGroup") return;
       // +ボタンのポップオーバーが開いている場合はクリックを無視
       if (addContext) return;
       openSheet(node.id, "edit");
@@ -226,11 +242,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{ deletable: true }}
       >
-        <LayerBackground layers={layers} />
+        {layers.length > 0 && <LayerBackground layers={layers} />}
         <OrgChartToolbar
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
+          onOpenGroupManager={openGroupManager}
         />
         <MiniMap
           nodeStrokeWidth={3}
@@ -253,6 +270,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         dealId={dealId}
         open={levelEditorOpen}
         onOpenChange={setLevelEditorOpen}
+      />
+
+      {/* 部門グループ管理パネル */}
+      <OrgGroupManager
+        dealId={dealId}
+        open={groupManagerOpen}
+        onOpenChange={closeGroupManager}
       />
     </div>
   );

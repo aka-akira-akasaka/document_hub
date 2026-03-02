@@ -28,6 +28,8 @@ import type {
   InfluenceLevel,
 } from "@/types/stakeholder";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
+import { ORG_GROUP_LEVEL_LABELS } from "@/types/org-group";
 
 interface StakeholderFormProps {
   dealId: string;
@@ -58,6 +60,7 @@ export function StakeholderForm({
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 
   const [name, setName] = useState(stakeholder?.name ?? "");
@@ -87,6 +90,7 @@ export function StakeholderForm({
     ?? defaultOrgLevel?.toString()
     ?? orgLevelOptions[orgLevelOptions.length - 1].level.toString()
   );
+  const [groupId, setGroupId] = useState(stakeholder?.groupId ?? "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +111,7 @@ export function StakeholderForm({
       phone: phone.trim(),
       notes: notes.trim(),
       orgLevel: Number(orgLevel),
+      groupId: groupId || null,
     };
 
     if (isEdit && stakeholder) {
@@ -207,6 +212,31 @@ export function StakeholderForm({
           </SelectContent>
         </Select>
       </div>
+
+      {orgGroups.length > 0 && (
+        <div className="space-y-2">
+          <Label>所属部門グループ</Label>
+          <Select
+            value={groupId || "none"}
+            onValueChange={(v) => setGroupId(v === "none" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="なし（フリー配置）" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">なし（フリー配置）</SelectItem>
+              {orgGroups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}（{ORG_GROUP_LEVEL_LABELS[g.level]}）
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            部門グループボックス内に配置します
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>上司</Label>

@@ -60,6 +60,11 @@ interface UiState {
   openAddPopover: (context: NonNullable<AddContext>, position: { x: number; y: number }) => void;
   /** 追加ポップオーバーを閉じる */
   closeAddPopover: () => void;
+
+  /** グループ管理パネル */
+  groupManagerOpen: boolean;
+  openGroupManager: () => void;
+  closeGroupManager: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -109,4 +114,8 @@ export const useUiStore = create<UiState>()((set) => ({
     set({ addContext: context, addPopoverPosition: position }),
   closeAddPopover: () =>
     set({ addContext: null, addPopoverPosition: null }),
+
+  groupManagerOpen: false,
+  openGroupManager: () => set({ groupManagerOpen: true }),
+  closeGroupManager: () => set({ groupManagerOpen: false }),
 }));

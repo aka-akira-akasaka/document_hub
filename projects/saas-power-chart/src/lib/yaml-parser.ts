@@ -19,6 +19,7 @@ export interface YamlOrgNode {
   phone?: string;
   notes?: string;
   org_level?: number;
+  group_id?: string;
   children?: YamlOrgNode[];
 }
 
@@ -127,6 +128,7 @@ export function parseYAML(yamlText: string, dealId: string): ParseResult {
           phone: String(node.phone ?? ""),
           notes: String(node.notes ?? ""),
           orgLevel: node.org_level != null ? Number(node.org_level) : 5,
+          groupId: typeof node.group_id === "string" ? node.group_id : null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -170,6 +172,7 @@ interface ExportNode {
   phone?: string;
   notes?: string;
   org_level?: number;
+  group_id?: string;
   children: ExportNode[];
 }
 
@@ -194,6 +197,7 @@ export function exportYAML(stakeholders: Stakeholder[]): string {
       ...(s.phone && { phone: s.phone }),
       ...(s.notes && { notes: s.notes }),
       ...(s.orgLevel != null && { org_level: s.orgLevel }),
+      ...(s.groupId && { group_id: s.groupId }),
       children: [],
     });
   }
