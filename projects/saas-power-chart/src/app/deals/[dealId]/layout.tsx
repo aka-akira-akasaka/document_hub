@@ -37,7 +37,7 @@ function DealLayoutContent({
   const params = useParams();
   const router = useRouter();
   const dealId = params.dealId as string;
-  const deal = useDealStore((s) => s.getDealById(dealId));
+  const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const openBatchAdd = useUiStore((s) => s.openBatchAdd);
   const { handleExport, handleYamlExport } = useCsvExport({

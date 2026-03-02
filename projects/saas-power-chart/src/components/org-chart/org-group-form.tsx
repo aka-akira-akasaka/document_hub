@@ -22,6 +22,8 @@ import { useHistoryStore } from "@/stores/history-store";
 import type { OrgGroup } from "@/types/org-group";
 import { MAX_GROUP_DEPTH } from "@/lib/constants";
 
+const EMPTY_GROUPS: OrgGroup[] = [];
+
 interface OrgGroupFormProps {
   dealId: string;
   open: boolean;
@@ -45,7 +47,7 @@ export function OrgGroupForm({
   const deleteGroup = useOrgGroupStore((s) => s.deleteGroup);
   const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
-  const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
 
   const [name, setName] = useState(editGroup?.name ?? "");
   const [parentGroupId, setParentGroupId] = useState(

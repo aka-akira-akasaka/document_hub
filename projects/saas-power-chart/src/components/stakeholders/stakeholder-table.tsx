@@ -25,6 +25,7 @@ import { Users, ArrowUpDown, Search } from "lucide-react";
 import type { Stakeholder } from "@/types/stakeholder";
 
 const EMPTY: Stakeholder[] = [];
+const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
 
 interface StakeholderTableProps {
   dealId: string;
@@ -36,7 +37,7 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
   const stakeholders = useStakeholderStore((s) =>
     s.stakeholdersByDeal[dealId] ?? EMPTY
   );
-  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const openSheet = useUiStore((s) => s.openSheet);
 
   // groupId → グループ名の逆引きMap（親部署表示用）

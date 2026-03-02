@@ -35,6 +35,9 @@ import type {
 } from "@/types/stakeholder";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import type { OrgGroup } from "@/types/org-group";
+
+const EMPTY_GROUPS: OrgGroup[] = [];
 
 interface RowData {
   name: string;
@@ -66,7 +69,7 @@ export function BatchAddDialog({ dealId }: BatchAddDialogProps) {
   const open = useUiStore((s) => s.batchAddDialogOpen);
   const closeBatchAdd = useUiStore((s) => s.closeBatchAdd);
   const addStakeholder = useStakeholderStore((s) => s.addStakeholder);
-  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
 
   const [rows, setRows] = useState<RowData[]>(() => [
     createEmptyRow(),

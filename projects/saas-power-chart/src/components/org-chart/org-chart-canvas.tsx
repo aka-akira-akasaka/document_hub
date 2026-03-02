@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
+const EMPTY_LAYERS: import("@/lib/layout-engine").LayerInfo[] = [];
 
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -65,7 +66,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   } = isGroupMode ? groupLayout : layerLayout;
   // onNodeDragはグループモードのみ（D&Dの視覚フィードバック用）
   const onNodeDrag = isGroupMode ? groupLayout.onNodeDrag : undefined;
-  const layers = isGroupMode ? [] : (layerLayout.layers ?? []);
+  const layers = isGroupMode ? EMPTY_LAYERS : (layerLayout.layers ?? EMPTY_LAYERS);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -86,6 +87,8 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
   const closeGroupForm = useUiStore((s) => s.closeGroupForm);
   const autoLayoutApplied = useRef(false);
+  const applyAutoLayoutRef = useRef(applyAutoLayout);
+  applyAutoLayoutRef.current = applyAutoLayout;
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
@@ -109,9 +112,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     const allUnpositioned = stakeholders.every((s) => !s.position);
     if (allUnpositioned) {
       autoLayoutApplied.current = true;
-      applyAutoLayout();
+      applyAutoLayoutRef.current();
     }
-  }, [stakeholders, applyAutoLayout]);
+  }, [stakeholders]);
 
   // Undo/Redo キーボードショートカット
   useEffect(() => {

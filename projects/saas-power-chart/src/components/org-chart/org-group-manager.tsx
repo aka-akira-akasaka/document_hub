@@ -13,6 +13,8 @@ import { useOrgGroupStore } from "@/stores/org-group-store";
 import type { OrgGroup } from "@/types/org-group";
 import { OrgGroupForm } from "./org-group-form";
 
+const EMPTY_GROUPS: OrgGroup[] = [];
+
 interface OrgGroupManagerProps {
   dealId: string;
   open: boolean;
@@ -24,7 +26,7 @@ export function OrgGroupManager({
   open,
   onOpenChange,
 }: OrgGroupManagerProps) {
-  const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const [formOpen, setFormOpen] = useState(false);
   const [editGroup, setEditGroup] = useState<OrgGroup | null>(null);
   const [defaultParentId, setDefaultParentId] = useState<string | null>(null);

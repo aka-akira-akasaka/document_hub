@@ -32,6 +32,9 @@ import { useHistoryStore } from "@/stores/history-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useUiStore } from "@/stores/ui-store";
 import { TitleCombobox } from "@/components/org-chart/title-combobox";
+import type { OrgGroup } from "@/types/org-group";
+
+const EMPTY_GROUPS: OrgGroup[] = [];
 
 interface StakeholderFormProps {
   dealId: string;
@@ -64,7 +67,7 @@ export function StakeholderForm({
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
   const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
-  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? []);
+  const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const createGroupId = useUiStore((s) => s.createGroupId);
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
 

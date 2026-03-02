@@ -7,6 +7,8 @@ import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { getInsertableLevels } from "@/lib/constants";
 import type { Stakeholder } from "@/types/stakeholder";
 
+const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
+
 interface AddNodeMenuProps {
   dealId: string;
   onCreateNew: (parentId: string | null, suggestedOrgLevel?: number) => void;
@@ -20,7 +22,7 @@ export function AddNodeMenu({ dealId, onCreateNew, onSelectExisting }: AddNodeMe
   const closeAddPopover = useUiStore((s) => s.closeAddPopover);
 
   const stakeholders = useStakeholderStore(
-    (s) => s.stakeholdersByDeal[dealId] ?? []
+    (s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS
   );
   const dealOrgLevels = useStakeholderStore(
     (s) => s.orgLevelConfigByDeal[dealId]
