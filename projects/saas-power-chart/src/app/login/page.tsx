@@ -25,7 +25,7 @@ export default function LoginPage() {
             <span className="text-2xl font-bold">Power Chart</span>
           </div>
           <p className="text-sm text-gray-500">
-            エンプラ組織パワーチャート作成ツール
+            組織図・パワーチャート作成ツール
           </p>
         </div>
 

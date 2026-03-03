@@ -13,8 +13,8 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Power Chart - エンプラ組織パワーチャート",
-  description: "エンタープライズ組織開拓のためのパワーチャート作成ツール",
+  title: "Power Chart - 組織図・パワーチャート作成ツール",
+  description: "組織図・パワーチャート作成ツール",
 };
 
 export default function RootLayout({

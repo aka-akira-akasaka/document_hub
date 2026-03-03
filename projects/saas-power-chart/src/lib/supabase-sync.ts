@@ -34,6 +34,12 @@ import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 import { toast } from "sonner";
+import {
+  SAMPLE_DEAL,
+  SAMPLE_STAKEHOLDERS,
+  SAMPLE_RELATIONSHIPS,
+  SAMPLE_ORG_GROUPS,
+} from "@/lib/sample-data";
 
 // --- 内部状態 ---
 let unsubscribers: (() => void)[] = [];
@@ -86,6 +92,11 @@ export async function initSupabaseSync(userId: string) {
     if (deals.length === 0) {
       const migrated = await migrateFromLocalStorage(userId);
       if (migrated) return; // 移行完了時は再度 initSupabaseSync が呼ばれる
+
+      // 初回ユーザー: サンプル案件をプリセット
+      await seedSampleDeal(userId);
+      await initSupabaseSync(userId);
+      return;
     }
 
     // dealId ごとにグルーピング
@@ -403,5 +414,43 @@ async function migrateFromLocalStorage(userId: string): Promise<boolean> {
     console.error("localStorage migration failed:", err);
     toast.error("ローカルデータの移行に失敗しました");
     return false;
+  }
+}
+
+// ============================================
+// サンプルデータのプリセット
+// ============================================
+
+async function seedSampleDeal(userId: string): Promise<void> {
+  const supabase = createClient();
+  try {
+    // Deal
+    const { error: dealErr } = await supabase
+      .from("deals")
+      .insert([dealToDb(SAMPLE_DEAL, userId)]);
+    if (dealErr) throw dealErr;
+
+    // OrgGroups
+    const { error: groupErr } = await supabase
+      .from("org_groups")
+      .insert(SAMPLE_ORG_GROUPS.map(orgGroupToDb));
+    if (groupErr) throw groupErr;
+
+    // Stakeholders
+    const { error: sErr } = await supabase
+      .from("stakeholders")
+      .insert(SAMPLE_STAKEHOLDERS.map(stakeholderToDb));
+    if (sErr) throw sErr;
+
+    // Relationships
+    if (SAMPLE_RELATIONSHIPS.length > 0) {
+      const { error: rErr } = await supabase
+        .from("relationships")
+        .insert(SAMPLE_RELATIONSHIPS.map(relationshipToDb));
+      if (rErr) throw rErr;
+    }
+  } catch (err) {
+    console.error("sample deal seeding failed:", err);
+    // サンプル投入失敗は致命的ではないのでtoastは出さない
   }
 }
