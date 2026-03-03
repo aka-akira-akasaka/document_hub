@@ -88,8 +88,8 @@ export async function initSupabaseSync(userId: string) {
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
 
-    // シード不完全検出: dealはあるがstakeholder/orgGroupsが空
-    const isIncompleteSeed = deals.length > 0 && stakeholders.length === 0 && orgGroups.length === 0;
+    // シード不完全検出: dealはあるがstakeholderが空（部分シード失敗）
+    const isIncompleteSeed = deals.length > 0 && stakeholders.length === 0;
     if (isIncompleteSeed) {
       // 不完全なデータを削除して再シード（CASCADE で関連データも消える）
       const dealIds = deals.map((d) => d.id);
@@ -448,11 +448,19 @@ async function seedSampleDeal(userId: string): Promise<boolean> {
       .insert(SAMPLE_ORG_GROUPS.map(orgGroupToDb));
     if (groupErr) throw groupErr;
 
-    // Stakeholders
-    const { error: sErr } = await supabase
-      .from("stakeholders")
-      .insert(SAMPLE_STAKEHOLDERS.map(stakeholderToDb));
-    if (sErr) throw sErr;
+    // Stakeholders（バッチ分割で挿入）
+    const stakeholderRows = SAMPLE_STAKEHOLDERS.map(stakeholderToDb);
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < stakeholderRows.length; i += BATCH_SIZE) {
+      const batch = stakeholderRows.slice(i, i + BATCH_SIZE);
+      const { error: sErr } = await supabase
+        .from("stakeholders")
+        .insert(batch);
+      if (sErr) {
+        console.error(`stakeholders batch ${i / BATCH_SIZE} failed:`, sErr, JSON.stringify(batch[0]));
+        throw sErr;
+      }
+    }
 
     // Relationships
     if (SAMPLE_RELATIONSHIPS.length > 0) {
