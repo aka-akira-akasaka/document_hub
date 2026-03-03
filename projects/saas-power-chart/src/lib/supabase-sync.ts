@@ -97,13 +97,12 @@ export async function initSupabaseSync(userId: string) {
       const migrated = await migrateFromLocalStorage(userId);
       if (migrated) return; // 移行完了時は再度 initSupabaseSync が呼ばれる
 
-      // 初回ユーザー: サンプル案件をプリセット
-      const seeded = await seedSampleDeal(userId);
-      if (seeded) {
-        // シード成功時のみ再読み込み（無限再帰防止）
-        initInProgress = false;
-        await initSupabaseSync(userId);
-      }
+      // サンプル案件の自動生成は一時的にOFF
+      // const seeded = await seedSampleDeal(userId);
+      // if (seeded) {
+      //   initInProgress = false;
+      //   await initSupabaseSync(userId);
+      // }
       return;
     }
 
