@@ -10,12 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useHistoryStore } from "@/stores/history-store";
 import { parseCSV, downloadCSV, type ParseResult } from "@/lib/csv-parser";
 import { parseYAML, downloadYAML, YAML_TEMPLATE } from "@/lib/yaml-parser";
 import { CSV_COLUMNS, CSV_COLUMN_LABELS, CSV_TEMPLATE_EXAMPLE } from "@/types/csv";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { toast } from "sonner";
-import { Upload, FileText, Download } from "lucide-react";
+import { Upload, FileText, Download, AlertTriangle } from "lucide-react";
 
 // 対応ファイル拡張子
 const ACCEPTED_EXTENSIONS = [".csv", ".yaml", ".yml"];
@@ -28,6 +29,10 @@ function isAcceptedFile(filename: string): boolean {
   return ACCEPTED_EXTENSIONS.some((ext) => filename.endsWith(ext));
 }
 
+type ImportMode = "append" | "overwrite";
+
+const EMPTY_STAKEHOLDERS: import("@/types/stakeholder").Stakeholder[] = [];
+
 interface CsvImportDialogProps {
   dealId: string;
 }
@@ -36,9 +41,13 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
   const open = useUiStore((s) => s.csvImportDialogOpen);
   const closeCsvImport = useUiStore((s) => s.closeCsvImport);
   const importStakeholders = useStakeholderStore((s) => s.importStakeholders);
+  const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
+  const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [importMode, setImportMode] = useState<ImportMode>("append");
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
 
   const handleDownloadCsvTemplate = useCallback(() => {
     const headers = CSV_COLUMNS.map((col) => CSV_COLUMN_LABELS[col]);
@@ -60,6 +69,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
           ? parseYAML(text, dealId)
           : parseCSV(text, dealId);
         setParseResult(result);
+        setShowOverwriteConfirm(false);
       };
       reader.readAsText(file);
     },
@@ -88,16 +98,26 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
 
   const handleImport = () => {
     if (!parseResult) return;
-    importStakeholders(dealId, parseResult.valid);
-    toast.success(
-      `${parseResult.valid.length}件のステークホルダーをインポートしました`
-    );
+
+    // 上書きモードで未確認 → 確認ステップを表示
+    if (importMode === "overwrite" && !showOverwriteConfirm) {
+      setShowOverwriteConfirm(true);
+      return;
+    }
+
+    captureSnapshot();
+    importStakeholders(dealId, parseResult.valid, importMode);
+
+    const modeLabel = importMode === "overwrite" ? "上書きインポート" : "追加インポート";
+    toast.success(`${parseResult.valid.length}件を${modeLabel}しました`);
     handleClose();
   };
 
   const handleClose = () => {
     setParseResult(null);
     setDragOver(false);
+    setImportMode("append");
+    setShowOverwriteConfirm(false);
     closeCsvImport();
   };
 
@@ -205,16 +225,85 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
 
             <CsvPreviewTable result={parseResult} />
 
+            {/* インポートモード選択 */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">インポート方法</p>
+              <div className="flex gap-4">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="append"
+                    checked={importMode === "append"}
+                    onChange={() => { setImportMode("append"); setShowOverwriteConfirm(false); }}
+                    className="accent-blue-600 mt-1"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">追加</span>
+                    <p className="text-xs text-muted-foreground">既存データに追加します</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="overwrite"
+                    checked={importMode === "overwrite"}
+                    onChange={() => { setImportMode("overwrite"); setShowOverwriteConfirm(false); }}
+                    className="accent-red-600 mt-1"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-red-600">上書き</span>
+                    <p className="text-xs text-muted-foreground">既存データを全て置き換えます</p>
+                  </div>
+                </label>
+              </div>
+
+              {/* 上書き確認メッセージ */}
+              {showOverwriteConfirm && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-md p-3 mt-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <div className="space-y-2">
+                    <p className="text-sm text-red-700">
+                      現在の組織図（{stakeholders.length}名）を上書きしますがよろしいですか？
+                    </p>
+                    <p className="text-xs text-red-500">
+                      既存のステークホルダーと関係線は全て削除され、インポートデータに置き換わります。この操作は元に戻す（Undo）ことができます。
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleImport}
+                      >
+                        上書きインポートを実行
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowOverwriteConfirm(false)}
+                      >
+                        キャンセル
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setParseResult(null)}>
+              <Button variant="outline" onClick={() => { setParseResult(null); setShowOverwriteConfirm(false); }}>
                 やり直す
               </Button>
-              <Button
-                onClick={handleImport}
-                disabled={parseResult.valid.length === 0}
-              >
-                {parseResult.valid.length}件をインポート
-              </Button>
+              {!showOverwriteConfirm && (
+                <Button
+                  onClick={handleImport}
+                  disabled={parseResult.valid.length === 0}
+                  variant={importMode === "overwrite" ? "destructive" : "default"}
+                >
+                  {parseResult.valid.length}件を{importMode === "overwrite" ? "上書き" : ""}インポート
+                </Button>
+              )}
             </div>
           </div>
         )}

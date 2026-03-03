@@ -57,7 +57,7 @@ interface StakeholderState {
   ) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];
 
-  importStakeholders: (dealId: string, stakeholders: Stakeholder[]) => void;
+  importStakeholders: (dealId: string, stakeholders: Stakeholder[], mode?: "append" | "overwrite") => void;
   clearDealData: (dealId: string) => void;
 
   /** 案件の階層定義を取得 */
@@ -182,8 +182,23 @@ export const useStakeholderStore = create<StakeholderState>()(
       getRelationshipsByDeal: (dealId) =>
         get().relationshipsByDeal[dealId] ?? EMPTY_RELATIONSHIPS,
 
-      importStakeholders: (dealId, stakeholders) =>
+      importStakeholders: (dealId, stakeholders, mode = "append") =>
         set((state) => {
+          if (mode === "overwrite") {
+            // 上書きモード: 既存データを全て入れ替え（関係線もクリア）
+            return {
+              stakeholdersByDeal: {
+                ...state.stakeholdersByDeal,
+                [dealId]: stakeholders,
+              },
+              relationshipsByDeal: {
+                ...state.relationshipsByDeal,
+                [dealId]: [],
+              },
+            };
+          }
+
+          // 追加モード: 既存に追加・IDが一致するものは上書き
           const existing = state.stakeholdersByDeal[dealId] ?? [];
           const existingIds = new Set(existing.map((s) => s.id));
           const merged = [...existing];
