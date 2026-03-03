@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "@/components/auth/user-menu";
 
 // ナビゲーションアイテム定義
 const navItems = [
@@ -50,6 +51,9 @@ export function SideNav() {
           );
         })}
       </nav>
+
+      {/* ユーザーメニュー */}
+      <UserMenu />
     </aside>
   );
 }

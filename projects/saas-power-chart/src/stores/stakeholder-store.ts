@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { subscribeWithSelector } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship, RelationshipTargetType, RelationshipDirection } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
@@ -70,211 +70,214 @@ interface StakeholderState {
     dealId: string,
     position: { x: number; y: number }
   ) => void;
+
+  /** Supabase からの一括読み込み用 */
+  hydrate: (
+    stakeholdersByDeal: Record<string, Stakeholder[]>,
+    relationshipsByDeal: Record<string, Relationship[]>,
+    orgLevelConfigByDeal: Record<string, OrgLevelEntry[]>
+  ) => void;
+  /** ログアウト時のリセット用 */
+  reset: () => void;
 }
 
 export const useStakeholderStore = create<StakeholderState>()(
-  persist(
-    (set, get) => ({
-      stakeholdersByDeal: {},
-      relationshipsByDeal: {},
-      orgLevelConfigByDeal: {},
+  subscribeWithSelector((set, get) => ({
+    stakeholdersByDeal: {},
+    relationshipsByDeal: {},
+    orgLevelConfigByDeal: {},
 
-      addStakeholder: (data) => {
-        const stakeholder: Stakeholder = {
-          ...data,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((state) => {
-          const existing = state.stakeholdersByDeal[data.dealId] ?? [];
-          return {
-            stakeholdersByDeal: {
-              ...state.stakeholdersByDeal,
-              [data.dealId]: [...existing, stakeholder],
-            },
-          };
-        });
-        return stakeholder;
-      },
-
-      updateStakeholder: (id, dealId, updates) =>
-        set((state) => {
-          const list = state.stakeholdersByDeal[dealId] ?? [];
-          return {
-            stakeholdersByDeal: {
-              ...state.stakeholdersByDeal,
-              [dealId]: list.map((s) =>
-                s.id === id
-                  ? { ...s, ...updates, updatedAt: new Date().toISOString() }
-                  : s
-              ),
-            },
-          };
-        }),
-
-      deleteStakeholder: (id, dealId) =>
-        set((state) => {
-          const list = state.stakeholdersByDeal[dealId] ?? [];
-          const rels = state.relationshipsByDeal[dealId] ?? [];
-          return {
-            stakeholdersByDeal: {
-              ...state.stakeholdersByDeal,
-              [dealId]: list.filter((s) => s.id !== id),
-            },
-            relationshipsByDeal: {
-              ...state.relationshipsByDeal,
-              [dealId]: rels.filter(
-                (r) => r.sourceId !== id && r.targetId !== id
-              ),
-            },
-          };
-        }),
-
-      getStakeholdersByDeal: (dealId) =>
-        get().stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS,
-
-      getStakeholderById: (id, dealId) =>
-        (get().stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS).find((s) => s.id === id),
-
-      addRelationship: (data) => {
-        const relationship: Relationship = {
-          ...data,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        };
-        set((state) => {
-          const existing = state.relationshipsByDeal[data.dealId] ?? [];
-          return {
-            relationshipsByDeal: {
-              ...state.relationshipsByDeal,
-              [data.dealId]: [...existing, relationship],
-            },
-          };
-        });
-        return relationship;
-      },
-
-      deleteRelationship: (id, dealId) =>
-        set((state) => {
-          const list = state.relationshipsByDeal[dealId] ?? [];
-          return {
-            relationshipsByDeal: {
-              ...state.relationshipsByDeal,
-              [dealId]: list.filter((r) => r.id !== id),
-            },
-          };
-        }),
-
-      updateRelationship: (id, dealId, data) =>
-        set((state) => {
-          const list = state.relationshipsByDeal[dealId] ?? [];
-          return {
-            relationshipsByDeal: {
-              ...state.relationshipsByDeal,
-              [dealId]: list.map((r) =>
-                r.id === id ? { ...r, ...data } : r
-              ),
-            },
-          };
-        }),
-
-      getRelationshipsByDeal: (dealId) =>
-        get().relationshipsByDeal[dealId] ?? EMPTY_RELATIONSHIPS,
-
-      importStakeholders: (dealId, stakeholders, mode = "append") =>
-        set((state) => {
-          if (mode === "overwrite") {
-            // 上書きモード: 既存データを全て入れ替え（関係線もクリア）
-            return {
-              stakeholdersByDeal: {
-                ...state.stakeholdersByDeal,
-                [dealId]: stakeholders,
-              },
-              relationshipsByDeal: {
-                ...state.relationshipsByDeal,
-                [dealId]: [],
-              },
-            };
-          }
-
-          // 追加モード: 既存に追加・IDが一致するものは上書き
-          const existing = state.stakeholdersByDeal[dealId] ?? [];
-          const existingIds = new Set(existing.map((s) => s.id));
-          const merged = [...existing];
-
-          for (const s of stakeholders) {
-            if (existingIds.has(s.id)) {
-              const idx = merged.findIndex((e) => e.id === s.id);
-              if (idx !== -1) merged[idx] = { ...merged[idx], ...s, updatedAt: new Date().toISOString() };
-            } else {
-              merged.push(s);
-            }
-          }
-
-          return {
-            stakeholdersByDeal: {
-              ...state.stakeholdersByDeal,
-              [dealId]: merged,
-            },
-          };
-        }),
-
-      clearDealData: (dealId) =>
-        set((state) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [dealId]: _s, ...restStakeholders } =
-            state.stakeholdersByDeal;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [dealId]: _r, ...restRelationships } =
-            state.relationshipsByDeal;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [dealId]: _l, ...restOrgLevels } =
-            state.orgLevelConfigByDeal;
-          return {
-            stakeholdersByDeal: restStakeholders,
-            relationshipsByDeal: restRelationships,
-            orgLevelConfigByDeal: restOrgLevels,
-          };
-        }),
-
-      getOrgLevels: (dealId) =>
-        get().orgLevelConfigByDeal[dealId] ?? EMPTY_ORG_LEVELS,
-
-      setOrgLevels: (dealId, levels) =>
-        set((state) => ({
-          orgLevelConfigByDeal: {
-            ...state.orgLevelConfigByDeal,
-            [dealId]: levels,
+    addStakeholder: (data) => {
+      const stakeholder: Stakeholder = {
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set((state) => {
+        const existing = state.stakeholdersByDeal[data.dealId] ?? [];
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [data.dealId]: [...existing, stakeholder],
           },
-        })),
+        };
+      });
+      return stakeholder;
+    },
 
-      updateNodePosition: (id, dealId, position) =>
-        set((state) => {
-          const list = state.stakeholdersByDeal[dealId] ?? [];
+    updateStakeholder: (id, dealId, updates) =>
+      set((state) => {
+        const list = state.stakeholdersByDeal[dealId] ?? [];
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: list.map((s) =>
+              s.id === id
+                ? { ...s, ...updates, updatedAt: new Date().toISOString() }
+                : s
+            ),
+          },
+        };
+      }),
+
+    deleteStakeholder: (id, dealId) =>
+      set((state) => {
+        const list = state.stakeholdersByDeal[dealId] ?? [];
+        const rels = state.relationshipsByDeal[dealId] ?? [];
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: list.filter((s) => s.id !== id),
+          },
+          relationshipsByDeal: {
+            ...state.relationshipsByDeal,
+            [dealId]: rels.filter(
+              (r) => r.sourceId !== id && r.targetId !== id
+            ),
+          },
+        };
+      }),
+
+    getStakeholdersByDeal: (dealId) =>
+      get().stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS,
+
+    getStakeholderById: (id, dealId) =>
+      (get().stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS).find((s) => s.id === id),
+
+    addRelationship: (data) => {
+      const relationship: Relationship = {
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      set((state) => {
+        const existing = state.relationshipsByDeal[data.dealId] ?? [];
+        return {
+          relationshipsByDeal: {
+            ...state.relationshipsByDeal,
+            [data.dealId]: [...existing, relationship],
+          },
+        };
+      });
+      return relationship;
+    },
+
+    deleteRelationship: (id, dealId) =>
+      set((state) => {
+        const list = state.relationshipsByDeal[dealId] ?? [];
+        return {
+          relationshipsByDeal: {
+            ...state.relationshipsByDeal,
+            [dealId]: list.filter((r) => r.id !== id),
+          },
+        };
+      }),
+
+    updateRelationship: (id, dealId, data) =>
+      set((state) => {
+        const list = state.relationshipsByDeal[dealId] ?? [];
+        return {
+          relationshipsByDeal: {
+            ...state.relationshipsByDeal,
+            [dealId]: list.map((r) =>
+              r.id === id ? { ...r, ...data } : r
+            ),
+          },
+        };
+      }),
+
+    getRelationshipsByDeal: (dealId) =>
+      get().relationshipsByDeal[dealId] ?? EMPTY_RELATIONSHIPS,
+
+    importStakeholders: (dealId, stakeholders, mode = "append") =>
+      set((state) => {
+        if (mode === "overwrite") {
+          // 上書きモード: 既存データを全て入れ替え（関係線もクリア）
           return {
             stakeholdersByDeal: {
               ...state.stakeholdersByDeal,
-              [dealId]: list.map((s) =>
-                s.id === id ? { ...s, position } : s
-              ),
+              [dealId]: stakeholders,
+            },
+            relationshipsByDeal: {
+              ...state.relationshipsByDeal,
+              [dealId]: [],
             },
           };
-        }),
-    }),
-    {
-      name: "power-chart-stakeholders",
-      version: 5,
-      migrate: (persisted, version) => {
-        if (typeof version !== "number" || version < 5) {
-          return {
-            stakeholdersByDeal: {},
-            relationshipsByDeal: {},
-            orgLevelConfigByDeal: {},
-          } as unknown as StakeholderState;
         }
-        return persisted as StakeholderState;
-      },
-    }
-  )
+
+        // 追加モード: 既存に追加・IDが一致するものは上書き
+        const existing = state.stakeholdersByDeal[dealId] ?? [];
+        const existingIds = new Set(existing.map((s) => s.id));
+        const merged = [...existing];
+
+        for (const s of stakeholders) {
+          if (existingIds.has(s.id)) {
+            const idx = merged.findIndex((e) => e.id === s.id);
+            if (idx !== -1) merged[idx] = { ...merged[idx], ...s, updatedAt: new Date().toISOString() };
+          } else {
+            merged.push(s);
+          }
+        }
+
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: merged,
+          },
+        };
+      }),
+
+    clearDealData: (dealId) =>
+      set((state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _s, ...restStakeholders } =
+          state.stakeholdersByDeal;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _r, ...restRelationships } =
+          state.relationshipsByDeal;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _l, ...restOrgLevels } =
+          state.orgLevelConfigByDeal;
+        return {
+          stakeholdersByDeal: restStakeholders,
+          relationshipsByDeal: restRelationships,
+          orgLevelConfigByDeal: restOrgLevels,
+        };
+      }),
+
+    getOrgLevels: (dealId) =>
+      get().orgLevelConfigByDeal[dealId] ?? EMPTY_ORG_LEVELS,
+
+    setOrgLevels: (dealId, levels) =>
+      set((state) => ({
+        orgLevelConfigByDeal: {
+          ...state.orgLevelConfigByDeal,
+          [dealId]: levels,
+        },
+      })),
+
+    updateNodePosition: (id, dealId, position) =>
+      set((state) => {
+        const list = state.stakeholdersByDeal[dealId] ?? [];
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: list.map((s) =>
+              s.id === id ? { ...s, position } : s
+            ),
+          },
+        };
+      }),
+
+    hydrate: (stakeholdersByDeal, relationshipsByDeal, orgLevelConfigByDeal) =>
+      set({ stakeholdersByDeal, relationshipsByDeal, orgLevelConfigByDeal }),
+
+    reset: () =>
+      set({
+        stakeholdersByDeal: {},
+        relationshipsByDeal: {},
+        orgLevelConfigByDeal: {},
+      }),
+  }))
 );

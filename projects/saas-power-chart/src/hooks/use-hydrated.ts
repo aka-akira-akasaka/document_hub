@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 
 /**
- * Zustand persist とSSRのハイドレーション不一致を防止するフック。
- * マウント後に true を返す。SSR時・初回レンダー時は false。
+ * 認証 + Supabase データ読み込みが完了するまで false を返すフック。
+ * 既存コンポーネントの useHydrated() 呼び出しをそのまま利用可能。
  */
 export function useHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-  return hydrated;
+  const { loading } = useAuth();
+  return !loading;
 }
