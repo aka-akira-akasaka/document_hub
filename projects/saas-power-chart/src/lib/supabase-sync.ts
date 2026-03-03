@@ -94,8 +94,11 @@ export async function initSupabaseSync(userId: string) {
       if (migrated) return; // 移行完了時は再度 initSupabaseSync が呼ばれる
 
       // 初回ユーザー: サンプル案件をプリセット
-      await seedSampleDeal(userId);
-      await initSupabaseSync(userId);
+      const seeded = await seedSampleDeal(userId);
+      if (seeded) {
+        // シード成功時のみ再読み込み（無限再帰防止）
+        await initSupabaseSync(userId);
+      }
       return;
     }
 
@@ -421,7 +424,7 @@ async function migrateFromLocalStorage(userId: string): Promise<boolean> {
 // サンプルデータのプリセット
 // ============================================
 
-async function seedSampleDeal(userId: string): Promise<void> {
+async function seedSampleDeal(userId: string): Promise<boolean> {
   const supabase = createClient();
   try {
     // Deal
@@ -449,8 +452,11 @@ async function seedSampleDeal(userId: string): Promise<void> {
         .insert(SAMPLE_RELATIONSHIPS.map(relationshipToDb));
       if (rErr) throw rErr;
     }
+
+    return true;
   } catch (err) {
     console.error("sample deal seeding failed:", err);
-    // サンプル投入失敗は致命的ではないのでtoastは出さない
+    toast.error("サンプルデータの作成に失敗しました");
+    return false;
   }
 }
