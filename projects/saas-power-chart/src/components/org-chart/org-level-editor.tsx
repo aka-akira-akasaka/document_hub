@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2, GripVertical, Settings2, Table2 } from "lucide-react";
 import { useStakeholderStore, type OrgLevelEntry } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
-import { DEFAULT_ORG_LEVELS } from "@/lib/constants";
+// DEFAULT_ORG_LEVELSは廃止（各案件で独自に定義する運用に統一）
 import { toast } from "sonner";
 import type { OrgGroup } from "@/types/org-group";
 import type { Stakeholder } from "@/types/stakeholder";
@@ -38,7 +38,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
 
   // ローカル編集状態（ダイアログが開くたびにストアから読み込み）
   const [levels, setLevels] = useState<OrgLevelEntry[]>(() =>
-    storedLevels && storedLevels.length > 0 ? [...storedLevels] : [...DEFAULT_ORG_LEVELS]
+    storedLevels && storedLevels.length > 0 ? [...storedLevels] : []
   );
 
   // D&D状態
@@ -50,7 +50,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
     (nextOpen: boolean) => {
       if (nextOpen) {
         const current = useStakeholderStore.getState().orgLevelConfigByDeal[dealId];
-        setLevels(current && current.length > 0 ? [...current] : [...DEFAULT_ORG_LEVELS]);
+        setLevels(current && current.length > 0 ? [...current] : []);
         setViewMode("edit");
       }
       onOpenChange(nextOpen);
@@ -111,10 +111,6 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
     setDragOverIndex(null);
   }, []);
 
-  const handleReset = useCallback(() => {
-    setLevels([...DEFAULT_ORG_LEVELS]);
-  }, []);
-
   const handleSave = useCallback(() => {
     const cleaned = levels
       .filter((l) => l.label.trim() !== "")
@@ -126,7 +122,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
 
   // ─── ピボットテーブル用データ ───
   const pivotData = useMemo(() => {
-    const savedLevels = storedLevels && storedLevels.length > 0 ? storedLevels : DEFAULT_ORG_LEVELS;
+    const savedLevels = storedLevels && storedLevels.length > 0 ? storedLevels : [];
 
     // 部署列: ルート→子の順にフラット化
     const groupColumns: { id: string; name: string; depth: number }[] = [];
@@ -259,10 +255,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
               階層を追加
             </Button>
 
-            <div className="flex justify-between pt-2">
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset}>
-                デフォルトに戻す
-              </Button>
+            <div className="flex justify-end pt-2">
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   キャンセル

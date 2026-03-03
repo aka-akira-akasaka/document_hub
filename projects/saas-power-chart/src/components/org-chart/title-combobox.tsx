@@ -102,8 +102,8 @@ export function TitleCombobox({
         onValueChange(v, opt?.label ?? "");
       }}
     >
-      <SelectTrigger>
-        <SelectValue />
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="役職を選択..." />
       </SelectTrigger>
       <SelectContent>
         {options.map((opt) => (

@@ -19,7 +19,6 @@ import {
   ROLE_LABELS,
   ROLE_OPTIONS,
   INFLUENCE_LABELS,
-  DEFAULT_ORG_LEVELS,
 } from "@/lib/constants";
 import type {
   Stakeholder,
@@ -69,7 +68,8 @@ export function StakeholderForm({
   const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const createGroupId = useUiStore((s) => s.createGroupId);
-  const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : DEFAULT_ORG_LEVELS;
+  // 案件に保存済みの階層定義を使用。未設定時は空リスト（+新しい役職を追加のみ表示）
+  const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : [];
 
   // groupIdが設定されている場合、対応グループ名をdepartmentのデフォルトにする
   const effectiveGroupId = stakeholder?.groupId ?? createGroupId ?? null;
@@ -99,7 +99,7 @@ export function StakeholderForm({
   const [orgLevel, setOrgLevel] = useState(
     stakeholder?.orgLevel?.toString()
     ?? defaultOrgLevel?.toString()
-    ?? orgLevelOptions[orgLevelOptions.length - 1].level.toString()
+    ?? ""
   );
   const [groupId, setGroupId] = useState(stakeholder?.groupId ?? createGroupId ?? "");
 

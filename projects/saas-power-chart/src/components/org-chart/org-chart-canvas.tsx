@@ -21,7 +21,7 @@ import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
 import { OrgGroupForm } from "./org-group-form";
-import { LayerBackground } from "./layer-background";
+// LayerBackground は廃止済み（グループモードに統一）
 import { useOrgChartLayout } from "@/hooks/use-org-chart-layout";
 import { useGroupChartLayout } from "@/hooks/use-group-chart-layout";
 import { useAutoGroupSeed } from "@/hooks/use-auto-group-seed";
@@ -37,7 +37,6 @@ import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
-const EMPTY_LAYERS: import("@/lib/layout-engine").LayerInfo[] = [];
 
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -70,7 +69,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   } = isGroupMode ? groupLayout : layerLayout;
   // onNodeDragはグループモードのみ（D&Dの視覚フィードバック用）
   const onNodeDrag = isGroupMode ? groupLayout.onNodeDrag : undefined;
-  const layers = isGroupMode ? EMPTY_LAYERS : (layerLayout.layers ?? EMPTY_LAYERS);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -266,23 +264,25 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     }
   }, [addContext, closeAddPopover]);
 
-  if (stakeholders.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <EmptyState
-          icon={Users}
-          title="ステークホルダーがいません"
-          description="人物を追加するか、CSVをインポートしてパワーチャートを作成しましょう。"
-          action={
-            <Button onClick={handleAddNode}>人を追加する</Button>
-          }
-        />
-      </div>
-    );
-  }
+  const isEmpty = stakeholders.length === 0;
 
   return (
     <div className="flex-1 relative">
+      {/* 空状態のオーバーレイ（ツールバーは常に表示） */}
+      {isEmpty && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto">
+            <EmptyState
+              icon={Users}
+              title="まだ人がいません"
+              description="左のツールバーから人や部署を追加してパワーチャートを作成しましょう。"
+              action={
+                <Button onClick={handleAddNode}>人を追加する</Button>
+              }
+            />
+          </div>
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -302,7 +302,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         proOptions={PRO_OPTIONS}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
-        {layers.length > 0 && <LayerBackground layers={layers} />}
+        {/* LayerBackground は廃止済み — グループモードに統一 */}
         <OrgChartToolbar
           onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
