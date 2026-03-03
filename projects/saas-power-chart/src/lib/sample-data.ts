@@ -147,7 +147,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "会社全体の経営方針決定", relationshipOwner: "赤坂", parentId: null,
     email: "yamada@demo.co.jp", phone: "03-6000-0001",
     notes: "DX推進を経営の最重要テーマとして掲げる。決裁者",
-    groupId: null, orgLevel: 1, position: { x: 660, y: 0 }, createdAt: ts, updatedAt: ts,
+    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
 
   // ── 執行役員（フリーフローティング: 山田の下に3名横並び） ──
@@ -157,7 +157,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "技術戦略の立案・実行", relationshipOwner: "赤坂", parentId: S_YAMADA,
     email: "sato@demo.co.jp", phone: "03-6000-0002",
     notes: "最新技術への投資に積極的。AI・クラウドの導入を推進",
-    groupId: null, orgLevel: 1, position: { x: 200, y: 110 }, createdAt: ts, updatedAt: ts,
+    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_TAKAHASHI, dealId: DEAL, name: "高橋 直美", department: "コーポレート本部", title: "執行役員 CFO",
@@ -165,7 +165,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "財務統制・投資判断", relationshipOwner: "", parentId: S_YAMADA,
     email: "takahashi@demo.co.jp", phone: "03-6000-0003",
     notes: "ROIを厳密に評価。コスト削減効果が見えないと承認しない",
-    groupId: null, orgLevel: 1, position: { x: 660, y: 110 }, createdAt: ts, updatedAt: ts,
+    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_SUZUKI, dealId: DEAL, name: "鈴木 浩二", department: "ビジネス本部", title: "執行役員 CSO",
@@ -173,7 +173,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "売上・事業拡大の統括", relationshipOwner: "赤坂", parentId: S_YAMADA,
     email: "suzuki@demo.co.jp", phone: "03-6000-0004",
     notes: "営業現場の効率化ツールに関心が高い。パートナー連携に前向き",
-    groupId: null, orgLevel: 1, position: { x: 1120, y: 110 }, createdAt: ts, updatedAt: ts,
+    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
 
   // ── テクノロジー本部 > 開発部 ──

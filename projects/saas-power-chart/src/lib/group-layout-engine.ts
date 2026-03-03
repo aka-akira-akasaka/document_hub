@@ -69,10 +69,11 @@ export function computeGroupLayout(
   const groupBounds: GroupBound[] = [];
   let currentX = 0;
 
-  // フリーフローティングノードを上部に配置（保存済み座標があればそれを使用）
-  let freeX = 0;
+  // フリーフローティングノードをparentIdベースのツリーレイアウトで配置
+  // 保存済み座標がある場合はそれを優先
+  const freePositions = layoutFreeFloatingTree(freeFloating);
   for (const s of freeFloating) {
-    const pos = s.position ?? { x: freeX, y: GROUP_LAYOUT.freeFloatY };
+    const pos = s.position ?? freePositions.get(s.id) ?? { x: 0, y: GROUP_LAYOUT.freeFloatY };
     nodes.push({
       id: s.id,
       type: "stakeholder",
@@ -80,7 +81,6 @@ export function computeGroupLayout(
       zIndex: 10,
       data: { ...s },
     });
-    freeX += GROUP_LAYOUT.nodeWidth + GROUP_LAYOUT.freeFloatGap;
   }
 
   // ルートグループ（division）を横並び配置
@@ -387,4 +387,104 @@ function positionGroupTree(
       subGroupX += child.width + subGroupGap;
     }
   }
+}
+
+// ============================================
+// フリーフローティングノードのツリーレイアウト
+// ============================================
+
+interface FreeTreeNode {
+  stakeholder: Stakeholder;
+  children: FreeTreeNode[];
+  /** サブツリーの幅（リーフ=nodeWidth、親=子の合計幅） */
+  subtreeWidth: number;
+}
+
+/**
+ * parentIdを使ってフリーフローティングノードをツリー配置する
+ * ルートノードは上段中央、子は下に横並びで配置
+ */
+function layoutFreeFloatingTree(
+  freeFloating: Stakeholder[]
+): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+  if (freeFloating.length === 0) return positions;
+
+  const { nodeWidth, nodeHeight, freeFloatGap, freeFloatY } = GROUP_LAYOUT;
+  const freeIds = new Set(freeFloating.map((s) => s.id));
+  const verticalGap = 38;
+
+  // ツリーを構築
+  const nodeMap = new Map<string, FreeTreeNode>();
+  for (const s of freeFloating) {
+    nodeMap.set(s.id, { stakeholder: s, children: [], subtreeWidth: nodeWidth });
+  }
+
+  const roots: FreeTreeNode[] = [];
+  for (const s of freeFloating) {
+    const node = nodeMap.get(s.id)!;
+    if (s.parentId && freeIds.has(s.parentId)) {
+      nodeMap.get(s.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  // サブツリー幅をボトムアップで計算
+  function computeSubtreeWidth(node: FreeTreeNode): number {
+    if (node.children.length === 0) {
+      node.subtreeWidth = nodeWidth;
+      return nodeWidth;
+    }
+    let totalChildWidth = 0;
+    for (const child of node.children) {
+      totalChildWidth += computeSubtreeWidth(child);
+    }
+    totalChildWidth += (node.children.length - 1) * freeFloatGap;
+    node.subtreeWidth = Math.max(nodeWidth, totalChildWidth);
+    return node.subtreeWidth;
+  }
+
+  for (const root of roots) {
+    computeSubtreeWidth(root);
+  }
+
+  // 位置をトップダウンで割り当て
+  function positionNode(node: FreeTreeNode, centerX: number, y: number) {
+    positions.set(node.stakeholder.id, {
+      x: centerX - nodeWidth / 2,
+      y,
+    });
+
+    if (node.children.length === 0) return;
+
+    const childY = y + nodeHeight + verticalGap;
+    let childStartX = centerX - node.subtreeWidth / 2;
+
+    for (const child of node.children) {
+      const childCenterX = childStartX + child.subtreeWidth / 2;
+      positionNode(child, childCenterX, childY);
+      childStartX += child.subtreeWidth + freeFloatGap;
+    }
+  }
+
+  // ルートノードを横並びで配置
+  let totalRootWidth = 0;
+  for (const root of roots) {
+    totalRootWidth += root.subtreeWidth;
+  }
+  totalRootWidth += (roots.length - 1) * freeFloatGap;
+
+  let rootStartX = -totalRootWidth / 2;
+  // 最小X座標が0以上になるように調整
+  if (rootStartX < 0) rootStartX = 0;
+
+  let currentRootX = rootStartX;
+  for (const root of roots) {
+    const centerX = currentRootX + root.subtreeWidth / 2;
+    positionNode(root, centerX, freeFloatY);
+    currentRootX += root.subtreeWidth + freeFloatGap;
+  }
+
+  return positions;
 }
