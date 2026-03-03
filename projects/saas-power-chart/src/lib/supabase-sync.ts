@@ -88,6 +88,15 @@ export async function initSupabaseSync(userId: string) {
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
 
+    // シード不完全検出: dealはあるがstakeholder/orgGroupsが空
+    const isIncompleteSeed = deals.length > 0 && stakeholders.length === 0 && orgGroups.length === 0;
+    if (isIncompleteSeed) {
+      // 不完全なデータを削除して再シード（CASCADE で関連データも消える）
+      const dealIds = deals.map((d) => d.id);
+      await supabase.from("deals").delete().in("id", dealIds);
+      deals.length = 0;
+    }
+
     // localStorage からの移行チェック
     if (deals.length === 0) {
       const migrated = await migrateFromLocalStorage(userId);
@@ -456,6 +465,8 @@ async function seedSampleDeal(userId: string): Promise<boolean> {
     return true;
   } catch (err) {
     console.error("sample deal seeding failed:", err);
+    // 部分挿入をロールバック（CASCADE で関連データも削除）
+    await supabase.from("deals").delete().eq("id", SAMPLE_DEAL.id);
     toast.error("サンプルデータの作成に失敗しました");
     return false;
   }
