@@ -7,11 +7,10 @@ import {
   getSmoothStepPath,
   type EdgeProps,
   EdgeLabelRenderer,
-  MarkerType,
 } from "@xyflow/react";
 import type { RelationshipType, RelationshipDirection } from "@/types/relationship";
 import { isPositiveRelationship } from "@/lib/constants";
-import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight } from "lucide-react";
+import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** エッジのカスタム色プリセット */
@@ -63,10 +62,9 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const strokeColor = customColor ?? (isGroupEdge ? "#9ca3af" : (isPositive ? "#3b82f6" : "#ef4444"));
   const strokeDash = isGroupEdge ? undefined : (isPositive ? undefined : "6 4");
 
-  // 矢印マーカー（方向に応じて設定）
-  const arrowMarker = { type: MarkerType.ArrowClosed, color: strokeColor, width: 16, height: 16 };
-  const markerEnd = (direction === "forward" || direction === "bidirectional") ? arrowMarker : undefined;
-  const markerStart = (direction === "reverse" || direction === "bidirectional") ? arrowMarker : undefined;
+  // カスタム矢印マーカーID
+  const hasEndMarker = direction === "forward" || direction === "bidirectional";
+  const hasStartMarker = direction === "reverse" || direction === "bidirectional";
 
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
   const [edgePath, labelX, labelY] = isGroupEdge
@@ -139,60 +137,46 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   return (
     <>
+      {/* カスタム矢印マーカー定義 */}
+      <defs>
+        {hasEndMarker && (
+          <marker
+            id={`arrow-end-${id}`}
+            markerWidth="12"
+            markerHeight="12"
+            refX="10"
+            refY="6"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
+          </marker>
+        )}
+        {hasStartMarker && (
+          <marker
+            id={`arrow-start-${id}`}
+            markerWidth="12"
+            markerHeight="12"
+            refX="2"
+            refY="6"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
+          </marker>
+        )}
+      </defs>
+      {/* エッジパス（カスタムマーカー付き） */}
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={markerEnd ? `url(#${MarkerType.ArrowClosed})` : undefined}
-        markerStart={markerStart ? `url(#${MarkerType.ArrowClosed})` : undefined}
+        markerEnd={hasEndMarker ? `url(#arrow-end-${id})` : undefined}
+        markerStart={hasStartMarker ? `url(#arrow-start-${id})` : undefined}
         style={{
           stroke: strokeColor,
           strokeWidth: 2,
           strokeDasharray: strokeDash,
         }}
-      />
-      {/* カスタム矢印マーカーをSVG defsで定義 */}
-      <svg style={{ position: "absolute", width: 0, height: 0 }}>
-        <defs>
-          {/* forward / bidirectional 用の終点マーカー */}
-          {(direction === "forward" || direction === "bidirectional") && (
-            <marker
-              id={`arrow-end-${id}`}
-              markerWidth="12"
-              markerHeight="12"
-              refX="10"
-              refY="6"
-              orient="auto"
-              markerUnits="userSpaceOnUse"
-            >
-              <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
-            </marker>
-          )}
-          {/* reverse / bidirectional 用の始点マーカー */}
-          {(direction === "reverse" || direction === "bidirectional") && (
-            <marker
-              id={`arrow-start-${id}`}
-              markerWidth="12"
-              markerHeight="12"
-              refX="2"
-              refY="6"
-              orient="auto-start-reverse"
-              markerUnits="userSpaceOnUse"
-            >
-              <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
-            </marker>
-          )}
-        </defs>
-      </svg>
-      {/* カスタムマーカー付きのパスを上書き描画 */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={2}
-        strokeDasharray={strokeDash}
-        markerEnd={(direction === "forward" || direction === "bidirectional") ? `url(#arrow-end-${id})` : undefined}
-        markerStart={(direction === "reverse" || direction === "bidirectional") ? `url(#arrow-start-${id})` : undefined}
-        style={{ pointerEvents: "none" }}
       />
 
       <EdgeLabelRenderer>
@@ -244,7 +228,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                   onClick={() => setEditDirection("bidirectional")}
                   title="双方向"
                 >
-                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <MoveHorizontal className="w-3.5 h-3.5" />
                 </button>
 
                 {/* 区切り */}
