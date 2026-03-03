@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -76,7 +76,6 @@ export function StakeholderForm({
   const matchingGroup = effectiveGroupId ? orgGroups.find(g => g.id === effectiveGroupId) : null;
 
   const [name, setName] = useState(stakeholder?.name ?? "");
-  const [department, setDepartment] = useState(stakeholder?.department ?? matchingGroup?.name ?? "");
   const [title, setTitle] = useState(stakeholder?.title ?? "");
   const [roleInDeal, setRoleInDeal] = useState<RoleInDeal>(
     stakeholder?.roleInDeal ?? "unknown"
@@ -104,6 +103,22 @@ export function StakeholderForm({
   );
   const [groupId, setGroupId] = useState(stakeholder?.groupId ?? createGroupId ?? "");
 
+  // グループツリーをフラット化（階層インデント付き）
+  const groupTree = useMemo(() => {
+    const result: { id: string; name: string; depth: number }[] = [];
+    const addRecursive = (parentId: string | null, depth: number) => {
+      const children = orgGroups
+        .filter((g) => g.parentGroupId === parentId)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      for (const child of children) {
+        result.push({ id: child.id, name: child.name, depth });
+        addRecursive(child.id, depth + 1);
+      }
+    };
+    addRecursive(null, 0);
+    return result;
+  }, [orgGroups]);
+
   // 役職選択時: titleとorgLevelの両方を更新
   const handleTitleChange = useCallback((newOrgLevel: string, label: string) => {
     setOrgLevel(newOrgLevel);
@@ -128,10 +143,14 @@ export function StakeholderForm({
     e.preventDefault();
     if (!name.trim() || !orgLevel) return;
 
+    // departmentはgroupIdから自動導出
+    const selectedGroup = groupId ? orgGroups.find((g) => g.id === groupId) : null;
+    const derivedDepartment = selectedGroup?.name ?? "";
+
     const data = {
       dealId,
       name: name.trim(),
-      department: department.trim(),
+      department: derivedDepartment,
       title: title.trim(),
       roleInDeal,
       influenceLevel,
@@ -174,25 +193,14 @@ export function StakeholderForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="sh-dept">部署</Label>
-          <Input
-            id="sh-dept"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            placeholder="例: 経営企画部"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>役職 *</Label>
-          <TitleCombobox
-            value={orgLevel}
-            onValueChange={handleTitleChange}
-            options={orgLevelOptions}
-            onAddOption={handleAddTitle}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>役職 *</Label>
+        <TitleCombobox
+          value={orgLevel}
+          onValueChange={handleTitleChange}
+          options={orgLevelOptions}
+          onAddOption={handleAddTitle}
+        />
       </div>
 
       <div className="space-y-2">
@@ -253,14 +261,19 @@ export function StakeholderForm({
             value={groupId || "none"}
             onValueChange={(v) => setGroupId(v === "none" ? "" : v)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="なし（フリー配置）" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">なし（フリー配置）</SelectItem>
-              {orgGroups.map((g) => (
+              {groupTree.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
-                  {g.name}
+                  <span style={{ paddingLeft: g.depth * 16 }} className="flex items-center gap-1">
+                    {g.depth > 0 && (
+                      <span className="text-muted-foreground/50 text-xs">└</span>
+                    )}
+                    {g.name}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

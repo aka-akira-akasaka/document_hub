@@ -18,9 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useHistoryStore } from "@/stores/history-store";
 import type { OrgGroup } from "@/types/org-group";
+import type { Stakeholder } from "@/types/stakeholder";
 import { MAX_GROUP_DEPTH } from "@/lib/constants";
+
+const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
 
 const EMPTY_GROUPS: OrgGroup[] = [];
 
@@ -48,6 +52,8 @@ export function OrgGroupForm({
   const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
+  const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
+  const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
 
   const [name, setName] = useState(editGroup?.name ?? "");
   const [parentGroupId, setParentGroupId] = useState(
@@ -76,10 +82,18 @@ export function OrgGroupForm({
 
     captureSnapshot();
     if (isEdit && editGroup) {
+      const newName = name.trim();
       updateGroup(editGroup.id, dealId, {
-        name: name.trim(),
+        name: newName,
         parentGroupId: parentGroupId || null,
       });
+      // グループ名変更時: 所属メンバーのdepartmentも連動更新
+      if (newName !== editGroup.name) {
+        const members = stakeholders.filter((s) => s.groupId === editGroup.id);
+        for (const member of members) {
+          updateStakeholder(member.id, dealId, { department: newName });
+        }
+      }
     } else {
       addGroup({
         dealId,
