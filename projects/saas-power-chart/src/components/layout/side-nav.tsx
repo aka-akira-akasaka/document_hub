@@ -15,6 +15,9 @@ const navItems = [
 export function SideNav() {
   const pathname = usePathname();
 
+  // ログインページではサイドバーを非表示
+  if (pathname === "/login") return null;
+
   return (
     <aside className="w-56 min-h-screen bg-white border-r flex flex-col">
       {/* ロゴ */}
