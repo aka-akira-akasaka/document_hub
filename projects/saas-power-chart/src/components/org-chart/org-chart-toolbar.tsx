@@ -12,7 +12,7 @@ import {
   Plus,
   Redo2,
   Undo2,
-  UserPlus,
+  User,
 } from "lucide-react";
 
 interface OrgChartToolbarProps {
@@ -138,7 +138,10 @@ export function OrgChartToolbar({
             className="h-8 w-8"
             onClick={onAddNode}
           >
-            <UserPlus className="h-4 w-4" />
+            <span className="relative inline-flex">
+              <User className="h-4 w-4" />
+              <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
+            </span>
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">人を追加する</TooltipContent>
