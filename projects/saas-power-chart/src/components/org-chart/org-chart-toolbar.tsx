@@ -141,7 +141,7 @@ export function OrgChartToolbar({
             <UserPlus className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">ステークホルダー追加</TooltipContent>
+        <TooltipContent side="right">人を追加する</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -152,7 +152,10 @@ export function OrgChartToolbar({
             className="h-8 w-8"
             onClick={onAddGroup}
           >
-            <Building2 className="h-4 w-4" />
+            <span className="relative">
+              <Building2 className="h-4 w-4" />
+              <Plus className="h-2.5 w-2.5 absolute -bottom-0.5 -right-1 text-current" strokeWidth={3} />
+            </span>
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">部署を追加する</TooltipContent>

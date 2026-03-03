@@ -60,9 +60,9 @@ export function StakeholderSheet({ dealId }: StakeholderSheetProps) {
 
   const title =
     sheetMode === "create"
-      ? "ステークホルダーを追加"
+      ? "人を追加する"
       : sheetMode === "edit"
-        ? "ステークホルダーを編集"
+        ? "人を編集する"
         : stakeholder?.name ?? "";
 
   return (

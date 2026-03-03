@@ -273,7 +273,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           title="ステークホルダーがいません"
           description="人物を追加するか、CSVをインポートしてパワーチャートを作成しましょう。"
           action={
-            <Button onClick={handleAddNode}>ステークホルダーを追加</Button>
+            <Button onClick={handleAddNode}>人を追加する</Button>
           }
         />
       </div>
