@@ -104,6 +104,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   }, [id, editLabel, editDirection, editColor, onUpdate]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // IME変換中（日本語入力の確定Enter）は無視
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") {
       e.stopPropagation();
       onUpdate?.(id, {
@@ -291,8 +293,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               </div>
             </div>
           ) : (
-            /* 通常表示: ラベル + 鉛筆・ゴミ箱 */
-            <div className="flex items-center gap-1">
+            /* 通常表示: ラベル + 鉛筆・ゴミ箱（右肩配置） */
+            <div className="relative">
               {customLabel && (
                 <span
                   className={cn(
@@ -304,20 +306,28 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                   {customLabel}
                 </span>
               )}
-              <button
-                className="p-0.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                onClick={handleStartEdit}
-                title="編集"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-              <button
-                className="p-0.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                onClick={handleDelete}
-                title="削除"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              {/* アイコンをラベル右肩に絶対配置（ラベルの中央揃えに影響しない） */}
+              <div className={cn(
+                "flex items-center gap-0.5",
+                customLabel
+                  ? "absolute -top-2.5 left-full ml-0.5"
+                  : ""
+              )}>
+                <button
+                  className="p-0.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  onClick={handleStartEdit}
+                  title="編集"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button
+                  className="p-0.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={handleDelete}
+                  title="削除"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
             </div>
           )}
         </div>
