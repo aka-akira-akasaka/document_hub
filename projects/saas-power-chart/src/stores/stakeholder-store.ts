@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Stakeholder } from "@/types/stakeholder";
-import type { Relationship, RelationshipTargetType } from "@/types/relationship";
+import type { Relationship, RelationshipTargetType, RelationshipDirection } from "@/types/relationship";
 import type { RelationshipType } from "@/types/relationship";
 
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
@@ -43,6 +43,8 @@ interface StakeholderState {
     type: RelationshipType;
     label?: string;
     bidirectional: boolean;
+    direction?: RelationshipDirection;
+    color?: string;
     targetType?: RelationshipTargetType;
     sourceHandle?: string;
     targetHandle?: string;
@@ -51,7 +53,7 @@ interface StakeholderState {
   updateRelationship: (
     id: string,
     dealId: string,
-    data: Partial<Pick<Relationship, "type" | "label" | "bidirectional">>
+    data: Partial<Pick<Relationship, "type" | "label" | "bidirectional" | "direction" | "color">>
   ) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];
 

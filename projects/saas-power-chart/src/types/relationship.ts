@@ -9,6 +9,9 @@ export type RelationshipType =
 /** 接続先の種類 */
 export type RelationshipTargetType = "stakeholder" | "group";
 
+/** 矢印の方向 */
+export type RelationshipDirection = "forward" | "reverse" | "bidirectional";
+
 export interface Relationship {
   id: string;
   dealId: string;
@@ -17,6 +20,10 @@ export interface Relationship {
   type: RelationshipType;
   label?: string;
   bidirectional: boolean;
+  /** 矢印の方向（省略時は bidirectional フラグから導出） */
+  direction?: RelationshipDirection;
+  /** コネクタとラベルのカスタム色（省略時はタイプに応じた既定色） */
+  color?: string;
   /** 接続先の種類（省略時は "stakeholder"） */
   targetType?: RelationshipTargetType;
   /** ユーザーが接続操作で指定したソースハンドルID */

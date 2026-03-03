@@ -152,9 +152,9 @@ export function OrgChartToolbar({
             className="h-8 w-8"
             onClick={onAddGroup}
           >
-            <span className="relative">
+            <span className="relative inline-flex">
               <Building2 className="h-4 w-4" />
-              <Plus className="h-2.5 w-2.5 absolute -bottom-0.5 -right-1 text-current" strokeWidth={3} />
+              <Plus className="h-2 w-2 absolute -top-0.5 -right-1.5 text-current" strokeWidth={3} />
             </span>
           </Button>
         </TooltipTrigger>

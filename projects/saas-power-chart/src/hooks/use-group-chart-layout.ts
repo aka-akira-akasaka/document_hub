@@ -59,7 +59,7 @@ export function useGroupChartLayout(dealId: string) {
       zIndex: 1000,
       ...(r.sourceHandle ? { sourceHandle: r.sourceHandle } : {}),
       ...(r.targetHandle ? { targetHandle: r.targetHandle } : {}),
-      data: { type: r.type, label: r.label, targetType: r.targetType, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
+      data: { type: r.type, label: r.label, targetType: r.targetType, direction: r.direction ?? (r.bidirectional ? "bidirectional" : "forward"), color: r.color, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
     })),
     [relationships, handleEdgeDelete, handleEdgeUpdate]
   );

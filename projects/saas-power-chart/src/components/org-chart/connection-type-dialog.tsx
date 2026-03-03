@@ -45,7 +45,7 @@ export function ConnectionTypeDialog({
 
   const [selectedType, setSelectedType] = useState<RelationshipType>(typeOptions[0]);
   const [label, setLabel] = useState("");
-  const [bidirectional, setBidirectional] = useState(true);
+  const [bidirectional, setBidirectional] = useState(false);
 
   const handleConfirm = () => {
     onConfirm(selectedType, label.trim(), bidirectional);
