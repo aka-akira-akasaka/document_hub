@@ -45,6 +45,7 @@ import {
 let unsubscribers: (() => void)[] = [];
 let currentUserId: string | null = null;
 let syncEnabled = false;
+let initInProgress = false;
 
 // デバウンス用タイマー
 const timers: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -59,8 +60,11 @@ function debounce(key: string, fn: () => void, ms = 500) {
 // ============================================
 
 export async function initSupabaseSync(userId: string) {
-  // 二重初期化防止
+  // 排他制御: 同時実行を防止（getUser と onAuthStateChange の競合回避）
+  if (initInProgress) return;
   if (currentUserId === userId && syncEnabled) return;
+
+  initInProgress = true;
   teardownSupabaseSync();
 
   currentUserId = userId;
@@ -88,15 +92,6 @@ export async function initSupabaseSync(userId: string) {
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
 
-    // シード不完全検出: dealはあるがstakeholderが空（部分シード失敗）
-    const isIncompleteSeed = deals.length > 0 && stakeholders.length === 0;
-    if (isIncompleteSeed) {
-      // 不完全なデータを削除して再シード（CASCADE で関連データも消える）
-      const dealIds = deals.map((d) => d.id);
-      await supabase.from("deals").delete().in("id", dealIds);
-      deals.length = 0;
-    }
-
     // localStorage からの移行チェック
     if (deals.length === 0) {
       const migrated = await migrateFromLocalStorage(userId);
@@ -106,6 +101,7 @@ export async function initSupabaseSync(userId: string) {
       const seeded = await seedSampleDeal(userId);
       if (seeded) {
         // シード成功時のみ再読み込み（無限再帰防止）
+        initInProgress = false;
         await initSupabaseSync(userId);
       }
       return;
@@ -146,6 +142,8 @@ export async function initSupabaseSync(userId: string) {
   } catch (err) {
     console.error("Supabase sync init failed:", err);
     toast.error("データの読み込みに失敗しました");
+  } finally {
+    initInProgress = false;
   }
 }
 
