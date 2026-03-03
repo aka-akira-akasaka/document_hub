@@ -154,7 +154,7 @@ export function OrgChartToolbar({
           >
             <span className="relative inline-flex">
               <Building2 className="h-4 w-4" />
-              <Plus className="h-2 w-2 absolute -top-0.5 -right-1.5 text-current" strokeWidth={3} />
+              <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
             </span>
           </Button>
         </TooltipTrigger>

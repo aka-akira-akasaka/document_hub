@@ -6,7 +6,7 @@ import { DealHeader } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
 import { CsvImportDialog } from "@/components/csv/csv-import-dialog";
-import { BatchAddDialog } from "@/components/stakeholders/batch-add-dialog";
+// BatchAddDialogは廃止（インポート機能に統合）
 import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
@@ -39,7 +39,6 @@ function DealLayoutContent({
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const openCsvImport = useUiStore((s) => s.openCsvImport);
-  const openBatchAdd = useUiStore((s) => s.openBatchAdd);
   const { handleExport, handleYamlExport } = useCsvExport({
     dealId,
     dealName: deal?.name ?? "export",
@@ -57,7 +56,6 @@ function DealLayoutContent({
     <div className="flex-1 bg-gray-50 flex flex-col">
       <DealHeader
         deal={deal}
-        onBatchAddClick={openBatchAdd}
         onImportClick={openCsvImport}
         onCsvExportClick={handleExport}
         onYamlExportClick={handleYamlExport}
@@ -66,7 +64,7 @@ function DealLayoutContent({
       <div className="flex-1 flex flex-col">{children}</div>
       <StakeholderSheet dealId={dealId} />
       <CsvImportDialog dealId={dealId} />
-      <BatchAddDialog dealId={dealId} />
+      {/* BatchAddDialogは廃止 */}
     </div>
   );
 }
