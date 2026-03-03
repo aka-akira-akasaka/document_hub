@@ -26,6 +26,7 @@ export function useGroupChartLayout(dealId: string) {
     s.groupsByDeal[dealId] ?? EMPTY_G
   );
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
+  const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
   const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
@@ -305,15 +306,24 @@ export function useGroupChartLayout(dealId: string) {
         if (targetGroupId && targetGroup) {
           updates.department = targetGroup.name;
         }
+        // グループに入る場合は座標をクリア、フリーになる場合は座標を保存
+        if (targetGroupId) {
+          updates.position = undefined;
+        } else {
+          updates.position = { x: absPos.x, y: absPos.y };
+        }
         updateStakeholder(node.id, dealId, updates);
         if (targetGroupId) {
           toast.success(`${s?.name ?? ""} を ${targetGroup?.name ?? ""}に移動しました`);
         } else {
           toast.success(`${s?.name ?? ""} をフリーに移動しました`);
         }
+      } else if (!targetGroupId) {
+        // フリーフローティングのまま移動 → 座標を保存
+        updateNodePosition(node.id, dealId, { x: node.position.x, y: node.position.y });
       }
     },
-    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
   );
 
   // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）

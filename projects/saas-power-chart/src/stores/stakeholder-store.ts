@@ -57,6 +57,8 @@ interface StakeholderState {
   ) => void;
   getRelationshipsByDeal: (dealId: string) => Relationship[];
 
+  /** フリーフローティングノードの座標を更新 */
+  updateNodePosition: (id: string, dealId: string, position: { x: number; y: number }) => void;
   importStakeholders: (dealId: string, stakeholders: Stakeholder[], mode?: "append" | "overwrite") => void;
   clearDealData: (dealId: string) => void;
 
@@ -183,6 +185,21 @@ export const useStakeholderStore = create<StakeholderState>()(
 
     getRelationshipsByDeal: (dealId) =>
       get().relationshipsByDeal[dealId] ?? EMPTY_RELATIONSHIPS,
+
+    updateNodePosition: (id, dealId, position) =>
+      set((state) => {
+        const list = state.stakeholdersByDeal[dealId] ?? [];
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: list.map((s) =>
+              s.id === id
+                ? { ...s, position, updatedAt: new Date().toISOString() }
+                : s
+            ),
+          },
+        };
+      }),
 
     importStakeholders: (dealId, stakeholders, mode = "append") =>
       set((state) => {

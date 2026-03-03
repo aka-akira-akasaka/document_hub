@@ -69,13 +69,14 @@ export function computeGroupLayout(
   const groupBounds: GroupBound[] = [];
   let currentX = 0;
 
-  // フリーフローティングノードを上部に配置
+  // フリーフローティングノードを上部に配置（保存済み座標があればそれを使用）
   let freeX = 0;
   for (const s of freeFloating) {
+    const pos = s.position ?? { x: freeX, y: GROUP_LAYOUT.freeFloatY };
     nodes.push({
       id: s.id,
       type: "stakeholder",
-      position: { x: freeX, y: GROUP_LAYOUT.freeFloatY },
+      position: pos,
       zIndex: 10,
       data: { ...s },
     });
