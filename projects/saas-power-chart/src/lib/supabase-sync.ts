@@ -34,12 +34,6 @@ import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 import { toast } from "sonner";
-import {
-  SAMPLE_DEAL,
-  SAMPLE_STAKEHOLDERS,
-  SAMPLE_RELATIONSHIPS,
-  SAMPLE_ORG_GROUPS,
-} from "@/lib/sample-data";
 
 // --- 内部状態 ---
 let unsubscribers: (() => void)[] = [];
@@ -47,12 +41,32 @@ let currentUserId: string | null = null;
 let syncEnabled = false;
 let initInProgress = false;
 
-// デバウンス用タイマー
+// デバウンス用タイマー + 保留中の同期関数
 const timers: Record<string, ReturnType<typeof setTimeout>> = {};
+const pendingSyncs: Record<string, () => void | Promise<void>> = {};
 
-function debounce(key: string, fn: () => void, ms = 500) {
+function debounce(key: string, fn: () => void | Promise<void>, ms = 500) {
   clearTimeout(timers[key]);
-  timers[key] = setTimeout(fn, ms);
+  pendingSyncs[key] = fn;
+  timers[key] = setTimeout(() => {
+    delete pendingSyncs[key];
+    delete timers[key];
+    fn();
+  }, ms);
+}
+
+/**
+ * 保留中のデバウンスされた同期処理をすべて即座に実行する。
+ * 案件作成・削除など、ナビゲーション前にDB永続化を保証したい場面で使う。
+ */
+export async function flushPendingSync() {
+  const entries = Object.entries(pendingSyncs);
+  for (const [key] of entries) {
+    clearTimeout(timers[key]);
+    delete timers[key];
+    delete pendingSyncs[key];
+  }
+  await Promise.all(entries.map(([, fn]) => fn()));
 }
 
 // ============================================
@@ -62,10 +76,15 @@ function debounce(key: string, fn: () => void, ms = 500) {
 export async function initSupabaseSync(userId: string) {
   // 排他制御: 同時実行を防止（getUser と onAuthStateChange の競合回避）
   if (initInProgress) return;
+  // 同じユーザーで同期済みなら何もしない（不要な teardown によるデータ消失を防止）
   if (currentUserId === userId && syncEnabled) return;
 
   initInProgress = true;
-  teardownSupabaseSync();
+
+  // ユーザーが変わった場合のみ teardown（同期解除 + ストアリセット）
+  if (currentUserId && currentUserId !== userId) {
+    teardownSupabaseSync();
+  }
 
   currentUserId = userId;
   const supabase = createClient();
@@ -92,18 +111,11 @@ export async function initSupabaseSync(userId: string) {
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
 
-    // localStorage からの移行チェック
+    // localStorage からの移行チェック（データが空の場合のみ）
     if (deals.length === 0) {
       const migrated = await migrateFromLocalStorage(userId);
       if (migrated) return; // 移行完了時は再度 initSupabaseSync が呼ばれる
-
-      // サンプル案件の自動生成は一時的にOFF
-      // const seeded = await seedSampleDeal(userId);
-      // if (seeded) {
-      //   initInProgress = false;
-      //   await initSupabaseSync(userId);
-      // }
-      return;
+      // 移行対象がなくてもフォールスルーして subscriptions を設定する
     }
 
     // dealId ごとにグルーピング
@@ -135,8 +147,10 @@ export async function initSupabaseSync(userId: string) {
     );
     useOrgGroupStore.getState().hydrate(groupsByDeal);
 
-    // 変更監視を開始
-    setupSubscriptions(userId);
+    // 変更監視を開始（初回のみ — 既に購読中なら重複しない）
+    if (!syncEnabled) {
+      setupSubscriptions(userId);
+    }
     syncEnabled = true;
   } catch (err) {
     console.error("Supabase sync init failed:", err);
@@ -426,53 +440,3 @@ async function migrateFromLocalStorage(userId: string): Promise<boolean> {
   }
 }
 
-// ============================================
-// サンプルデータのプリセット
-// ============================================
-
-async function seedSampleDeal(userId: string): Promise<boolean> {
-  const supabase = createClient();
-  try {
-    // Deal
-    const { error: dealErr } = await supabase
-      .from("deals")
-      .insert([dealToDb(SAMPLE_DEAL, userId)]);
-    if (dealErr) throw dealErr;
-
-    // OrgGroups
-    const { error: groupErr } = await supabase
-      .from("org_groups")
-      .insert(SAMPLE_ORG_GROUPS.map(orgGroupToDb));
-    if (groupErr) throw groupErr;
-
-    // Stakeholders（バッチ分割で挿入）
-    const stakeholderRows = SAMPLE_STAKEHOLDERS.map(stakeholderToDb);
-    const BATCH_SIZE = 10;
-    for (let i = 0; i < stakeholderRows.length; i += BATCH_SIZE) {
-      const batch = stakeholderRows.slice(i, i + BATCH_SIZE);
-      const { error: sErr } = await supabase
-        .from("stakeholders")
-        .insert(batch);
-      if (sErr) {
-        console.error(`stakeholders batch ${i / BATCH_SIZE} failed:`, sErr, JSON.stringify(batch[0]));
-        throw sErr;
-      }
-    }
-
-    // Relationships
-    if (SAMPLE_RELATIONSHIPS.length > 0) {
-      const { error: rErr } = await supabase
-        .from("relationships")
-        .insert(SAMPLE_RELATIONSHIPS.map(relationshipToDb));
-      if (rErr) throw rErr;
-    }
-
-    return true;
-  } catch (err) {
-    console.error("sample deal seeding failed:", err);
-    // 部分挿入をロールバック（CASCADE で関連データも削除）
-    await supabase.from("deals").delete().eq("id", SAMPLE_DEAL.id);
-    toast.error("サンプルデータの作成に失敗しました");
-    return false;
-  }
-}

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDealStore } from "@/stores/deal-store";
+import { flushPendingSync } from "@/lib/supabase-sync";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_OPTIONS } from "@/lib/constants";
 import type { DealStage } from "@/types/deal";
 import { Plus } from "lucide-react";
@@ -33,7 +34,7 @@ export function DealCreateDialog() {
   const addDeal = useDealStore((s) => s.addDeal);
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !clientName.trim()) return;
 
@@ -43,6 +44,9 @@ export function DealCreateDialog() {
       stage,
       description: description.trim(),
     });
+
+    // デバウンスされた同期処理を即座に実行してDB永続化を保証
+    await flushPendingSync();
 
     setName("");
     setClientName("");

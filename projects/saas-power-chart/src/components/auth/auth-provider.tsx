@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -24,13 +25,25 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // auth null フリッカーガード: トークンリフレッシュ時の一時的な null を無視
+  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleUser = useCallback(async (newUser: User | null) => {
+    // null → ユーザーあり: teardown タイマーをキャンセル（フリッカーだった）
+    if (newUser && teardownTimerRef.current) {
+      clearTimeout(teardownTimerRef.current);
+      teardownTimerRef.current = null;
+    }
+
     setUser(newUser);
     if (newUser) {
       await initSupabaseSync(newUser.id);
     } else {
-      teardownSupabaseSync();
+      // 即座に teardown せず、少し待つ（トークンリフレッシュ時の一時的 null 対策）
+      teardownTimerRef.current = setTimeout(() => {
+        teardownTimerRef.current = null;
+        teardownSupabaseSync();
+      }, 2000);
     }
     setLoading(false);
   }, []);
@@ -50,7 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       handleUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (teardownTimerRef.current) {
+        clearTimeout(teardownTimerRef.current);
+      }
+    };
   }, [handleUser]);
 
   return (
