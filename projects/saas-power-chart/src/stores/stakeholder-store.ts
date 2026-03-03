@@ -65,12 +65,6 @@ interface StakeholderState {
   /** 案件の階層定義を丸ごと更新 */
   setOrgLevels: (dealId: string, levels: OrgLevelEntry[]) => void;
 
-  updateNodePosition: (
-    id: string,
-    dealId: string,
-    position: { x: number; y: number }
-  ) => void;
-
   /** Supabase からの一括読み込み用 */
   hydrate: (
     stakeholdersByDeal: Record<string, Stakeholder[]>,
@@ -256,19 +250,6 @@ export const useStakeholderStore = create<StakeholderState>()(
           [dealId]: levels,
         },
       })),
-
-    updateNodePosition: (id, dealId, position) =>
-      set((state) => {
-        const list = state.stakeholdersByDeal[dealId] ?? [];
-        return {
-          stakeholdersByDeal: {
-            ...state.stakeholdersByDeal,
-            [dealId]: list.map((s) =>
-              s.id === id ? { ...s, position } : s
-            ),
-          },
-        };
-      }),
 
     hydrate: (stakeholdersByDeal, relationshipsByDeal, orgLevelConfigByDeal) =>
       set({ stakeholdersByDeal, relationshipsByDeal, orgLevelConfigByDeal }),

@@ -20,7 +20,6 @@ export function useOrgChartLayout(dealId: string) {
   const orgLevelConfig = useStakeholderStore((s) =>
     s.orgLevelConfigByDeal[dealId]
   );
-  const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
   const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
 
@@ -53,17 +52,8 @@ export function useOrgChartLayout(dealId: string) {
     };
   }, [stakeholders, orgLevels]);
 
-  // position保存済みならそちらを優先、未保存ならレイアウト計算結果を使用
-  const nodes: Node[] = useMemo(() =>
-    layoutNodes.map((n) => {
-      const s = stakeholders.find((st) => st.id === n.id);
-      return {
-        ...n,
-        position: s?.position ?? n.position,
-      };
-    }),
-    [layoutNodes, stakeholders]
-  );
+  // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
+  const nodes: Node[] = layoutNodes;
 
   // relationship（非reporting）エッジのみ描画（最近接ハンドル自動選択付き）
   const edges: Edge[] = useMemo(() => {
@@ -78,20 +68,14 @@ export function useOrgChartLayout(dealId: string) {
     return assignHandlesToEdges(baseEdges, nodes);
   }, [relationships, handleEdgeDelete, handleEdgeUpdate, nodes]);
 
+  // レイヤーモードではD&Dによる位置変更は不要（レイアウトエンジンが決定）
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      updateNodePosition(node.id, dealId, node.position);
-    },
-    [dealId, updateNodePosition]
+    () => {},
+    []
   );
 
-  // 自動レイアウト: レイヤー計算結果を全ノードに適用
-  const applyAutoLayout = useCallback(() => {
-    const result = getLayerLayout(stakeholders, orgLevels, []);
-    result.nodes.forEach((n) => {
-      updateNodePosition(n.id, dealId, n.position);
-    });
-  }, [stakeholders, orgLevels, dealId, updateNodePosition]);
+  // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）
+  const applyAutoLayout = useCallback(() => {}, []);
 
   return { nodes, edges, layers, onNodeDragStop, applyAutoLayout };
 }

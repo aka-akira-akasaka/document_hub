@@ -30,6 +30,16 @@ export interface GroupBound {
   height: number;
 }
 
+/** レイアウト計算のオプション */
+export interface GroupLayoutOptions {
+  /** ドラッグ中の並べ替えプレビュー */
+  reorderPreview?: {
+    parentGroupId: string | null;
+    draggedGroupId: string;
+    insertIndex: number;
+  } | null;
+}
+
 /**
  * グループベースレイアウトのメイン関数
  * stakeholderノードは絶対座標で配置（ドラッグ&ドロップ対応）
@@ -38,10 +48,13 @@ export interface GroupBound {
 export function computeGroupLayout(
   stakeholders: Stakeholder[],
   orgGroups: OrgGroup[],
-  reportingEdges: Edge[]
+  reportingEdges: Edge[],
+  options?: GroupLayoutOptions
 ): GroupLayoutResult {
+  const draggedGroupId = options?.reorderPreview?.draggedGroupId ?? null;
+
   // Step 1: グループツリーを構築
-  const groupTree = buildGroupTree(orgGroups);
+  const groupTree = buildGroupTree(orgGroups, options?.reorderPreview ?? undefined);
 
   // Step 2: ステークホルダーをグループに振り分け
   const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups);
@@ -77,7 +90,8 @@ export function computeGroupLayout(
       currentX, GROUP_LAYOUT.groupAreaY,  // 絶対座標
       null,                                // 親グループなし
       nodes,
-      groupBounds
+      groupBounds,
+      draggedGroupId
     );
     currentX += root.width + GROUP_LAYOUT.divisionGap;
   }
@@ -87,8 +101,12 @@ export function computeGroupLayout(
 
 /**
  * OrgGroupの配列からツリー構造を構築
+ * reorderPreview が渡された場合、ドラッグ中のグループの兄弟順序をプレビュー通りに入れ替える
  */
-function buildGroupTree(orgGroups: OrgGroup[]): GroupTreeNode[] {
+function buildGroupTree(
+  orgGroups: OrgGroup[],
+  reorderPreview?: { parentGroupId: string | null; draggedGroupId: string; insertIndex: number }
+): GroupTreeNode[] {
   const nodeMap = new Map<string, GroupTreeNode>();
 
   // まず全グループのノードを作成
@@ -114,9 +132,27 @@ function buildGroupTree(orgGroups: OrgGroup[]): GroupTreeNode[] {
   }
 
   // sortOrder順にソート（横並びの表示順序を制御）
+  const sortBySortOrder = (arr: GroupTreeNode[]) =>
+    arr.sort((a, b) => (a.group.sortOrder ?? 0) - (b.group.sortOrder ?? 0));
+
   roots.sort((a, b) => (a.group.sortOrder ?? 0) - (b.group.sortOrder ?? 0));
   for (const node of nodeMap.values()) {
-    node.children.sort((a, b) => (a.group.sortOrder ?? 0) - (b.group.sortOrder ?? 0));
+    sortBySortOrder(node.children);
+  }
+
+  // プレビュー並べ替え: ドラッグ中のグループを兄弟内で移動
+  if (reorderPreview) {
+    const { parentGroupId, draggedGroupId, insertIndex } = reorderPreview;
+    const siblings = parentGroupId === null
+      ? roots
+      : (nodeMap.get(parentGroupId)?.children ?? []);
+
+    const draggedIdx = siblings.findIndex((n) => n.group.id === draggedGroupId);
+    if (draggedIdx !== -1 && draggedIdx !== insertIndex) {
+      const [dragged] = siblings.splice(draggedIdx, 1);
+      const targetIdx = insertIndex > draggedIdx ? insertIndex - 1 : insertIndex;
+      siblings.splice(Math.min(targetIdx, siblings.length), 0, dragged);
+    }
   }
 
   return roots;
@@ -251,10 +287,14 @@ function positionGroupTree(
   absY: number,
   parentGroupNodeId: string | null,
   nodes: Node[],
-  groupBounds: GroupBound[]
+  groupBounds: GroupBound[],
+  draggedGroupId?: string | null
 ): void {
   const groupNodeId = `group-${node.group.id}`;
   const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, nodeHGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
+
+  // ドラッグ中でないグループノードにCSS transitionを付ける（アニメーション用）
+  const isDragging = draggedGroupId === node.group.id;
 
   // グループノード自体を追加（親子関係はグループ同士のみ）
   const groupNode: Node = {
@@ -265,6 +305,7 @@ function positionGroupTree(
     style: {
       width: node.width,
       height: node.height,
+      ...(isDragging ? {} : { transition: "transform 200ms ease-in-out" }),
     },
   };
   if (parentGroupNodeId) {
@@ -339,7 +380,8 @@ function positionGroupTree(
         absY + subGroupY,
         groupNodeId,                  // 親グループのReactFlow ID
         nodes,
-        groupBounds
+        groupBounds,
+        draggedGroupId
       );
       subGroupX += child.width + subGroupGap;
     }

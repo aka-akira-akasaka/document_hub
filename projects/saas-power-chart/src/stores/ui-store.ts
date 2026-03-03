@@ -95,6 +95,19 @@ interface UiState {
   /** D&D時のドラッグオーバー対象グループ */
   dragOverGroupId: string | null;
   setDragOverGroupId: (groupId: string | null) => void;
+
+  /** D&D中のノードID（グループ並べ替えアニメーション用） */
+  draggingNodeId: string | null;
+  setDraggingNodeId: (id: string | null) => void;
+
+  /** ドラッグ中の並べ替えプレビュー */
+  reorderPreview: {
+    parentGroupId: string | null;
+    draggedGroupId: string;
+    insertIndex: number;
+  } | null;
+  setReorderPreview: (preview: { parentGroupId: string | null; draggedGroupId: string; insertIndex: number } | null) => void;
+  clearReorderPreview: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -168,4 +181,11 @@ export const useUiStore = create<UiState>()((set) => ({
 
   dragOverGroupId: null,
   setDragOverGroupId: (groupId) => set({ dragOverGroupId: groupId }),
+
+  draggingNodeId: null,
+  setDraggingNodeId: (id) => set({ draggingNodeId: id }),
+
+  reorderPreview: null,
+  setReorderPreview: (preview) => set({ reorderPreview: preview }),
+  clearReorderPreview: () => set({ reorderPreview: null, draggingNodeId: null }),
 }));

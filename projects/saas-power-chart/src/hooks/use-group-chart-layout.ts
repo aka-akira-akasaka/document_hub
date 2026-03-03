@@ -25,7 +25,6 @@ export function useGroupChartLayout(dealId: string) {
   const orgGroups = useOrgGroupStore((s) =>
     s.groupsByDeal[dealId] ?? EMPTY_G
   );
-  const updateNodePosition = useStakeholderStore((s) => s.updateNodePosition);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
   const deleteRelationship = useStakeholderStore((s) => s.deleteRelationship);
   const updateRelationship = useStakeholderStore((s) => s.updateRelationship);
@@ -66,9 +65,10 @@ export function useGroupChartLayout(dealId: string) {
 
   // グループベースレイアウト計算
   const groupBoundsRef = useRef<GroupBound[]>([]);
+  const reorderPreview = useUiStore((s) => s.reorderPreview);
 
   const { layoutNodes, allEdges } = useMemo(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview });
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     // groupBoundsをRefに保存（コールバック内で参照するため）
@@ -77,28 +77,10 @@ export function useGroupChartLayout(dealId: string) {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
     };
-  }, [stakeholders, orgGroups, relEdges]);
+  }, [stakeholders, orgGroups, relEdges, reorderPreview]);
 
-  // フリーフローティングノードは保存済み位置を優先
-  // グループ内stakeholderはレイアウト計算の相対座標を使用
-  const nodes: Node[] = useMemo(() =>
-    layoutNodes.map((n) => {
-      // グループノードはレイアウト結果をそのまま使用
-      if (n.type === "orgGroup") return n;
-      // stakeholderノード: groupIdがあればレイアウト位置（相対座標）、なければ保存位置を優先
-      const s = stakeholders.find((st) => st.id === n.id);
-      if (s?.groupId) {
-        // グループ所属: レイアウトエンジンの相対座標をそのまま使用
-        return n;
-      }
-      // フリーフローティング: 保存済み位置があればそちらを優先
-      return {
-        ...n,
-        position: s?.position ?? n.position,
-      };
-    }),
-    [layoutNodes, stakeholders]
-  );
+  // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
+  const nodes: Node[] = layoutNodes;
 
   /**
    * ドラッグ中のノードの絶対座標を算出
@@ -169,11 +151,21 @@ export function useGroupChartLayout(dealId: string) {
 
   // D&D中のリアルタイムフィードバック
   const setDragOverGroupId = useUiStore((s) => s.setDragOverGroupId);
+  const setDraggingNodeId = useUiStore((s) => s.setDraggingNodeId);
+  const setReorderPreview = useUiStore((s) => s.setReorderPreview);
+
+  const onNodeDragStart = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setDraggingNodeId(node.id);
+    },
+    [setDraggingNodeId]
+  );
 
   const onNodeDrag = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       if (node.type === "addPersonPlaceholder") {
         setDragOverGroupId(null);
+        setReorderPreview(null);
         return;
       }
       if (node.type === "orgGroup") {
@@ -182,22 +174,60 @@ export function useGroupChartLayout(dealId: string) {
         const absPos = getNodeAbsolutePosition(node);
         const targetGroupId = findDropTargetGroup(absPos, draggedGroupId);
         setDragOverGroupId(targetGroupId);
+
+        // 同じ親内での並べ替えプレビューを計算
+        const draggedGroup = orgGroups.find((g) => g.id === draggedGroupId);
+        const currentParent = draggedGroup?.parentGroupId ?? null;
+
+        if (targetGroupId === currentParent) {
+          // 同じ親 → 兄弟間の挿入位置を計算
+          const siblings = orgGroups
+            .filter((g) => g.parentGroupId === currentParent && g.dealId === dealId)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+          if (siblings.length > 1) {
+            const draggedBound = groupBoundsRef.current.find((gb) => gb.groupId === draggedGroupId);
+            const dragCenterX = absPos.x + (draggedBound?.width ?? GROUP_LAYOUT.nodeWidth) / 2;
+
+            const otherSiblings = siblings.filter((g) => g.id !== draggedGroupId);
+            let insertIndex = 0;
+            for (const sib of otherSiblings) {
+              const bound = groupBoundsRef.current.find((gb) => gb.groupId === sib.id);
+              const sibCenterX = bound ? bound.x + bound.width / 2 : Infinity;
+              if (sibCenterX < dragCenterX) insertIndex++;
+            }
+
+            setReorderPreview({
+              parentGroupId: currentParent,
+              draggedGroupId,
+              insertIndex,
+            });
+          } else {
+            setReorderPreview(null);
+          }
+        } else {
+          setReorderPreview(null);
+        }
         return;
       }
       const absPos = getNodeAbsolutePosition(node);
       const targetGroupId = findDropTargetGroup(absPos);
       setDragOverGroupId(targetGroupId);
+      setReorderPreview(null);
     },
-    [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId]
+    [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId, setReorderPreview, orgGroups, dealId]
   );
 
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const reorderGroup = useOrgGroupStore((s) => s.reorderGroup);
 
+  const clearReorderPreview = useUiStore((s) => s.clearReorderPreview);
+
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      // ドラッグオーバー状態をリセット
+      // ドラッグオーバー・プレビュー状態をリセット
       setDragOverGroupId(null);
+      clearReorderPreview();
 
       // プレースホルダーのドラッグは無視
       if (node.type === "addPersonPlaceholder") return;
@@ -281,26 +311,15 @@ export function useGroupChartLayout(dealId: string) {
         } else {
           toast.success(`${s?.name ?? ""} をフリーに移動しました`);
         }
-      } else if (!targetGroupId) {
-        updateNodePosition(node.id, dealId, node.position);
       }
     },
-    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
   );
 
-  // 自動レイアウト: 全フリーフローティングノードの位置をリセット
+  // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）
   const applyAutoLayout = useCallback(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges);
-    for (const n of result.nodes) {
-      if (n.type !== "orgGroup") {
-        const s = stakeholders.find((st) => st.id === n.id);
-        // フリーフローティングのみ位置を保存
-        if (!s?.groupId) {
-          updateNodePosition(n.id, dealId, n.position);
-        }
-      }
-    }
-  }, [stakeholders, orgGroups, relEdges, dealId, updateNodePosition]);
+    // レイアウトエンジンが全ノードの位置を計算するため、明示的な位置保存は不要
+  }, []);
 
-  return { nodes, edges: allEdges, onNodeDragStop, onNodeDrag, applyAutoLayout };
+  return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag, applyAutoLayout };
 }

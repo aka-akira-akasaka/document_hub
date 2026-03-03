@@ -35,7 +35,6 @@ export interface Stakeholder {
   orgLevel: number;
   /** 所属するOrgGroupのID。nullならフリーフローティング */
   groupId: string | null;
-  position?: { x: number; y: number };
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -67,8 +67,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     onNodeDragStop,
     applyAutoLayout,
   } = isGroupMode ? groupLayout : layerLayout;
-  // onNodeDragはグループモードのみ（D&Dの視覚フィードバック用）
+  // onNodeDrag/onNodeDragStartはグループモードのみ（D&Dの視覚フィードバック用）
   const onNodeDrag = isGroupMode ? groupLayout.onNodeDrag : undefined;
+  const onNodeDragStart = isGroupMode ? groupLayout.onNodeDragStart : undefined;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -88,9 +89,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const groupFormEditId = useUiStore((s) => s.groupFormEditId);
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
   const closeGroupForm = useUiStore((s) => s.closeGroupForm);
-  const autoLayoutApplied = useRef(false);
-  const applyAutoLayoutRef = useRef(applyAutoLayout);
-  applyAutoLayoutRef.current = applyAutoLayout;
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
@@ -102,21 +100,24 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     ? orgGroups.find((g) => g.id === groupFormEditId) ?? null
     : null;
 
-  useEffect(() => {
-    setNodes(layoutNodes);
-    setEdges(layoutEdges);
-  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+  const draggingNodeId = useUiStore((s) => s.draggingNodeId);
 
-  // positionが未設定のノードばかりの場合、初回のみ自動レイアウトを適用
   useEffect(() => {
-    if (autoLayoutApplied.current) return;
-    if (stakeholders.length === 0) return;
-    const allUnpositioned = stakeholders.every((s) => !s.position);
-    if (allUnpositioned) {
-      autoLayoutApplied.current = true;
-      applyAutoLayoutRef.current();
+    if (draggingNodeId) {
+      // ドラッグ中: ドラッグ中のノードの位置はマウス追従を維持し、それ以外を更新
+      setNodes((prev) => {
+        const layoutMap = new Map(layoutNodes.map((n) => [n.id, n]));
+        return prev.map((node) => {
+          if (node.id === draggingNodeId) return node;
+          const updated = layoutMap.get(node.id);
+          return updated ?? node;
+        });
+      });
+    } else {
+      setNodes(layoutNodes);
     }
-  }, [stakeholders]);
+    setEdges(layoutEdges);
+  }, [layoutNodes, layoutEdges, setNodes, setEdges, draggingNodeId]);
 
   // Undo/Redo キーボードショートカット
   useEffect(() => {
@@ -290,6 +291,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         onNodeDrag={onNodeDrag}
         onPaneClick={onPaneClick}

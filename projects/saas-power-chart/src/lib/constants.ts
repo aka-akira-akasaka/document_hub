@@ -169,15 +169,15 @@ export const GROUP_LAYOUT = {
   /** グループフッターの高さ（＋人を追加する） */
   footerHeight: 32,
   /** グループ内部のパディング */
-  innerPadding: 12,
+  innerPadding: 16,
   /** ノード間の縦間隔 */
   nodeGap: 16,
   /** 同階層ノード間の横間隔 */
   nodeHGap: 12,
   /** サブグループ間の横間隔 */
-  subGroupGap: 16,
+  subGroupGap: 28,
   /** division間の横間隔 */
-  divisionGap: 32,
+  divisionGap: 48,
   /** フリーフローティング領域のY起点 */
   freeFloatY: 0,
   /** グループ領域のY起点 */

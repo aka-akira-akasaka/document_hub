@@ -118,10 +118,6 @@ export function dbToStakeholder(row: DbStakeholder): Stakeholder {
     notes: row.notes,
     orgLevel: row.org_level,
     groupId: row.group_id,
-    position:
-      row.position_x != null && row.position_y != null
-        ? { x: row.position_x, y: row.position_y }
-        : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -202,8 +198,8 @@ export function stakeholderToDb(s: Stakeholder): Omit<DbStakeholder, "created_at
     notes: s.notes,
     org_level: s.orgLevel,
     group_id: s.groupId,
-    position_x: s.position?.x ?? null,
-    position_y: s.position?.y ?? null,
+    position_x: null,
+    position_y: null,
     created_at: s.createdAt,
     updated_at: s.updatedAt,
   };
