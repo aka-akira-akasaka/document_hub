@@ -265,7 +265,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     }
   }, [addContext, closeAddPopover]);
 
-  const isEmpty = stakeholders.length === 0;
+  const isEmpty = stakeholders.length === 0 && orgGroups.length === 0;
 
   return (
     <div className="flex-1 relative">
