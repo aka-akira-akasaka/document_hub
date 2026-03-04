@@ -49,11 +49,11 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, updateRelationship, captureSnapshot]
   );
 
-  // relationshipエッジを描画（targetTypeに応じてtarget IDを変換）
+  // relationshipエッジを描画（sourceType/targetTypeに応じてIDを変換）
   const relEdges: Edge[] = useMemo(() =>
     relationships.map((r) => ({
       id: r.id,
-      source: r.sourceId,
+      source: r.sourceType === "group" ? `group-${r.sourceId}` : r.sourceId,
       target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
       zIndex: 1000,
@@ -67,9 +67,10 @@ export function useGroupChartLayout(dealId: string) {
   // グループベースレイアウト計算
   const groupBoundsRef = useRef<GroupBound[]>([]);
   const reorderPreview = useUiStore((s) => s.reorderPreview);
+  const orgLevelConfig = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
 
   const { layoutNodes, allEdges } = useMemo(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview });
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, orgLevelConfig });
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     // groupBoundsをRefに保存（コールバック内で参照するため）
@@ -78,7 +79,7 @@ export function useGroupChartLayout(dealId: string) {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
     };
-  }, [stakeholders, orgGroups, relEdges, reorderPreview]);
+  }, [stakeholders, orgGroups, relEdges, reorderPreview, orgLevelConfig]);
 
   // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
   const nodes: Node[] = layoutNodes;
@@ -326,10 +327,5 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
   );
 
-  // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）
-  const applyAutoLayout = useCallback(() => {
-    // レイアウトエンジンが全ノードの位置を計算するため、明示的な位置保存は不要
-  }, []);
-
-  return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag, applyAutoLayout };
+  return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag };
 }

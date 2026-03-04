@@ -13,7 +13,14 @@ interface DealState {
     expectedCloseDate?: string;
   }) => Deal;
   updateDeal: (id: string, updates: Partial<Deal>) => void;
+  /** @deprecated trashDeal を使用してください */
   deleteDeal: (id: string) => void;
+  /** 案件をゴミ箱に移動 */
+  trashDeal: (id: string) => void;
+  /** ゴミ箱から復元 */
+  restoreDeal: (id: string) => void;
+  /** 完全に削除（ゴミ箱から） */
+  permanentlyDeleteDeal: (id: string) => void;
   getDealById: (id: string) => Deal | undefined;
   /** Supabase からの一括読み込み用 */
   hydrate: (deals: Deal[]) => void;
@@ -43,6 +50,26 @@ export const useDealStore = create<DealState>()(
         ),
       })),
     deleteDeal: (id) =>
+      set((state) => ({
+        deals: state.deals.filter((d) => d.id !== id),
+      })),
+    trashDeal: (id) =>
+      set((state) => ({
+        deals: state.deals.map((d) =>
+          d.id === id
+            ? { ...d, trashedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+            : d
+        ),
+      })),
+    restoreDeal: (id) =>
+      set((state) => ({
+        deals: state.deals.map((d) =>
+          d.id === id
+            ? { ...d, trashedAt: null, updatedAt: new Date().toISOString() }
+            : d
+        ),
+      })),
+    permanentlyDeleteDeal: (id) =>
       set((state) => ({
         deals: state.deals.filter((d) => d.id !== id),
       })),

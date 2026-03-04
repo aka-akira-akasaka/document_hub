@@ -38,6 +38,8 @@ export interface GroupLayoutOptions {
     draggedGroupId: string;
     insertIndex: number;
   } | null;
+  /** 役職階層定義（表示順でソートするため） */
+  orgLevelConfig?: { level: number }[];
 }
 
 /**
@@ -57,7 +59,7 @@ export function computeGroupLayout(
   const groupTree = buildGroupTree(orgGroups, options?.reorderPreview ?? undefined);
 
   // Step 2: ステークホルダーをグループに振り分け
-  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups);
+  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups, options?.orgLevelConfig);
 
   // Step 3: グループサイズをボトムアップで計算
   for (const root of groupTree) {
@@ -67,7 +69,6 @@ export function computeGroupLayout(
   // Step 4: グループ位置をトップダウンで割り当て
   const nodes: Node[] = [];
   const groupBounds: GroupBound[] = [];
-  let currentX = 0;
 
   // フリーフローティングノードをparentIdベースのツリーレイアウトで配置
   // 保存済み座標がある場合はそれを優先
@@ -83,18 +84,55 @@ export function computeGroupLayout(
     });
   }
 
-  // ルートグループ（division）を横並び配置
+  // ルートグループをtierごとに段分け配置（高tier=上段）
+  const tierMap = new Map<number, GroupTreeNode[]>();
   for (const root of groupTree) {
-    positionGroupTree(
-      root,
-      currentX, GROUP_LAYOUT.groupAreaY,  // 相対座標（ルートなので=絶対座標）
-      currentX, GROUP_LAYOUT.groupAreaY,  // 絶対座標
-      null,                                // 親グループなし
-      nodes,
-      groupBounds,
-      draggedGroupId
-    );
-    currentX += root.width + GROUP_LAYOUT.divisionGap;
+    const tier = root.group.tier ?? 0;
+    if (!tierMap.has(tier)) tierMap.set(tier, []);
+    tierMap.get(tier)!.push(root);
+  }
+  // tier降順にソート（大きい数字が上段）
+  const sortedTiers = [...tierMap.keys()].sort((a, b) => b - a);
+
+  // 各tierの合計幅を先に計算（中央揃え用）
+  const tierWidths = new Map<number, number>();
+  for (const tier of sortedTiers) {
+    const tierGroups = tierMap.get(tier)!;
+    let totalWidth = 0;
+    for (const root of tierGroups) {
+      totalWidth += root.width;
+    }
+    totalWidth += Math.max(0, tierGroups.length - 1) * GROUP_LAYOUT.divisionGap;
+    tierWidths.set(tier, totalWidth);
+  }
+  const maxTierWidth = sortedTiers.length > 0
+    ? Math.max(...sortedTiers.map((t) => tierWidths.get(t)!))
+    : 0;
+
+  let currentTierY = GROUP_LAYOUT.groupAreaY;
+
+  for (const tier of sortedTiers) {
+    const tierGroups = tierMap.get(tier)!;
+    const totalWidth = tierWidths.get(tier)!;
+    // 最も幅の広いtierを基準に中央揃え
+    let tierX = (maxTierWidth - totalWidth) / 2;
+    let tierMaxHeight = 0;
+
+    for (const root of tierGroups) {
+      positionGroupTree(
+        root,
+        tierX, currentTierY,    // 相対座標（ルートなので=絶対座標）
+        tierX, currentTierY,    // 絶対座標
+        null,                    // 親グループなし
+        nodes,
+        groupBounds,
+        draggedGroupId
+      );
+      tierX += root.width + GROUP_LAYOUT.divisionGap;
+      tierMaxHeight = Math.max(tierMaxHeight, root.height);
+    }
+
+    currentTierY += tierMaxHeight + GROUP_LAYOUT.tierGap;
   }
 
   return { nodes, edges: reportingEdges, groupBounds };
@@ -151,8 +189,8 @@ function buildGroupTree(
     const draggedIdx = siblings.findIndex((n) => n.group.id === draggedGroupId);
     if (draggedIdx !== -1 && draggedIdx !== insertIndex) {
       const [dragged] = siblings.splice(draggedIdx, 1);
-      const targetIdx = insertIndex > draggedIdx ? insertIndex - 1 : insertIndex;
-      siblings.splice(Math.min(targetIdx, siblings.length), 0, dragged);
+      // insertIndex は otherSiblings（除外後の配列）基準で計算されている
+      siblings.splice(Math.min(insertIndex, siblings.length), 0, dragged);
     }
   }
 
@@ -165,7 +203,8 @@ function buildGroupTree(
 function assignStakeholders(
   stakeholders: Stakeholder[],
   groupTree: GroupTreeNode[],
-  orgGroups: OrgGroup[]
+  orgGroups: OrgGroup[],
+  orgLevelConfig?: { level: number }[]
 ): Stakeholder[] {
   const groupNodeMap = new Map<string, GroupTreeNode>();
   const collectNodes = (nodes: GroupTreeNode[]) => {
@@ -192,9 +231,20 @@ function assignStakeholders(
     }
   }
 
-  // メンバーをorgLevelで並び替え
+  // メンバーを役職階層の設定順序で並び替え
+  // （階層設定のUIでの並び順に準拠。設定外のlevelは末尾にフォールバック）
+  const levelOrderMap = new Map<number, number>();
+  if (orgLevelConfig && orgLevelConfig.length > 0) {
+    orgLevelConfig.forEach((entry, idx) => {
+      levelOrderMap.set(entry.level, idx);
+    });
+  }
   for (const node of groupNodeMap.values()) {
-    node.members.sort((a, b) => a.orgLevel - b.orgLevel);
+    node.members.sort((a, b) => {
+      const orderA = levelOrderMap.get(a.orgLevel) ?? (1000 + a.orgLevel);
+      const orderB = levelOrderMap.get(b.orgLevel) ?? (1000 + b.orgLevel);
+      return orderA - orderB;
+    });
   }
 
   return freeFloating;
@@ -315,6 +365,30 @@ function positionGroupTree(
     // → ネストされたグループを親の外にドラッグして別部門へ移動・トップレベルへ取り出しを可能にする
   }
   nodes.push(groupNode);
+
+  // 並べ替えプレビュー中: ドロップ先を示すインジケーター追加
+  if (isDragging) {
+    const indicator: Node = {
+      id: "reorder-drop-indicator",
+      type: "reorderDropIndicator",
+      position: { x: relX, y: relY },
+      data: {},
+      style: {
+        width: node.width,
+        height: node.height,
+        transition: "transform 200ms ease-in-out",
+      },
+      draggable: false,
+      selectable: false,
+      connectable: false,
+      focusable: false,
+      zIndex: -1,
+    };
+    if (parentGroupNodeId) {
+      indicator.parentId = parentGroupNodeId;
+    }
+    nodes.push(indicator);
+  }
 
   // グループの絶対位置をドロップ先検出用に記録
   groupBounds.push({

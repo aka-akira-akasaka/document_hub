@@ -38,6 +38,7 @@ function DealLayoutContent({
   const router = useRouter();
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
+  const isActive = !!deal && !deal.trashedAt;
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const { handleExport, handleYamlExport } = useCsvExport({
     dealId,
@@ -45,12 +46,12 @@ function DealLayoutContent({
   });
 
   useEffect(() => {
-    if (!deal) {
+    if (!isActive) {
       router.push("/");
     }
-  }, [deal, router]);
+  }, [isActive, router]);
 
-  if (!deal) return null;
+  if (!isActive) return null;
 
   return (
     <div className="flex-1 bg-gray-50 flex flex-col">

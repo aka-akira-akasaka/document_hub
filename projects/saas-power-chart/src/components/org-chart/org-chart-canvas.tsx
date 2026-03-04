@@ -8,6 +8,7 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type NodeMouseHandler,
   type Connection,
 } from "@xyflow/react";
@@ -17,6 +18,7 @@ import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgGroupNode } from "./org-group-node";
 import { AddPersonPlaceholderNode } from "./add-person-placeholder-node";
+import { ReorderDropIndicatorNode } from "./reorder-drop-indicator";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
@@ -29,16 +31,38 @@ import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useHistoryStore } from "@/stores/history-store";
-import { EmptyState } from "@/components/layout/empty-state";
-import { Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TemplateSelector } from "./template-selector";
+import { SaveTemplateDialog } from "./save-template-dialog";
 import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
 
-const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
+/** 新規作成された部署に自動スクロールするヘルパー（ReactFlow内部で使用） */
+function ScrollToNewGroup() {
+  const scrollToGroupId = useUiStore((s) => s.scrollToGroupId);
+  const clearScrollToGroup = useUiStore((s) => s.clearScrollToGroup);
+  const { fitView, getZoom } = useReactFlow();
+
+  useEffect(() => {
+    if (!scrollToGroupId) return;
+    const timer = setTimeout(() => {
+      fitView({
+        nodes: [{ id: `group-${scrollToGroupId}` }],
+        duration: 300,
+        padding: 0.3,
+        maxZoom: getZoom(),
+      });
+      clearScrollToGroup();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [scrollToGroupId, fitView, getZoom, clearScrollToGroup]);
+
+  return null;
+}
+
+const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 // ReactFlowに渡すオプションをモジュールレベルで定義（毎レンダー新オブジェクト生成による無限ループ防止）
@@ -65,7 +89,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     nodes: layoutNodes,
     edges: layoutEdges,
     onNodeDragStop,
-    applyAutoLayout,
   } = isGroupMode ? groupLayout : layerLayout;
   // onNodeDrag/onNodeDragStartはグループモードのみ（D&Dの視覚フィードバック用）
   const onNodeDrag = isGroupMode ? groupLayout.onNodeDrag : undefined;
@@ -85,6 +108,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   );
 
   const [levelEditorOpen, setLevelEditorOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const groupFormOpen = useUiStore((s) => s.groupFormOpen);
   const groupFormEditId = useUiStore((s) => s.groupFormEditId);
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
@@ -104,11 +128,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   useEffect(() => {
     if (draggingNodeId) {
-      // ドラッグ中: ドラッグ中のノードの位置はマウス追従を維持し、それ以外を更新
+      // ドラッグ中: ドラッグ中のノード＋その子ノードの位置を維持し、それ以外を更新
+      // （グループD&D時に中の人ノードが先に動くアニメーションを防止）
       setNodes((prev) => {
         const layoutMap = new Map(layoutNodes.map((n) => [n.id, n]));
         return prev.map((node) => {
-          if (node.id === draggingNodeId) return node;
+          if (node.id === draggingNodeId || node.parentId === draggingNodeId) return node;
           const updated = layoutMap.get(node.id);
           return updated ?? node;
         });
@@ -141,7 +166,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       if (!connection.source || !connection.target) return;
       if (connection.source === connection.target) return;
 
+      const isGroupSource = connection.source.startsWith("group-");
       const isGroupTarget = connection.target.startsWith("group-");
+      const sourceId = isGroupSource
+        ? connection.source.replace(/^group-/, "")
+        : connection.source;
       const targetId = isGroupTarget
         ? connection.target.replace(/^group-/, "")
         : connection.target;
@@ -149,11 +178,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       captureSnapshot();
       addRelationship({
         dealId,
-        sourceId: connection.source,
+        sourceId,
         targetId,
         type: isGroupTarget ? "oversight" : "informal",
         bidirectional: false,
         direction: "forward",
+        sourceType: isGroupSource ? "group" : "stakeholder",
         targetType: isGroupTarget ? "group" : "stakeholder",
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
@@ -271,18 +301,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     <div className="flex-1 relative">
       {/* 空状態のオーバーレイ（ツールバーは常に表示） */}
       {isEmpty && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-          <div className="pointer-events-auto">
-            <EmptyState
-              icon={Users}
-              title="まだ人がいません"
-              description="左のツールバーから人や部署を追加してパワーチャートを作成しましょう。"
-              action={
-                <Button onClick={handleAddNode}>人を追加する</Button>
-              }
-            />
-          </div>
-        </div>
+        <TemplateSelector dealId={dealId} />
       )}
       <ReactFlow
         nodes={nodes}
@@ -299,17 +318,18 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
+        connectionRadius={40}
         minZoom={0.1}
         maxZoom={2}
         proOptions={PRO_OPTIONS}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
-        {/* LayerBackground は廃止済み — グループモードに統一 */}
+        <ScrollToNewGroup />
         <OrgChartToolbar
-          onAutoLayout={applyAutoLayout}
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
+          onSaveTemplate={() => setSaveTemplateOpen(true)}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -345,6 +365,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onOpenChange={(open) => { if (!open) closeGroupForm(); }}
         editGroup={editGroupObj}
         defaultParentGroupId={groupFormParentId}
+      />
+
+      {/* テンプレート保存ダイアログ */}
+      <SaveTemplateDialog
+        dealId={dealId}
+        open={saveTemplateOpen}
+        onOpenChange={setSaveTemplateOpen}
       />
 
     </div>

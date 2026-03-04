@@ -3,14 +3,13 @@
 import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
-  getBezierPath,
   getSmoothStepPath,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
 import type { RelationshipType, RelationshipDirection } from "@/types/relationship";
 import { isPositiveRelationship } from "@/lib/constants";
-import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal } from "lucide-react";
+import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** エッジのカスタム色プリセット */
@@ -67,9 +66,52 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const hasStartMarker = direction === "reverse" || direction === "bidirectional";
 
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
-  const [edgePath, labelX, labelY] = isGroupEdge
-    ? getSmoothStepPath(pathParams)
-    : getBezierPath(pathParams);
+
+  // グループ: getSmoothStepPath（直角パス）
+  // 人物間: ソース→ターゲット方向に沿ったカスタムベジェ
+  //   → orient="auto" で矢印がライン方向に自然に向く
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
+
+  if (isGroupEdge) {
+    [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
+  } else {
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 1) {
+      edgePath = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
+    } else {
+      // ソース→ターゲット方向の単位ベクトル
+      const nx = dx / dist;
+      const ny = dy / dist;
+      // 垂直方向（カーブ用）
+      const perpX = -ny;
+      const perpY = nx;
+
+      // ハンドル方向とライン方向のずれからカーブ量を計算
+      // ハンドルが左右なら sourcePosition は "left"|"right" → 水平成分
+      // ハンドルが上下なら sourcePosition は "top"|"bottom" → 垂直成分
+      const handleDirX = sourcePosition === "left" ? -1 : sourcePosition === "right" ? 1 : 0;
+      const handleDirY = sourcePosition === "top" ? -1 : sourcePosition === "bottom" ? 1 : 0;
+      // ハンドル方向とライン方向の外積（符号でカーブ方向決定）
+      const cross = handleDirX * ny - handleDirY * nx;
+      const curvature = cross * Math.min(dist * 0.2, 40);
+
+      const handleLen = dist * 0.35;
+      const cp1x = sourceX + nx * handleLen + perpX * curvature;
+      const cp1y = sourceY + ny * handleLen + perpY * curvature;
+      const cp2x = targetX - nx * handleLen + perpX * curvature;
+      const cp2y = targetY - ny * handleLen + perpY * curvature;
+
+      edgePath = `M ${sourceX},${sourceY} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${targetX},${targetY}`;
+    }
+
+    labelX = (sourceX + targetX) / 2;
+    labelY = (sourceY + targetY) / 2;
+  }
 
   // 編集状態
   const [isEditing, setIsEditing] = useState(false);
@@ -232,6 +274,17 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                 >
                   <MoveHorizontal className="w-3.5 h-3.5" />
                 </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "p-1 rounded transition-colors",
+                    editDirection === "none" ? "bg-blue-100 text-blue-700" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                  )}
+                  onClick={() => setEditDirection("none")}
+                  title="矢印なし"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
 
                 {/* 区切り */}
                 <div className="w-px h-4 bg-gray-200 mx-0.5" />
@@ -251,18 +304,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                     title={c.label}
                   />
                 ))}
-                {/* デフォルトに戻す（×） */}
-                <button
-                  type="button"
-                  className={cn(
-                    "w-4 h-4 rounded-full border-2 text-[8px] flex items-center justify-center shrink-0",
-                    !editColor ? "border-gray-800" : "border-gray-300 hover:border-gray-500"
-                  )}
-                  onClick={() => setEditColor("")}
-                  title="既定色"
-                >
-                  <span className="text-gray-500">×</span>
-                </button>
               </div>
 
               {/* ラベル入力 + 確定 + 削除 */}
@@ -298,7 +339,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               {customLabel && (
                 <span
                   className={cn(
-                    "text-[10px] font-medium px-2 py-0.5 rounded-sm whitespace-nowrap text-white",
+                    "inline-block text-[10px] leading-none font-medium px-2 py-1 rounded-sm whitespace-nowrap text-white",
                     badgeBg
                   )}
                   style={customColor ? { backgroundColor: customColor } : undefined}

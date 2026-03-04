@@ -7,6 +7,7 @@ import type { Stakeholder, RoleInDeal, InfluenceLevel, Attitude } from "@/types/
 import type { Relationship, RelationshipType, RelationshipDirection, RelationshipTargetType } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
+import type { TierEntry } from "@/stores/org-group-store";
 
 // ============================================
 // DB 行の型定義
@@ -21,6 +22,7 @@ export interface DbDeal {
   description: string;
   target_amount: number | null;
   expected_close_date: string | null;
+  trashed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +61,7 @@ export interface DbRelationship {
   direction: string | null;
   color: string | null;
   target_type: string | null;
+  source_type: string | null;
   source_handle: string | null;
   target_handle: string | null;
   created_at: string;
@@ -71,6 +74,7 @@ export interface DbOrgGroup {
   parent_group_id: string | null;
   color: string | null;
   sort_order: number;
+  tier: number;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +83,13 @@ export interface DbOrgLevelConfig {
   id: string;
   deal_id: string;
   level: number;
+  label: string;
+}
+
+export interface DbTierConfig {
+  id: string;
+  deal_id: string;
+  tier: number;
   label: string;
 }
 
@@ -95,6 +106,7 @@ export function dbToDeal(row: DbDeal): Deal {
     description: row.description,
     targetAmount: row.target_amount ?? undefined,
     expectedCloseDate: row.expected_close_date ?? undefined,
+    trashedAt: row.trashed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -138,6 +150,7 @@ export function dbToRelationship(row: DbRelationship): Relationship {
     direction: (row.direction as RelationshipDirection) ?? undefined,
     color: row.color ?? undefined,
     targetType: (row.target_type as RelationshipTargetType) ?? undefined,
+    sourceType: (row.source_type as RelationshipTargetType) ?? undefined,
     sourceHandle: row.source_handle ?? undefined,
     targetHandle: row.target_handle ?? undefined,
     createdAt: row.created_at,
@@ -152,6 +165,7 @@ export function dbToOrgGroup(row: DbOrgGroup): OrgGroup {
     parentGroupId: row.parent_group_id,
     color: row.color ?? undefined,
     sortOrder: row.sort_order,
+    tier: row.tier ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -178,6 +192,7 @@ export function dealToDb(deal: Deal, userId: string): DbDeal {
     description: deal.description,
     target_amount: deal.targetAmount ?? null,
     expected_close_date: deal.expectedCloseDate ?? null,
+    trashed_at: deal.trashedAt ?? null,
     created_at: deal.createdAt,
     updated_at: deal.updatedAt,
   };
@@ -220,6 +235,7 @@ export function relationshipToDb(r: Relationship): DbRelationship {
     direction: r.direction ?? null,
     color: r.color ?? null,
     target_type: r.targetType ?? null,
+    source_type: r.sourceType ?? null,
     source_handle: r.sourceHandle ?? null,
     target_handle: r.targetHandle ?? null,
     created_at: r.createdAt,
@@ -234,6 +250,7 @@ export function orgGroupToDb(g: OrgGroup): DbOrgGroup {
     parent_group_id: g.parentGroupId,
     color: g.color ?? null,
     sort_order: g.sortOrder,
+    tier: g.tier ?? 0,
     created_at: g.createdAt,
     updated_at: g.updatedAt,
   };
@@ -246,6 +263,24 @@ export function orgLevelToDb(
   return {
     deal_id: dealId,
     level: entry.level,
+    label: entry.label,
+  };
+}
+
+export function dbToTierEntry(row: DbTierConfig): TierEntry {
+  return {
+    tier: row.tier,
+    label: row.label,
+  };
+}
+
+export function tierEntryToDb(
+  entry: TierEntry,
+  dealId: string
+): Omit<DbTierConfig, "id"> {
+  return {
+    deal_id: dealId,
+    tier: entry.tier,
     label: entry.label,
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { DealList } from "@/components/deals/deal-list";
 import { DealCreateDialog } from "@/components/deals/deal-create-dialog";
@@ -33,7 +34,8 @@ export default function DashboardPage() {
 
 /** Zustand ストア依存の実コンテンツ（Hydration完了後にのみマウントされる） */
 function DashboardContent() {
-  const deals = useDealStore((s) => s.deals);
+  const allDeals = useDealStore((s) => s.deals);
+  const deals = useMemo(() => allDeals.filter((d) => !d.trashedAt), [allDeals]);
 
   return (
     <div className="flex-1 bg-gray-50">

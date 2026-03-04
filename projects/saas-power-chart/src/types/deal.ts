@@ -15,6 +15,8 @@ export interface Deal {
   description: string;
   targetAmount?: number;
   expectedCloseDate?: string;
+  /** ゴミ箱に移動した日時（null/undefined = アクティブ） */
+  trashedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

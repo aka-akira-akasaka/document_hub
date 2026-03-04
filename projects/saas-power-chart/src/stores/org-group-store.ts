@@ -2,16 +2,26 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { OrgGroup } from "@/types/org-group";
 
+/** 案件ごとの部署種別定義 */
+export interface TierEntry {
+  tier: number;
+  label: string;
+}
+
 const EMPTY_GROUPS: OrgGroup[] = [];
+const EMPTY_TIER_CONFIG: TierEntry[] = [];
 
 interface OrgGroupState {
   groupsByDeal: Record<string, OrgGroup[]>;
+  /** 案件ごとの部署種別定義 */
+  tierConfigByDeal: Record<string, TierEntry[]>;
 
   addGroup: (data: {
     dealId: string;
     name: string;
     parentGroupId: string | null;
     color?: string;
+    tier?: number;
   }) => OrgGroup;
 
   updateGroup: (id: string, dealId: string, updates: Partial<OrgGroup>) => void;
@@ -28,8 +38,15 @@ interface OrgGroupState {
   /** 兄弟グループ内での表示順序を変更する（D&D横並び入れ替え用） */
   reorderGroup: (id: string, dealId: string, newIndex: number) => void;
 
+  /** 案件の部署種別定義を取得 */
+  getTierConfig: (dealId: string) => TierEntry[];
+  /** 案件の部署種別定義を丸ごと更新 */
+  setTierConfig: (dealId: string, entries: TierEntry[]) => void;
+
+  /** 案件データの一括削除 */
+  clearDealData: (dealId: string) => void;
   /** Supabase からの一括読み込み用 */
-  hydrate: (groupsByDeal: Record<string, OrgGroup[]>) => void;
+  hydrate: (groupsByDeal: Record<string, OrgGroup[]>, tierConfigByDeal?: Record<string, TierEntry[]>) => void;
   /** ログアウト時のリセット用 */
   reset: () => void;
 }
@@ -37,6 +54,7 @@ interface OrgGroupState {
 export const useOrgGroupStore = create<OrgGroupState>()(
   subscribeWithSelector((set, get) => ({
     groupsByDeal: {},
+    tierConfigByDeal: {},
 
     addGroup: (data) => {
       const existing = get().groupsByDeal[data.dealId] ?? [];
@@ -51,6 +69,7 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         parentGroupId: data.parentGroupId,
         color: data.color,
         sortOrder: maxOrder + 1,
+        tier: data.tier ?? 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -164,7 +183,29 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         };
       }),
 
-    hydrate: (groupsByDeal) => set({ groupsByDeal }),
-    reset: () => set({ groupsByDeal: {} }),
+    getTierConfig: (dealId) =>
+      get().tierConfigByDeal[dealId] ?? EMPTY_TIER_CONFIG,
+
+    setTierConfig: (dealId, entries) =>
+      set((state) => ({
+        tierConfigByDeal: {
+          ...state.tierConfigByDeal,
+          [dealId]: entries,
+        },
+      })),
+
+    hydrate: (groupsByDeal, tierConfigByDeal) =>
+      set({ groupsByDeal, tierConfigByDeal: tierConfigByDeal ?? {} }),
+
+    clearDealData: (dealId) =>
+      set((state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _g, ...restGroups } = state.groupsByDeal;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _t, ...restTier } = state.tierConfigByDeal;
+        return { groupsByDeal: restGroups, tierConfigByDeal: restTier };
+      }),
+
+    reset: () => set({ groupsByDeal: {}, tierConfigByDeal: {} }),
   }))
 );

@@ -23,6 +23,7 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
   const [hovered, setHovered] = useState(false);
 
   const isDropTarget = dragOverGroupId === group.id;
+  const isTieredGroup = (group.tier ?? 0) > 0;
 
   const handleAddSubGroup = useCallback(
     (e: React.MouseEvent | Event) => {
@@ -58,7 +59,9 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
       className={`rounded-lg border shadow-sm transition-all duration-200 ${
         isDropTarget
           ? "border-blue-400 bg-blue-50/80 shadow-md ring-2 ring-blue-200"
-          : "border-gray-200 bg-white/95"
+          : isTieredGroup
+            ? "border-dashed border-purple-300 bg-purple-50/60"
+            : "border-gray-200 bg-white/95"
       }`}
       style={{
         width: "100%",
@@ -67,7 +70,7 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* コネクタの受け口（4辺） */}
+      {/* コネクタの受け口（target: 4辺） */}
       <Handle
         type="target"
         position={Position.Top}
@@ -93,6 +96,36 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
         type="target"
         position={Position.Right}
         id="group-right"
+        className={groupHandleClass}
+        isConnectable
+      />
+
+      {/* コネクタの出口（source: 4辺） */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="group-source-top"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="group-source-bottom"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="group-source-left"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="group-source-right"
         className={groupHandleClass}
         isConnectable
       />

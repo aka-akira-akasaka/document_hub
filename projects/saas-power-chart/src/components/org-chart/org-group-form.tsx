@@ -17,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus, Check } from "lucide-react";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useHistoryStore } from "@/stores/history-store";
+import { useUiStore } from "@/stores/ui-store";
 import type { OrgGroup } from "@/types/org-group";
 import type { Stakeholder } from "@/types/stakeholder";
 import { MAX_GROUP_DEPTH } from "@/lib/constants";
@@ -50,8 +52,10 @@ export function OrgGroupForm({
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const deleteGroup = useOrgGroupStore((s) => s.deleteGroup);
   const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
+  const setTierConfig = useOrgGroupStore((s) => s.setTierConfig);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
+  const tierConfig = useOrgGroupStore((s) => s.tierConfigByDeal[dealId]);
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
 
@@ -59,20 +63,31 @@ export function OrgGroupForm({
   const [parentGroupId, setParentGroupId] = useState(
     editGroup?.parentGroupId ?? defaultParentGroupId ?? ""
   );
+  const [tier, setTier] = useState(editGroup?.tier ?? 0);
+
+  // インライン種別追加の状態
+  const [isAddingTier, setIsAddingTier] = useState(false);
+  const [newTierLabel, setNewTierLabel] = useState("");
 
   // ダイアログが開くたびにフォーム状態をリセット
   const prevOpenRef = useRef(false);
   if (open && !prevOpenRef.current) {
     // open が false→true に変わった瞬間
     if (isEdit && editGroup) {
-      // 編集時: 現在の部署名・親部署をプリセット
+      // 編集時: 現在の部署名・親部署・tierをプリセット
       setName(editGroup.name);
       setParentGroupId(editGroup.parentGroupId ?? "");
+      setTier(editGroup.tier ?? 0);
     } else {
       // 新規作成時: defaultParentGroupIdを反映、名前は空にリセット
       setParentGroupId(defaultParentGroupId ?? "");
       setName("");
+      // tierConfigの最初のエントリに合わせる（存在しない tier 値を避ける）
+      const currentConfig = useOrgGroupStore.getState().tierConfigByDeal[dealId];
+      setTier(currentConfig && currentConfig.length > 0 ? currentConfig[0].tier : 0);
     }
+    setIsAddingTier(false);
+    setNewTierLabel("");
   }
   prevOpenRef.current = open;
 
@@ -81,11 +96,15 @@ export function OrgGroupForm({
     if (!name.trim()) return;
 
     captureSnapshot();
+    // tier > 0（上位会議体）はネスト不可
+    const effectiveParentGroupId = tier > 0 ? null : (parentGroupId || null);
+
     if (isEdit && editGroup) {
       const newName = name.trim();
       updateGroup(editGroup.id, dealId, {
         name: newName,
-        parentGroupId: parentGroupId || null,
+        parentGroupId: effectiveParentGroupId,
+        tier,
       });
       // グループ名変更時: 所属メンバーのdepartmentも連動更新
       if (newName !== editGroup.name) {
@@ -95,11 +114,14 @@ export function OrgGroupForm({
         }
       }
     } else {
-      addGroup({
+      const newGroup = addGroup({
         dealId,
         name: name.trim(),
-        parentGroupId: parentGroupId || null,
+        parentGroupId: effectiveParentGroupId,
+        tier,
       });
+      // 作成した部署が画面中央に表示されるようスクロール予約
+      useUiStore.getState().setScrollToGroup(newGroup.id);
     }
     onOpenChange(false);
   };
@@ -109,6 +131,19 @@ export function OrgGroupForm({
     captureSnapshot();
     deleteGroup(editGroup.id, dealId);
     onOpenChange(false);
+  };
+
+  // インラインで新しい種別を追加
+  const handleAddNewTier = () => {
+    const label = newTierLabel.trim();
+    if (!label) return;
+    const currentConfig = tierConfig ?? [];
+    const nextTier = currentConfig.length > 0 ? Math.max(...currentConfig.map((t) => t.tier)) + 1 : 0;
+    const newEntry = { tier: nextTier, label };
+    setTierConfig(dealId, [...currentConfig, newEntry]);
+    setTier(nextTier);
+    setNewTierLabel("");
+    setIsAddingTier(false);
   };
 
   // 親グループの選択肢（自分自身と子孫は除外）
@@ -123,6 +158,11 @@ export function OrgGroupForm({
     ? getGroupDepth(parentGroupId, dealId)
     : -1;
   const isTooDeep = selectedParentDepth >= MAX_GROUP_DEPTH - 1;
+
+  // tierConfigのソート済みリスト
+  const sortedTierConfig = tierConfig
+    ? [...tierConfig].sort((a, b) => a.tier - b.tier)
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,11 +184,95 @@ export function OrgGroupForm({
             />
           </div>
 
+          {/* 種別セレクター */}
+          <div className="space-y-2">
+            <Label>種別 *</Label>
+            {isAddingTier ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  value={newTierLabel}
+                  onChange={(e) => setNewTierLabel(e.target.value)}
+                  placeholder="新しい組織種別名"
+                  className="h-9 text-sm flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddNewTier();
+                    } else if (e.key === "Escape") {
+                      setIsAddingTier(false);
+                      setNewTierLabel("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0"
+                  onClick={handleAddNewTier}
+                  disabled={!newTierLabel.trim()}
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 px-2 text-xs text-gray-500"
+                  onClick={() => { setIsAddingTier(false); setNewTierLabel(""); }}
+                >
+                  取消
+                </Button>
+              </div>
+            ) : (
+              <Select
+                value={tier.toString()}
+                onValueChange={(v) => {
+                  if (v === "__add_new__") {
+                    setIsAddingTier(true);
+                    return;
+                  }
+                  const newTier = Number(v);
+                  setTier(newTier);
+                  // tier > 0 はネスト不可なので親部署をリセット
+                  if (newTier > 0) setParentGroupId("");
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="種別を選択..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedTierConfig.map((t) => (
+                    <SelectItem key={t.tier} value={t.tier.toString()}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__add_new__" className="text-blue-600">
+                    <span className="flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" />
+                      新しい組織種別を追加
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {sortedTierConfig.length > 0 && !isAddingTier && (
+              <p className="text-xs text-muted-foreground">
+                {tier > 0
+                  ? "この種別は組織図の上段に配置されます"
+                  : "通常の部署としてレイアウトされます"}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>親部署</Label>
             <Select
               value={parentGroupId || "none"}
               onValueChange={(v) => setParentGroupId(v === "none" ? "" : v)}
+              disabled={tier > 0}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="なし（トップレベル）" />
@@ -162,6 +286,11 @@ export function OrgGroupForm({
                 ))}
               </SelectContent>
             </Select>
+            {tier > 0 && (
+              <p className="text-xs text-muted-foreground">
+                ※ 上位会議体はトップレベルに固定されます
+              </p>
+            )}
             {isTooDeep && (
               <p className="text-xs text-orange-600">
                 ※ 階層が深すぎます（最大{MAX_GROUP_DEPTH}階層）

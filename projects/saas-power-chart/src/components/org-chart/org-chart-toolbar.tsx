@@ -8,18 +8,18 @@ import {
   Layers,
   Maximize2,
   Minus,
-  Network,
   Plus,
   Redo2,
+  Save,
   Undo2,
   User,
 } from "lucide-react";
 
 interface OrgChartToolbarProps {
-  onAutoLayout: () => void;
   onAddNode: () => void;
   onAddGroup: () => void;
   onOpenLevelEditor: () => void;
+  onSaveTemplate: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -27,10 +27,10 @@ interface OrgChartToolbarProps {
 }
 
 export function OrgChartToolbar({
-  onAutoLayout,
   onAddNode,
   onAddGroup,
   onOpenLevelEditor,
+  onSaveTemplate,
   onUndo,
   onRedo,
   canUndo,
@@ -122,20 +122,6 @@ export function OrgChartToolbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onAutoLayout}
-          >
-            <Network className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">自動レイアウト</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
             onClick={onAddNode}
           >
             <span className="relative inline-flex">
@@ -175,7 +161,23 @@ export function OrgChartToolbar({
             <Layers className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">役職の階層設定</TooltipContent>
+        <TooltipContent side="right">役職・組織の階層設定</TooltipContent>
+      </Tooltip>
+
+      <div className="border-t my-0.5" />
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onSaveTemplate}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">テンプレートとして保存</TooltipContent>
       </Tooltip>
     </div>
   );

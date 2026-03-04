@@ -20,8 +20,9 @@ import {
   ATTITUDE_LABELS,
 } from "@/lib/constants";
 import type { InfluenceLevel } from "@/types/stakeholder";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/layout/empty-state";
-import { Users, ArrowUpDown, Search } from "lucide-react";
+import { Users, ArrowUpDown, Search, Plus } from "lucide-react";
 import type { Stakeholder } from "@/types/stakeholder";
 
 const EMPTY: Stakeholder[] = [];
@@ -39,6 +40,7 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
   );
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const openSheet = useUiStore((s) => s.openSheet);
+  const openSheetForCreate = useUiStore((s) => s.openSheetForCreate);
 
   // groupId → グループ名の逆引きMap（親部署表示用）
   const groupNameMap = useMemo(() => {
@@ -107,11 +109,17 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
   if (stakeholders.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <EmptyState
-          icon={Users}
-          title="ステークホルダーがいません"
-          description="組織図ビューからステークホルダーを追加してください。"
-        />
+        <div className="text-center space-y-4">
+          <EmptyState
+            icon={Users}
+            title="ステークホルダーがいません"
+            description="ステークホルダーを追加して管理を開始しましょう。"
+          />
+          <Button onClick={() => openSheetForCreate(null, null)}>
+            <Plus className="w-4 h-4 mr-1" />
+            人を追加
+          </Button>
+        </div>
       </div>
     );
   }
@@ -145,6 +153,12 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
           <span className="text-sm text-muted-foreground">
             {filtered.length}件
           </span>
+          <div className="ml-auto">
+            <Button size="sm" onClick={() => openSheetForCreate(null, null)}>
+              <Plus className="w-4 h-4 mr-1" />
+              人を追加
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -182,7 +196,7 @@ export function StakeholderTable({ dealId }: StakeholderTableProps) {
                 <tr
                   key={s.id}
                   className="border-t hover:bg-gray-50 cursor-pointer"
-                  onClick={() => openSheet(s.id, "view")}
+                  onClick={() => openSheet(s.id, "edit")}
                 >
                   <td className="px-4 py-2.5 font-medium">{s.name}</td>
                   <td className="px-4 py-2.5">{s.department}</td>

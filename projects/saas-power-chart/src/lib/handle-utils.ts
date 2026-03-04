@@ -45,6 +45,21 @@ function groupTargetHandles(
   ];
 }
 
+/** group ノードの source ハンドル座標 */
+function groupSourceHandles(
+  absX: number,
+  absY: number,
+  w: number,
+  h: number
+): HandlePos[] {
+  return [
+    { id: "group-source-top", x: absX + w / 2, y: absY },
+    { id: "group-source-bottom", x: absX + w / 2, y: absY + h },
+    { id: "group-source-left", x: absX, y: absY + h / 2 },
+    { id: "group-source-right", x: absX + w, y: absY + h / 2 },
+  ];
+}
+
 export interface NodeInfo {
   absX: number;
   absY: number;
@@ -60,7 +75,9 @@ export function findClosestHandlePair(
   source: NodeInfo,
   target: NodeInfo
 ): { sourceHandle: string; targetHandle: string } {
-  const srcHandles = stakeholderSourceHandles(source.absX, source.absY);
+  const srcHandles = source.isGroup
+    ? groupSourceHandles(source.absX, source.absY, source.width!, source.height!)
+    : stakeholderSourceHandles(source.absX, source.absY);
   const tgtHandles = target.isGroup
     ? groupTargetHandles(
         target.absX,
@@ -128,7 +145,14 @@ export function assignHandlesToEdges(
     const srcAbs = getAbsolutePosition(srcNode, nodeMap);
     const tgtAbs = getAbsolutePosition(tgtNode, nodeMap);
 
+    const isGroupSource = srcNode.type === "orgGroup";
     const isGroupTarget = tgtNode.type === "orgGroup";
+    const srcW = isGroupSource
+      ? ((srcNode.style?.width as number) ?? srcNode.measured?.width ?? 0)
+      : NODE_W;
+    const srcH = isGroupSource
+      ? ((srcNode.style?.height as number) ?? srcNode.measured?.height ?? 0)
+      : NODE_H;
     const tgtW = isGroupTarget
       ? ((tgtNode.style?.width as number) ?? tgtNode.measured?.width ?? 0)
       : NODE_W;
@@ -137,7 +161,13 @@ export function assignHandlesToEdges(
       : NODE_H;
 
     const { sourceHandle, targetHandle } = findClosestHandlePair(
-      { absX: srcAbs.x, absY: srcAbs.y, isGroup: false },
+      {
+        absX: srcAbs.x,
+        absY: srcAbs.y,
+        width: srcW,
+        height: srcH,
+        isGroup: isGroupSource,
+      },
       {
         absX: tgtAbs.x,
         absY: tgtAbs.y,

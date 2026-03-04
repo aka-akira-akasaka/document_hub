@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,7 +25,7 @@ import { useDealStore } from "@/stores/deal-store";
 import { flushPendingSync } from "@/lib/supabase-sync";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_OPTIONS } from "@/lib/constants";
 import type { DealStage } from "@/types/deal";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 export function DealCreateDialog() {
   const [open, setOpen] = useState(false);
@@ -31,43 +33,61 @@ export function DealCreateDialog() {
   const [clientName, setClientName] = useState("");
   const [stage, setStage] = useState<DealStage>("prospecting");
   const [description, setDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const addDeal = useDealStore((s) => s.addDeal);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !clientName.trim()) return;
+    if (!name.trim() || !clientName.trim() || isCreating) return;
 
-    const deal = addDeal({
-      name: name.trim(),
-      clientName: clientName.trim(),
-      stage,
-      description: description.trim(),
-    });
+    flushSync(() => setIsCreating(true));
+    try {
+      const start = Date.now();
+      const deal = addDeal({
+        name: name.trim(),
+        clientName: clientName.trim(),
+        stage,
+        description: description.trim(),
+      });
 
-    // デバウンスされた同期処理を即座に実行してDB永続化を保証
-    await flushPendingSync();
+      // デバウンスされた同期処理を即座に実行してDB永続化を保証
+      await flushPendingSync();
 
-    setName("");
-    setClientName("");
-    setStage("prospecting");
-    setDescription("");
-    setOpen(false);
-    router.push(`/deals/${deal.id}`);
+      // ローディング表示を最低800ms保証（sync が高速完了しても UX を維持）
+      const elapsed = Date.now() - start;
+      if (elapsed < 800) {
+        await new Promise((r) => setTimeout(r, 800 - elapsed));
+      }
+
+      // ダイアログは閉じず、ページ遷移でアンマウントされるまでローディング継続
+      router.push(`/deals/${deal.id}`);
+    } catch {
+      setIsCreating(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { if (!isCreating) setOpen(v); }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           新規案件
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent aria-describedby="deal-create-desc" onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
         <DialogHeader>
           <DialogTitle>新規案件を作成</DialogTitle>
+          <DialogDescription id="deal-create-desc" className="sr-only">
+            案件名と顧客名を入力して新しい案件を作成します
+          </DialogDescription>
         </DialogHeader>
+        {isCreating ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">案件を作成しています...</p>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">案件名</Label>
@@ -124,9 +144,13 @@ export function DealCreateDialog() {
             >
               キャンセル
             </Button>
-            <Button type="submit">作成</Button>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isCreating ? "作成中..." : "作成"}
+            </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

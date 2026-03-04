@@ -17,29 +17,33 @@ import {
   dbToRelationship,
   dbToOrgGroup,
   dbToOrgLevel,
+  dbToTierEntry,
   dealToDb,
   stakeholderToDb,
   relationshipToDb,
   orgGroupToDb,
   orgLevelToDb,
+  tierEntryToDb,
   type DbDeal,
   type DbStakeholder,
   type DbRelationship,
   type DbOrgGroup,
   type DbOrgLevelConfig,
+  type DbTierConfig,
 } from "@/lib/supabase-mappers";
 import type { Deal } from "@/types/deal";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
+import type { TierEntry } from "@/stores/org-group-store";
 import { toast } from "sonner";
 
 // --- 内部状態 ---
 let unsubscribers: (() => void)[] = [];
 let currentUserId: string | null = null;
 let syncEnabled = false;
-let initInProgress = false;
+let initPromise: Promise<void> | null = null;
 
 // デバウンス用タイマー + 保留中の同期関数
 const timers: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -58,6 +62,10 @@ function debounce(key: string, fn: () => void | Promise<void>, ms = 500) {
 /**
  * 保留中のデバウンスされた同期処理をすべて即座に実行する。
  * 案件作成・削除など、ナビゲーション前にDB永続化を保証したい場面で使う。
+ *
+ * RLS依存順序: deals を先に同期してから他テーブルを同期する。
+ * org_groups / stakeholders は deals.id を外部キーとして参照するため、
+ * deals が DB に存在しない状態で upsert すると 403 になる。
  */
 export async function flushPendingSync() {
   const entries = Object.entries(pendingSyncs);
@@ -66,7 +74,17 @@ export async function flushPendingSync() {
     delete timers[key];
     delete pendingSyncs[key];
   }
-  await Promise.all(entries.map(([, fn]) => fn()));
+
+  // deals を先に同期（RLS の外部キー依存）
+  const dealsEntry = entries.find(([key]) => key === "deals");
+  const rest = entries.filter(([key]) => key !== "deals");
+
+  if (dealsEntry) {
+    await dealsEntry[1]();
+  }
+  if (rest.length > 0) {
+    await Promise.all(rest.map(([, fn]) => fn()));
+  }
 }
 
 // ============================================
@@ -74,13 +92,23 @@ export async function flushPendingSync() {
 // ============================================
 
 export async function initSupabaseSync(userId: string) {
-  // 排他制御: 同時実行を防止（getUser と onAuthStateChange の競合回避）
-  if (initInProgress) return;
+  // 別の初期化が進行中なら、完了を待ってから戻る（getUser と onAuthStateChange の競合回避）
+  if (initPromise) {
+    await initPromise;
+    return;
+  }
   // 同じユーザーで同期済みなら何もしない（不要な teardown によるデータ消失を防止）
   if (currentUserId === userId && syncEnabled) return;
 
-  initInProgress = true;
+  initPromise = performInit(userId);
+  try {
+    await initPromise;
+  } finally {
+    initPromise = null;
+  }
+}
 
+async function performInit(userId: string) {
   // ユーザーが変わった場合のみ teardown（同期解除 + ストアリセット）
   if (currentUserId && currentUserId !== userId) {
     teardownSupabaseSync();
@@ -91,18 +119,22 @@ export async function initSupabaseSync(userId: string) {
 
   try {
     // 全データを並行取得
-    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes] =
+    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes] =
       await Promise.all([
         supabase.from("deals").select("*"),
         supabase.from("stakeholders").select("*"),
         supabase.from("relationships").select("*"),
         supabase.from("org_groups").select("*"),
         supabase.from("org_level_configs").select("*"),
+        supabase.from("tier_configs").select("*"),
       ]);
 
-    // エラーチェック
+    // エラーチェック（tier_configs はテーブル未作成の可能性があるためオプショナル扱い）
     for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
       if (res.error) throw res.error;
+    }
+    if (tierConfigsRes.error) {
+      console.warn("tier_configs テーブル未作成（スキップ）:", tierConfigsRes.error.message);
     }
 
     const deals = (dealsRes.data as DbDeal[]).map(dbToDeal);
@@ -110,6 +142,7 @@ export async function initSupabaseSync(userId: string) {
     const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
+    const tierConfigs = ((tierConfigsRes.data ?? []) as DbTierConfig[]);
 
     // localStorage からの移行チェック（データが空の場合のみ）
     if (deals.length === 0) {
@@ -123,6 +156,7 @@ export async function initSupabaseSync(userId: string) {
     const relationshipsByDeal: Record<string, Relationship[]> = {};
     const orgLevelConfigByDeal: Record<string, OrgLevelEntry[]> = {};
     const groupsByDeal: Record<string, OrgGroup[]> = {};
+    const tierConfigByDeal: Record<string, TierEntry[]> = {};
 
     for (const s of stakeholders) {
       (stakeholdersByDeal[s.dealId] ??= []).push(s);
@@ -137,6 +171,10 @@ export async function initSupabaseSync(userId: string) {
     for (const g of orgGroups) {
       (groupsByDeal[g.dealId] ??= []).push(g);
     }
+    for (const row of tierConfigs) {
+      const dealId = row.deal_id;
+      (tierConfigByDeal[dealId] ??= []).push(dbToTierEntry(row));
+    }
 
     // Zustand ストアに反映
     useDealStore.getState().hydrate(deals);
@@ -145,7 +183,7 @@ export async function initSupabaseSync(userId: string) {
       relationshipsByDeal,
       orgLevelConfigByDeal
     );
-    useOrgGroupStore.getState().hydrate(groupsByDeal);
+    useOrgGroupStore.getState().hydrate(groupsByDeal, tierConfigByDeal);
 
     // 変更監視を開始（初回のみ — 既に購読中なら重複しない）
     if (!syncEnabled) {
@@ -155,8 +193,6 @@ export async function initSupabaseSync(userId: string) {
   } catch (err) {
     console.error("Supabase sync init failed:", err);
     toast.error("データの読み込みに失敗しました");
-  } finally {
-    initInProgress = false;
   }
 }
 
@@ -235,6 +271,17 @@ function setupSubscriptions(userId: string) {
       }
     )
   );
+
+  // TierConfig の監視
+  unsubscribers.push(
+    useOrgGroupStore.subscribe(
+      (state) => state.tierConfigByDeal,
+      (byDeal) => {
+        if (!syncEnabled) return;
+        debounce("tierConfigs", () => syncTierConfigs(byDeal));
+      }
+    )
+  );
 }
 
 // ============================================
@@ -246,10 +293,23 @@ async function syncDeals(deals: Deal[], userId: string) {
   try {
     // Upsert
     if (deals.length > 0) {
+      const rows = deals.map((d) => dealToDb(d, userId));
       const { error } = await supabase
         .from("deals")
-        .upsert(deals.map((d) => dealToDb(d, userId)), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // trashed_at カラム未追加の場合、trashed_at を除外してリトライ
+        if (error.message?.includes("trashed_at")) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const rowsCompat = rows.map(({ trashed_at: _, ...rest }) => rest);
+          const { error: retryErr } = await supabase
+            .from("deals")
+            .upsert(rowsCompat, { onConflict: "id" });
+          if (retryErr) throw retryErr;
+        } else {
+          throw error;
+        }
+      }
     }
 
     // 削除: ローカルにないIDをDBから削除
@@ -299,10 +359,21 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
   try {
     const all = Object.values(byDeal).flat();
     if (all.length > 0) {
+      const rows = all.map(relationshipToDb);
       const { error } = await supabase
         .from("relationships")
-        .upsert(all.map(relationshipToDb), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // 新カラム未追加の場合、新カラムを除外してリトライ
+        const rowsCompat = rows.map(({
+          direction: _d, color: _c, source_type: _st, target_type: _tt,
+          source_handle: _sh, target_handle: _th, ...rest
+        }) => rest);
+        const { error: retryErr } = await supabase
+          .from("relationships")
+          .upsert(rowsCompat, { onConflict: "id" });
+        if (retryErr) throw retryErr;
+      }
     }
 
     const localIds = new Set(all.map((r) => r.id));
@@ -324,10 +395,19 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
   try {
     const all = Object.values(byDeal).flat();
     if (all.length > 0) {
+      const rows = all.map(orgGroupToDb);
       const { error } = await supabase
         .from("org_groups")
-        .upsert(all.map(orgGroupToDb), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // tier カラム未追加等のスキーマ不一致時、tier を除外してリトライ
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const rowsWithoutTier = rows.map(({ tier: _, ...rest }) => rest);
+        const { error: retryErr } = await supabase
+          .from("org_groups")
+          .upsert(rowsWithoutTier, { onConflict: "id" });
+        if (retryErr) throw retryErr;
+      }
     }
 
     const localIds = new Set(all.map((g) => g.id));
@@ -361,6 +441,33 @@ async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
   } catch (err) {
     console.error("org_level_configs sync failed:", err);
     toast.error("階層設定の保存に失敗しました");
+  }
+}
+
+async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
+  const supabase = createClient();
+  try {
+    // テーブル存在チェック（未作成なら静かにスキップ）
+    const probe = await supabase.from("tier_configs").select("id").limit(0);
+    if (probe.error) {
+      console.warn("tier_configs テーブル未作成（同期スキップ）");
+      return;
+    }
+
+    // tier_configs は deal_id + tier がユニーク制約
+    // 全件削除して再挿入が最もシンプル（org_level_configs と同パターン）
+    for (const [dealId, entries] of Object.entries(byDeal)) {
+      await supabase.from("tier_configs").delete().eq("deal_id", dealId);
+      if (entries.length > 0) {
+        const { error } = await supabase
+          .from("tier_configs")
+          .insert(entries.map((e) => tierEntryToDb(e, dealId)));
+        if (error) throw error;
+      }
+    }
+  } catch (err) {
+    console.error("tier_configs sync failed:", err);
+    toast.error("部署種別設定の保存に失敗しました");
   }
 }
 
