@@ -17,22 +17,26 @@ import {
   dbToRelationship,
   dbToOrgGroup,
   dbToOrgLevel,
+  dbToTierEntry,
   dealToDb,
   stakeholderToDb,
   relationshipToDb,
   orgGroupToDb,
   orgLevelToDb,
+  tierEntryToDb,
   type DbDeal,
   type DbStakeholder,
   type DbRelationship,
   type DbOrgGroup,
   type DbOrgLevelConfig,
+  type DbTierConfig,
 } from "@/lib/supabase-mappers";
 import type { Deal } from "@/types/deal";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
+import type { TierEntry } from "@/stores/org-group-store";
 import { toast } from "sonner";
 
 // --- 内部状態 ---
@@ -115,17 +119,18 @@ async function performInit(userId: string) {
 
   try {
     // 全データを並行取得
-    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes] =
+    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes] =
       await Promise.all([
         supabase.from("deals").select("*"),
         supabase.from("stakeholders").select("*"),
         supabase.from("relationships").select("*"),
         supabase.from("org_groups").select("*"),
         supabase.from("org_level_configs").select("*"),
+        supabase.from("tier_configs").select("*"),
       ]);
 
     // エラーチェック
-    for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
+    for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes]) {
       if (res.error) throw res.error;
     }
 
@@ -134,6 +139,7 @@ async function performInit(userId: string) {
     const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
+    const tierConfigs = (tierConfigsRes.data as DbTierConfig[]);
 
     // localStorage からの移行チェック（データが空の場合のみ）
     if (deals.length === 0) {
@@ -147,6 +153,7 @@ async function performInit(userId: string) {
     const relationshipsByDeal: Record<string, Relationship[]> = {};
     const orgLevelConfigByDeal: Record<string, OrgLevelEntry[]> = {};
     const groupsByDeal: Record<string, OrgGroup[]> = {};
+    const tierConfigByDeal: Record<string, TierEntry[]> = {};
 
     for (const s of stakeholders) {
       (stakeholdersByDeal[s.dealId] ??= []).push(s);
@@ -161,6 +168,10 @@ async function performInit(userId: string) {
     for (const g of orgGroups) {
       (groupsByDeal[g.dealId] ??= []).push(g);
     }
+    for (const row of tierConfigs) {
+      const dealId = row.deal_id;
+      (tierConfigByDeal[dealId] ??= []).push(dbToTierEntry(row));
+    }
 
     // Zustand ストアに反映
     useDealStore.getState().hydrate(deals);
@@ -169,7 +180,7 @@ async function performInit(userId: string) {
       relationshipsByDeal,
       orgLevelConfigByDeal
     );
-    useOrgGroupStore.getState().hydrate(groupsByDeal);
+    useOrgGroupStore.getState().hydrate(groupsByDeal, tierConfigByDeal);
 
     // 変更監視を開始（初回のみ — 既に購読中なら重複しない）
     if (!syncEnabled) {
@@ -254,6 +265,17 @@ function setupSubscriptions(userId: string) {
       (byDeal) => {
         if (!syncEnabled) return;
         debounce("orgGroups", () => syncOrgGroups(byDeal));
+      }
+    )
+  );
+
+  // TierConfig の監視
+  unsubscribers.push(
+    useOrgGroupStore.subscribe(
+      (state) => state.tierConfigByDeal,
+      (byDeal) => {
+        if (!syncEnabled) return;
+        debounce("tierConfigs", () => syncTierConfigs(byDeal));
       }
     )
   );
@@ -383,6 +405,26 @@ async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
   } catch (err) {
     console.error("org_level_configs sync failed:", err);
     toast.error("階層設定の保存に失敗しました");
+  }
+}
+
+async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
+  const supabase = createClient();
+  try {
+    // tier_configs は deal_id + tier がユニーク制約
+    // 全件削除して再挿入が最もシンプル（org_level_configs と同パターン）
+    for (const [dealId, entries] of Object.entries(byDeal)) {
+      await supabase.from("tier_configs").delete().eq("deal_id", dealId);
+      if (entries.length > 0) {
+        const { error } = await supabase
+          .from("tier_configs")
+          .insert(entries.map((e) => tierEntryToDb(e, dealId)));
+        if (error) throw error;
+      }
+    }
+  } catch (err) {
+    console.error("tier_configs sync failed:", err);
+    toast.error("部署種別設定の保存に失敗しました");
   }
 }
 

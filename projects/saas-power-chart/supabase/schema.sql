@@ -86,6 +86,7 @@ create table public.relationships (
   direction text,
   color text,
   target_type text default 'stakeholder',
+  source_type text default 'stakeholder',
   source_handle text,
   target_handle text,
   created_at timestamptz not null default now()
@@ -114,6 +115,7 @@ create table public.org_groups (
   parent_group_id text,
   color text,
   sort_order integer not null default 0,
+  tier integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -151,6 +153,30 @@ create policy "org_level_configs_all" on public.org_level_configs
     exists (
       select 1 from public.deals
       where deals.id = org_level_configs.deal_id
+        and deals.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- tier_configs: 部署種別定義テーブル
+-- ============================================
+create table public.tier_configs (
+  id uuid primary key default uuid_generate_v4(),
+  deal_id uuid not null references public.deals(id) on delete cascade,
+  tier integer not null,
+  label text not null,
+  constraint unique_deal_tier unique (deal_id, tier)
+);
+
+create index idx_tier_configs_deal_id on public.tier_configs(deal_id);
+
+alter table public.tier_configs enable row level security;
+
+create policy "tier_configs_all" on public.tier_configs
+  for all using (
+    exists (
+      select 1 from public.deals
+      where deals.id = tier_configs.deal_id
         and deals.user_id = auth.uid()
     )
   );

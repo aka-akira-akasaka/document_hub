@@ -2,10 +2,19 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { OrgGroup } from "@/types/org-group";
 
+/** 案件ごとの部署種別定義 */
+export interface TierEntry {
+  tier: number;
+  label: string;
+}
+
 const EMPTY_GROUPS: OrgGroup[] = [];
+const EMPTY_TIER_CONFIG: TierEntry[] = [];
 
 interface OrgGroupState {
   groupsByDeal: Record<string, OrgGroup[]>;
+  /** 案件ごとの部署種別定義 */
+  tierConfigByDeal: Record<string, TierEntry[]>;
 
   addGroup: (data: {
     dealId: string;
@@ -29,8 +38,13 @@ interface OrgGroupState {
   /** 兄弟グループ内での表示順序を変更する（D&D横並び入れ替え用） */
   reorderGroup: (id: string, dealId: string, newIndex: number) => void;
 
+  /** 案件の部署種別定義を取得 */
+  getTierConfig: (dealId: string) => TierEntry[];
+  /** 案件の部署種別定義を丸ごと更新 */
+  setTierConfig: (dealId: string, entries: TierEntry[]) => void;
+
   /** Supabase からの一括読み込み用 */
-  hydrate: (groupsByDeal: Record<string, OrgGroup[]>) => void;
+  hydrate: (groupsByDeal: Record<string, OrgGroup[]>, tierConfigByDeal?: Record<string, TierEntry[]>) => void;
   /** ログアウト時のリセット用 */
   reset: () => void;
 }
@@ -38,6 +52,7 @@ interface OrgGroupState {
 export const useOrgGroupStore = create<OrgGroupState>()(
   subscribeWithSelector((set, get) => ({
     groupsByDeal: {},
+    tierConfigByDeal: {},
 
     addGroup: (data) => {
       const existing = get().groupsByDeal[data.dealId] ?? [];
@@ -166,7 +181,20 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         };
       }),
 
-    hydrate: (groupsByDeal) => set({ groupsByDeal }),
-    reset: () => set({ groupsByDeal: {} }),
+    getTierConfig: (dealId) =>
+      get().tierConfigByDeal[dealId] ?? EMPTY_TIER_CONFIG,
+
+    setTierConfig: (dealId, entries) =>
+      set((state) => ({
+        tierConfigByDeal: {
+          ...state.tierConfigByDeal,
+          [dealId]: entries,
+        },
+      })),
+
+    hydrate: (groupsByDeal, tierConfigByDeal) =>
+      set({ groupsByDeal, tierConfigByDeal: tierConfigByDeal ?? {} }),
+
+    reset: () => set({ groupsByDeal: {}, tierConfigByDeal: {} }),
   }))
 );

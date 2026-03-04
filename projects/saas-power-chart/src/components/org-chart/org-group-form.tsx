@@ -52,6 +52,7 @@ export function OrgGroupForm({
   const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
+  const tierConfig = useOrgGroupStore((s) => s.tierConfigByDeal[dealId]);
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
   const updateStakeholder = useStakeholderStore((s) => s.updateStakeholder);
 
@@ -152,32 +153,40 @@ export function OrgGroupForm({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>種別</Label>
-            <Select
-              value={tier.toString()}
-              onValueChange={(v) => {
-                const newTier = Number(v);
-                setTier(newTier);
-                // 上位会議体はネスト不可なので親部署をリセット
-                if (newTier > 0) setParentGroupId("");
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">通常部署</SelectItem>
-                <SelectItem value="1">上位会議体（役員会等）</SelectItem>
-                <SelectItem value="2">最上位会議体（株主総会等）</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {tier > 0
-                ? "上位会議体は組織図の上段に配置されます"
-                : "通常の部署としてレイアウトされます"}
-            </p>
-          </div>
+          {/* 種別: tierConfigが定義されていれば動的表示、なければ非表示 */}
+          {tierConfig && tierConfig.length > 0 && (
+            <div className="space-y-2">
+              <Label>種別</Label>
+              <Select
+                value={tier.toString()}
+                onValueChange={(v) => {
+                  const newTier = Number(v);
+                  setTier(newTier);
+                  // tier > 0 はネスト不可なので親部署をリセット
+                  if (newTier > 0) setParentGroupId("");
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {tierConfig
+                    .slice()
+                    .sort((a, b) => a.tier - b.tier)
+                    .map((t) => (
+                      <SelectItem key={t.tier} value={t.tier.toString()}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {tier > 0
+                  ? "この種別は組織図の上段に配置されます"
+                  : "通常の部署としてレイアウトされます"}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>親部署</Label>

@@ -26,6 +26,8 @@ export interface Relationship {
   color?: string;
   /** 接続先の種類（省略時は "stakeholder"） */
   targetType?: RelationshipTargetType;
+  /** 接続元の種類（省略時は "stakeholder"） */
+  sourceType?: RelationshipTargetType;
   /** ユーザーが接続操作で指定したソースハンドルID */
   sourceHandle?: string;
   /** ユーザーが接続操作で指定したターゲットハンドルID */

@@ -70,7 +70,7 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* コネクタの受け口（4辺） */}
+      {/* コネクタの受け口（target: 4辺） */}
       <Handle
         type="target"
         position={Position.Top}
@@ -96,6 +96,36 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
         type="target"
         position={Position.Right}
         id="group-right"
+        className={groupHandleClass}
+        isConnectable
+      />
+
+      {/* コネクタの出口（source: 4辺） */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="group-source-top"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="group-source-bottom"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="group-source-left"
+        className={groupHandleClass}
+        isConnectable
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="group-source-right"
         className={groupHandleClass}
         isConnectable
       />

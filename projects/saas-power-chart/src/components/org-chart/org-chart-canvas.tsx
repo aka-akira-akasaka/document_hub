@@ -141,7 +141,11 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       if (!connection.source || !connection.target) return;
       if (connection.source === connection.target) return;
 
+      const isGroupSource = connection.source.startsWith("group-");
       const isGroupTarget = connection.target.startsWith("group-");
+      const sourceId = isGroupSource
+        ? connection.source.replace(/^group-/, "")
+        : connection.source;
       const targetId = isGroupTarget
         ? connection.target.replace(/^group-/, "")
         : connection.target;
@@ -149,11 +153,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
       captureSnapshot();
       addRelationship({
         dealId,
-        sourceId: connection.source,
+        sourceId,
         targetId,
         type: isGroupTarget ? "oversight" : "informal",
         bidirectional: false,
         direction: "forward",
+        sourceType: isGroupSource ? "group" : "stakeholder",
         targetType: isGroupTarget ? "group" : "stakeholder",
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
@@ -288,6 +293,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
+        connectionRadius={40}
         minZoom={0.1}
         maxZoom={2}
         proOptions={PRO_OPTIONS}

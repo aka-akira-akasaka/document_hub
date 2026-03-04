@@ -18,12 +18,17 @@ export function applyTemplate(dealId: string, template: DealTemplate): void {
   // Undo 用スナップショット（1回で全テンプレート適用を一括巻き戻し）
   useHistoryStore.getState().captureSnapshot();
 
-  const { addGroup } = useOrgGroupStore.getState();
+  const { addGroup, setTierConfig } = useOrgGroupStore.getState();
   const { addStakeholder, setOrgLevels } = useStakeholderStore.getState();
 
   // --- 役職階層の登録 ---
   if (template.orgLevels.length > 0) {
     setOrgLevels(dealId, template.orgLevels);
+  }
+
+  // --- 部署種別の登録 ---
+  if (template.tierConfig && template.tierConfig.length > 0) {
+    setTierConfig(dealId, template.tierConfig);
   }
 
   // refKey → 実際の UUID マッピング

@@ -49,11 +49,11 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, updateRelationship, captureSnapshot]
   );
 
-  // relationshipエッジを描画（targetTypeに応じてtarget IDを変換）
+  // relationshipエッジを描画（sourceType/targetTypeに応じてIDを変換）
   const relEdges: Edge[] = useMemo(() =>
     relationships.map((r) => ({
       id: r.id,
-      source: r.sourceId,
+      source: r.sourceType === "group" ? `group-${r.sourceId}` : r.sourceId,
       target: r.targetType === "group" ? `group-${r.targetId}` : r.targetId,
       type: "relationship",
       zIndex: 1000,

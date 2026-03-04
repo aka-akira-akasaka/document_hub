@@ -36,6 +36,11 @@ export interface TemplateOrgLevel {
   label: string;
 }
 
+export interface TemplateTierConfig {
+  tier: number;
+  label: string;
+}
+
 export interface DealTemplate {
   id: string;
   name: string;
@@ -43,6 +48,7 @@ export interface DealTemplate {
   groupCount: number;
   stakeholderCount: number;
   orgLevels: TemplateOrgLevel[];
+  tierConfig?: TemplateTierConfig[];
   groups: TemplateGroup[];
   stakeholders: TemplateStakeholder[];
 }
@@ -55,6 +61,10 @@ const BANK: DealTemplate = {
   description: "役員会・本店営業部・融資部・審査部など銀行の典型的な組織構成",
   groupCount: 8,
   stakeholderCount: 6,
+  tierConfig: [
+    { tier: 0, label: "部署" },
+    { tier: 1, label: "会議体" },
+  ],
   orgLevels: [
     { level: 1, label: "頭取" },
     { level: 2, label: "副頭取" },
@@ -157,6 +167,10 @@ const BUSINESS_COMPANY: DealTemplate = {
   description: "経営企画・情報システム・営業部など事業会社の典型的な組織構成",
   groupCount: 9,
   stakeholderCount: 4,
+  tierConfig: [
+    { tier: 0, label: "部署" },
+    { tier: 1, label: "会議体" },
+  ],
   orgLevels: [
     { level: 1, label: "代表取締役" },
     { level: 2, label: "取締役" },

@@ -46,6 +46,7 @@ interface StakeholderState {
     direction?: RelationshipDirection;
     color?: string;
     targetType?: RelationshipTargetType;
+    sourceType?: RelationshipTargetType;
     sourceHandle?: string;
     targetHandle?: string;
   }) => Relationship;
