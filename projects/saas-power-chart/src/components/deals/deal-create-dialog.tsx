@@ -23,7 +23,7 @@ import { useDealStore } from "@/stores/deal-store";
 import { flushPendingSync } from "@/lib/supabase-sync";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_OPTIONS } from "@/lib/constants";
 import type { DealStage } from "@/types/deal";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 export function DealCreateDialog() {
   const [open, setOpen] = useState(false);
@@ -31,29 +31,35 @@ export function DealCreateDialog() {
   const [clientName, setClientName] = useState("");
   const [stage, setStage] = useState<DealStage>("prospecting");
   const [description, setDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const addDeal = useDealStore((s) => s.addDeal);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !clientName.trim()) return;
+    if (!name.trim() || !clientName.trim() || isCreating) return;
 
-    const deal = addDeal({
-      name: name.trim(),
-      clientName: clientName.trim(),
-      stage,
-      description: description.trim(),
-    });
+    setIsCreating(true);
+    try {
+      const deal = addDeal({
+        name: name.trim(),
+        clientName: clientName.trim(),
+        stage,
+        description: description.trim(),
+      });
 
-    // デバウンスされた同期処理を即座に実行してDB永続化を保証
-    await flushPendingSync();
+      // デバウンスされた同期処理を即座に実行してDB永続化を保証
+      await flushPendingSync();
 
-    setName("");
-    setClientName("");
-    setStage("prospecting");
-    setDescription("");
-    setOpen(false);
-    router.push(`/deals/${deal.id}`);
+      setName("");
+      setClientName("");
+      setStage("prospecting");
+      setDescription("");
+      setOpen(false);
+      router.push(`/deals/${deal.id}`);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -124,7 +130,10 @@ export function DealCreateDialog() {
             >
               キャンセル
             </Button>
-            <Button type="submit">作成</Button>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isCreating ? "作成中..." : "作成"}
+            </Button>
           </div>
         </form>
       </DialogContent>

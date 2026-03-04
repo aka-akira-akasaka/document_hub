@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DEAL_TEMPLATES, type DealTemplate } from "@/lib/deal-templates";
 import { applyTemplate } from "@/lib/apply-template";
 import { flushPendingSync } from "@/lib/supabase-sync";
-import { Building2, Landmark, Building, Plus } from "lucide-react";
+import { Building2, Landmark, Building, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TEMPLATE_ICONS: Record<string, React.ElementType> = {
@@ -20,19 +20,26 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ dealId }: TemplateSelectorProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [applyingId, setApplyingId] = useState<string | null>(null);
 
   if (dismissed) return null;
 
   const handleSelect = async (template: DealTemplate) => {
+    if (applyingId) return;
     if (template.id === "blank") {
       setDismissed(true);
       return;
     }
-    // deals のDB永続化を保証してからテンプレート適用（RLS: org_groups は deal_id 経由で認可）
-    await flushPendingSync();
-    applyTemplate(dealId, template);
-    // テンプレートで追加されたデータを即座にDB永続化（デバウンス500ms待ちを回避）
-    await flushPendingSync();
+    setApplyingId(template.id);
+    try {
+      // deals のDB永続化を保証してからテンプレート適用（RLS: org_groups は deal_id 経由で認可）
+      await flushPendingSync();
+      applyTemplate(dealId, template);
+      // テンプレートで追加されたデータを即座にDB永続化（デバウンス500ms待ちを回避）
+      await flushPendingSync();
+    } finally {
+      setApplyingId(null);
+    }
   };
 
   return (
@@ -51,18 +58,23 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
           {DEAL_TEMPLATES.map((template) => {
             const Icon = TEMPLATE_ICONS[template.id] ?? Building;
             const isBlank = template.id === "blank";
+            const isApplying = applyingId === template.id;
+            const isDisabled = applyingId !== null;
 
             return (
               <button
                 key={template.id}
                 type="button"
                 onClick={() => handleSelect(template)}
+                disabled={isDisabled}
                 className={cn(
                   "group relative flex flex-col items-center gap-2 rounded-xl border bg-white p-5 text-center transition-all",
                   "hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5",
                   isBlank
                     ? "border-dashed border-gray-300"
-                    : "border-gray-200"
+                    : "border-gray-200",
+                  isDisabled && !isApplying && "opacity-50 cursor-not-allowed",
+                  isApplying && "border-blue-400 shadow-md"
                 )}
               >
                 <div
@@ -73,7 +85,11 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
                       : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  {isApplying ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Icon className="h-5 w-5" />
+                  )}
                 </div>
                 <span className="text-sm font-medium text-gray-900">
                   {template.name}
