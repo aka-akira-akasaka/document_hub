@@ -3,7 +3,6 @@
 import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
-  getBezierPath,
   getSmoothStepPath,
   type EdgeProps,
   EdgeLabelRenderer,
@@ -67,12 +66,52 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const hasStartMarker = direction === "reverse" || direction === "bidirectional";
 
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
-  const [edgePath, labelX, labelY] = isGroupEdge
-    ? getSmoothStepPath(pathParams)
-    : getBezierPath(pathParams);
 
-  // 矢印マーカーをラインの全体方向に合わせる（ノード面に対し直角ではなく）
-  const angleDeg = Math.atan2(targetY - sourceY, targetX - sourceX) * (180 / Math.PI);
+  // グループ: getSmoothStepPath（直角パス）
+  // 人物間: ソース→ターゲット方向に沿ったカスタムベジェ
+  //   → orient="auto" で矢印がライン方向に自然に向く
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
+
+  if (isGroupEdge) {
+    [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
+  } else {
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 1) {
+      edgePath = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
+    } else {
+      // ソース→ターゲット方向の単位ベクトル
+      const nx = dx / dist;
+      const ny = dy / dist;
+      // 垂直方向（カーブ用）
+      const perpX = -ny;
+      const perpY = nx;
+
+      // ハンドル方向とライン方向のずれからカーブ量を計算
+      // ハンドルが左右なら sourcePosition は "left"|"right" → 水平成分
+      // ハンドルが上下なら sourcePosition は "top"|"bottom" → 垂直成分
+      const handleDirX = sourcePosition === "left" ? -1 : sourcePosition === "right" ? 1 : 0;
+      const handleDirY = sourcePosition === "top" ? -1 : sourcePosition === "bottom" ? 1 : 0;
+      // ハンドル方向とライン方向の外積（符号でカーブ方向決定）
+      const cross = handleDirX * ny - handleDirY * nx;
+      const curvature = cross * Math.min(dist * 0.2, 40);
+
+      const handleLen = dist * 0.35;
+      const cp1x = sourceX + nx * handleLen + perpX * curvature;
+      const cp1y = sourceY + ny * handleLen + perpY * curvature;
+      const cp2x = targetX - nx * handleLen + perpX * curvature;
+      const cp2y = targetY - ny * handleLen + perpY * curvature;
+
+      edgePath = `M ${sourceX},${sourceY} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${targetX},${targetY}`;
+    }
+
+    labelX = (sourceX + targetX) / 2;
+    labelY = (sourceY + targetY) / 2;
+  }
 
   // 編集状態
   const [isEditing, setIsEditing] = useState(false);
@@ -151,7 +190,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="10"
             refY="6"
-            orient={angleDeg}
+            orient="auto"
             markerUnits="userSpaceOnUse"
           >
             <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
@@ -164,7 +203,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="2"
             refY="6"
-            orient={angleDeg}
+            orient="auto"
             markerUnits="userSpaceOnUse"
           >
             <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
