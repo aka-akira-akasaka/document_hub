@@ -38,6 +38,8 @@ export interface GroupLayoutOptions {
     draggedGroupId: string;
     insertIndex: number;
   } | null;
+  /** 役職階層定義（表示順でソートするため） */
+  orgLevelConfig?: { level: number }[];
 }
 
 /**
@@ -57,7 +59,7 @@ export function computeGroupLayout(
   const groupTree = buildGroupTree(orgGroups, options?.reorderPreview ?? undefined);
 
   // Step 2: ステークホルダーをグループに振り分け
-  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups);
+  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups, options?.orgLevelConfig);
 
   // Step 3: グループサイズをボトムアップで計算
   for (const root of groupTree) {
@@ -201,7 +203,8 @@ function buildGroupTree(
 function assignStakeholders(
   stakeholders: Stakeholder[],
   groupTree: GroupTreeNode[],
-  orgGroups: OrgGroup[]
+  orgGroups: OrgGroup[],
+  orgLevelConfig?: { level: number }[]
 ): Stakeholder[] {
   const groupNodeMap = new Map<string, GroupTreeNode>();
   const collectNodes = (nodes: GroupTreeNode[]) => {
@@ -228,9 +231,20 @@ function assignStakeholders(
     }
   }
 
-  // メンバーをorgLevelで並び替え
+  // メンバーを役職階層の設定順序で並び替え
+  // （階層設定のUIでの並び順に準拠。設定外のlevelは末尾にフォールバック）
+  const levelOrderMap = new Map<number, number>();
+  if (orgLevelConfig && orgLevelConfig.length > 0) {
+    orgLevelConfig.forEach((entry, idx) => {
+      levelOrderMap.set(entry.level, idx);
+    });
+  }
   for (const node of groupNodeMap.values()) {
-    node.members.sort((a, b) => a.orgLevel - b.orgLevel);
+    node.members.sort((a, b) => {
+      const orderA = levelOrderMap.get(a.orgLevel) ?? (1000 + a.orgLevel);
+      const orderB = levelOrderMap.get(b.orgLevel) ?? (1000 + b.orgLevel);
+      return orderA - orderB;
+    });
   }
 
   return freeFloating;

@@ -67,9 +67,10 @@ export function useGroupChartLayout(dealId: string) {
   // グループベースレイアウト計算
   const groupBoundsRef = useRef<GroupBound[]>([]);
   const reorderPreview = useUiStore((s) => s.reorderPreview);
+  const orgLevelConfig = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
 
   const { layoutNodes, allEdges } = useMemo(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview });
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, orgLevelConfig });
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     // groupBoundsをRefに保存（コールバック内で参照するため）
@@ -78,7 +79,7 @@ export function useGroupChartLayout(dealId: string) {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
     };
-  }, [stakeholders, orgGroups, relEdges, reorderPreview]);
+  }, [stakeholders, orgGroups, relEdges, reorderPreview, orgLevelConfig]);
 
   // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
   const nodes: Node[] = layoutNodes;
