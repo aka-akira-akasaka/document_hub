@@ -178,7 +178,7 @@ export function OrgChartToolbar({
             <Layers className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">役職の階層設定</TooltipContent>
+        <TooltipContent side="right">役職・組織の階層設定</TooltipContent>
       </Tooltip>
 
       <div className="border-t my-0.5" />

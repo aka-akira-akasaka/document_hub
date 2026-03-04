@@ -299,7 +299,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
       >
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>役職・組織の階層設定</DialogTitle>
+            <DialogTitle>階層設定</DialogTitle>
             <div className="flex gap-1">
               <Button
                 type="button"
