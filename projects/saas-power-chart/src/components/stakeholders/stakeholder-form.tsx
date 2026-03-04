@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { useHistoryStore } from "@/stores/history-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useUiStore } from "@/stores/ui-store";
 import { TitleCombobox } from "@/components/org-chart/title-combobox";
+import { DepartmentCombobox } from "@/components/org-chart/department-combobox";
 import type { OrgGroup } from "@/types/org-group";
 
 const EMPTY_GROUPS: OrgGroup[] = [];
@@ -67,6 +68,7 @@ export function StakeholderForm({
   const dealOrgLevels = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
   const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
+  const addGroup = useOrgGroupStore((s) => s.addGroup);
   const createGroupId = useUiStore((s) => s.createGroupId);
   // 案件に保存済みの階層定義を使用。未設定時は空リスト（+新しい役職を追加のみ表示）
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : [];
@@ -103,21 +105,15 @@ export function StakeholderForm({
   );
   const [groupId, setGroupId] = useState(stakeholder?.groupId ?? createGroupId ?? "");
 
-  // グループツリーをフラット化（階層インデント付き）
-  const groupTree = useMemo(() => {
-    const result: { id: string; name: string; depth: number }[] = [];
-    const addRecursive = (parentId: string | null, depth: number) => {
-      const children = orgGroups
-        .filter((g) => g.parentGroupId === parentId)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      for (const child of children) {
-        result.push({ id: child.id, name: child.name, depth });
-        addRecursive(child.id, depth + 1);
-      }
-    };
-    addRecursive(null, 0);
-    return result;
-  }, [orgGroups]);
+  // 新しい部署をインライン追加するコールバック
+  const handleAddGroup = useCallback((name: string): string => {
+    const newGroup = addGroup({
+      dealId,
+      name,
+      parentGroupId: null,
+    });
+    return newGroup.id;
+  }, [addGroup, dealId]);
 
   // 役職選択時: titleとorgLevelの両方を更新
   const handleTitleChange = useCallback((newOrgLevel: string, label: string) => {
@@ -254,35 +250,18 @@ export function StakeholderForm({
         </Select>
       </div>
 
-      {orgGroups.length > 0 && (
-        <div className="space-y-2">
-          <Label>所属部門グループ</Label>
-          <Select
-            value={groupId || "none"}
-            onValueChange={(v) => setGroupId(v === "none" ? "" : v)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="なし（フリー配置）" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">なし（フリー配置）</SelectItem>
-              {groupTree.map((g) => (
-                <SelectItem key={g.id} value={g.id}>
-                  <span style={{ paddingLeft: g.depth * 16 }} className="flex items-center gap-1">
-                    {g.depth > 0 && (
-                      <span className="text-muted-foreground/50 text-xs">└</span>
-                    )}
-                    {g.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            部門グループボックス内に配置します
-          </p>
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label>所属部門グループ</Label>
+        <DepartmentCombobox
+          value={groupId}
+          onValueChange={setGroupId}
+          groups={orgGroups}
+          onAddGroup={handleAddGroup}
+        />
+        <p className="text-xs text-muted-foreground">
+          部門グループボックス内に配置します
+        </p>
+      </div>
 
       <div className="space-y-2">
         <Label>上司</Label>
