@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -67,9 +68,12 @@ export function DealCreateDialog() {
           新規案件
         </Button>
       </DialogTrigger>
-      <DialogContent onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
+      <DialogContent aria-describedby="deal-create-desc" onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
         <DialogHeader>
           <DialogTitle>新規案件を作成</DialogTitle>
+          <DialogDescription id="deal-create-desc" className="sr-only">
+            案件名と顧客名を入力して新しい案件を作成します
+          </DialogDescription>
         </DialogHeader>
         {isCreating ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">

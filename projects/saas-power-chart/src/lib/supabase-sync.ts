@@ -58,6 +58,10 @@ function debounce(key: string, fn: () => void | Promise<void>, ms = 500) {
 /**
  * 保留中のデバウンスされた同期処理をすべて即座に実行する。
  * 案件作成・削除など、ナビゲーション前にDB永続化を保証したい場面で使う。
+ *
+ * RLS依存順序: deals を先に同期してから他テーブルを同期する。
+ * org_groups / stakeholders は deals.id を外部キーとして参照するため、
+ * deals が DB に存在しない状態で upsert すると 403 になる。
  */
 export async function flushPendingSync() {
   const entries = Object.entries(pendingSyncs);
@@ -66,7 +70,17 @@ export async function flushPendingSync() {
     delete timers[key];
     delete pendingSyncs[key];
   }
-  await Promise.all(entries.map(([, fn]) => fn()));
+
+  // deals を先に同期（RLS の外部キー依存）
+  const dealsEntry = entries.find(([key]) => key === "deals");
+  const rest = entries.filter(([key]) => key !== "deals");
+
+  if (dealsEntry) {
+    await dealsEntry[1]();
+  }
+  if (rest.length > 0) {
+    await Promise.all(rest.map(([, fn]) => fn()));
+  }
 }
 
 // ============================================
