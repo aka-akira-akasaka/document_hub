@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
 /** Zustand ストア依存の実コンテンツ（Hydration完了後にのみマウントされる） */
 function DashboardContent() {
-  const deals = useDealStore((s) => s.deals);
+  const deals = useDealStore((s) => s.deals.filter((d) => !d.trashedAt));
 
   return (
     <div className="flex-1 bg-gray-50">

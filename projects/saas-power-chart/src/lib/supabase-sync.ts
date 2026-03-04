@@ -293,10 +293,23 @@ async function syncDeals(deals: Deal[], userId: string) {
   try {
     // Upsert
     if (deals.length > 0) {
+      const rows = deals.map((d) => dealToDb(d, userId));
       const { error } = await supabase
         .from("deals")
-        .upsert(deals.map((d) => dealToDb(d, userId)), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // trashed_at カラム未追加の場合、trashed_at を除外してリトライ
+        if (error.message?.includes("trashed_at")) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const rowsCompat = rows.map(({ trashed_at: _, ...rest }) => rest);
+          const { error: retryErr } = await supabase
+            .from("deals")
+            .upsert(rowsCompat, { onConflict: "id" });
+          if (retryErr) throw retryErr;
+        } else {
+          throw error;
+        }
+      }
     }
 
     // 削除: ローカルにないIDをDBから削除

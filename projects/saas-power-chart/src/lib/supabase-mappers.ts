@@ -22,6 +22,7 @@ export interface DbDeal {
   description: string;
   target_amount: number | null;
   expected_close_date: string | null;
+  trashed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -105,6 +106,7 @@ export function dbToDeal(row: DbDeal): Deal {
     description: row.description,
     targetAmount: row.target_amount ?? undefined,
     expectedCloseDate: row.expected_close_date ?? undefined,
+    trashedAt: row.trashed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -190,6 +192,7 @@ export function dealToDb(deal: Deal, userId: string): DbDeal {
     description: deal.description,
     target_amount: deal.targetAmount ?? null,
     expected_close_date: deal.expectedCloseDate ?? null,
+    trashed_at: deal.trashedAt ?? null,
     created_at: deal.createdAt,
     updated_at: deal.updatedAt,
   };

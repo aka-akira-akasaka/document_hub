@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { FolderOpen } from "lucide-react";
 
 export function DealList() {
-  const deals = useDealStore((s) => s.deals);
+  const deals = useDealStore((s) => s.deals.filter((d) => !d.trashedAt));
 
   if (deals.length === 0) {
     return (

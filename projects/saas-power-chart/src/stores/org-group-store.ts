@@ -43,6 +43,8 @@ interface OrgGroupState {
   /** 案件の部署種別定義を丸ごと更新 */
   setTierConfig: (dealId: string, entries: TierEntry[]) => void;
 
+  /** 案件データの一括削除 */
+  clearDealData: (dealId: string) => void;
   /** Supabase からの一括読み込み用 */
   hydrate: (groupsByDeal: Record<string, OrgGroup[]>, tierConfigByDeal?: Record<string, TierEntry[]>) => void;
   /** ログアウト時のリセット用 */
@@ -194,6 +196,15 @@ export const useOrgGroupStore = create<OrgGroupState>()(
 
     hydrate: (groupsByDeal, tierConfigByDeal) =>
       set({ groupsByDeal, tierConfigByDeal: tierConfigByDeal ?? {} }),
+
+    clearDealData: (dealId) =>
+      set((state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _g, ...restGroups } = state.groupsByDeal;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [dealId]: _t, ...restTier } = state.tierConfigByDeal;
+        return { groupsByDeal: restGroups, tierConfigByDeal: restTier };
+      }),
 
     reset: () => set({ groupsByDeal: {}, tierConfigByDeal: {} }),
   }))

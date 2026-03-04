@@ -15,6 +15,7 @@ import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useDealStore } from "@/stores/deal-store";
 import type { Deal } from "@/types/deal";
 import { MoreVertical, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
 
 interface DealCardProps {
   deal: Deal;
@@ -25,14 +26,13 @@ export function DealCard({ deal }: DealCardProps) {
     s.stakeholdersByDeal[deal.id]
   );
   const count = stakeholders?.length ?? 0;
-  const deleteDeal = useDealStore((s) => s.deleteDeal);
-  const clearDealData = useStakeholderStore((s) => s.clearDealData);
+  const trashDeal = useDealStore((s) => s.trashDeal);
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleTrash = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    clearDealData(deal.id);
-    deleteDeal(deal.id);
+    trashDeal(deal.id);
+    toast.success(`「${deal.name}」をゴミ箱に移動しました`);
   };
 
   return (
@@ -52,10 +52,10 @@ export function DealCard({ deal }: DealCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 className="text-red-600"
-                onClick={handleDelete}
+                onClick={handleTrash}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                削除
+                ゴミ箱に移動
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

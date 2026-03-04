@@ -43,6 +43,7 @@ export function DealCreateDialog() {
 
     flushSync(() => setIsCreating(true));
     try {
+      const start = Date.now();
       const deal = addDeal({
         name: name.trim(),
         clientName: clientName.trim(),
@@ -52,6 +53,12 @@ export function DealCreateDialog() {
 
       // デバウンスされた同期処理を即座に実行してDB永続化を保証
       await flushPendingSync();
+
+      // ローディング表示を最低800ms保証（sync が高速完了しても UX を維持）
+      const elapsed = Date.now() - start;
+      if (elapsed < 800) {
+        await new Promise((r) => setTimeout(r, 800 - elapsed));
+      }
 
       // ダイアログは閉じず、ページ遷移でアンマウントされるまでローディング継続
       router.push(`/deals/${deal.id}`);
