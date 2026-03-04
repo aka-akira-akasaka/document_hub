@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { DealList } from "@/components/deals/deal-list";
 import { DealCreateDialog } from "@/components/deals/deal-create-dialog";
+import { Button } from "@/components/ui/button";
 import { useDealStore } from "@/stores/deal-store";
 
 /**
@@ -36,6 +39,7 @@ export default function DashboardPage() {
 function DashboardContent() {
   const allDeals = useDealStore((s) => s.deals);
   const deals = useMemo(() => allDeals.filter((d) => !d.trashedAt), [allDeals]);
+  const trashedCount = allDeals.length - deals.length;
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -47,7 +51,20 @@ function DashboardContent() {
               {deals.length}件の案件
             </p>
           </div>
-          {deals.length > 0 && <DealCreateDialog />}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild className="text-gray-500 hover:text-gray-700">
+              <Link href="/trash">
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                ゴミ箱
+                {trashedCount > 0 && (
+                  <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 leading-none">
+                    {trashedCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            {deals.length > 0 && <DealCreateDialog />}
+          </div>
         </div>
         <DealList />
       </main>

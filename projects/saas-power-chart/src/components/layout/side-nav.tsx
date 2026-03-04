@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Home, Settings, Trash2 } from "lucide-react";
+import { BarChart3, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/auth/user-menu";
 
 // ナビゲーションアイテム定義
 const navItems = [
   { label: "ホーム", href: "/", icon: Home },
-  { label: "ゴミ箱", href: "/trash", icon: Trash2 },
   { label: "設定", href: "/settings", icon: Settings },
 ];
 
