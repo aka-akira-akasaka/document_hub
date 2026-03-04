@@ -14,6 +14,8 @@ export interface TemplateGroup {
   name: string;
   parentRefKey: string | null;
   color?: string;
+  /** 縦軸レイヤー: 0=通常部署（デフォルト）, 1以上=上位会議体 */
+  tier?: number;
 }
 
 export interface TemplateStakeholder {
@@ -47,11 +49,11 @@ export interface DealTemplate {
 
 // --- テンプレートデータ ---
 
-const REGIONAL_BANK: DealTemplate = {
-  id: "regional-bank",
-  name: "地方銀行",
-  description: "本店営業部・融資部・審査部など地銀の典型的な組織構成",
-  groupCount: 9,
+const BANK: DealTemplate = {
+  id: "bank",
+  name: "銀行",
+  description: "役員会・本店営業部・融資部・審査部など銀行の典型的な組織構成",
+  groupCount: 8,
   stakeholderCount: 6,
   orgLevels: [
     { level: 1, label: "頭取" },
@@ -62,39 +64,40 @@ const REGIONAL_BANK: DealTemplate = {
     { level: 6, label: "担当者" },
   ],
   groups: [
+    // 上位会議体（tier 1）
+    { refKey: "yakuinkai", name: "役員会", parentRefKey: null, tier: 1 },
+    // 通常部署（tier 0）
     { refKey: "honten-eigyo", name: "本店営業部", parentRefKey: null },
-    { refKey: "honten-houjin", name: "法人営業課", parentRefKey: "honten-eigyo" },
-    { refKey: "honten-kojin", name: "個人営業課", parentRefKey: "honten-eigyo" },
+    { refKey: "houjin-eigyo", name: "法人営業部", parentRefKey: null },
     { refKey: "yuushi", name: "融資部", parentRefKey: null },
-    { refKey: "yuushi-shinsa", name: "融資審査課", parentRefKey: "yuushi" },
-    { refKey: "yuushi-kanri", name: "管理課", parentRefKey: "yuushi" },
     { refKey: "shinsa", name: "審査部", parentRefKey: null },
-    { refKey: "jimu-kanri", name: "事務管理部", parentRefKey: null },
     { refKey: "sogo-kikaku", name: "総合企画部", parentRefKey: null },
+    { refKey: "risk", name: "リスク管理部", parentRefKey: null },
+    { refKey: "digital", name: "デジタル戦略部", parentRefKey: null },
   ],
   stakeholders: [
     {
       refKey: "todori",
       name: "（頭取）",
       title: "頭取",
-      department: "経営",
+      department: "役員会",
       roleInDeal: "decision_maker",
       influenceLevel: 5,
       attitude: "neutral",
       orgLevel: 1,
-      groupRefKey: null,
+      groupRefKey: "yakuinkai",
       parentRefKey: null,
     },
     {
       refKey: "fuku-todori",
       name: "（副頭取）",
       title: "副頭取",
-      department: "経営",
+      department: "役員会",
       roleInDeal: "approver",
       influenceLevel: 5,
       attitude: "neutral",
       orgLevel: 2,
-      groupRefKey: null,
+      groupRefKey: "yakuinkai",
       parentRefKey: "todori",
     },
     {
@@ -148,113 +151,11 @@ const REGIONAL_BANK: DealTemplate = {
   ],
 };
 
-const MEGA_BANK: DealTemplate = {
-  id: "mega-bank",
-  name: "メガバンク",
-  description: "法人営業部・RM部・審査部などメガバンクの大規模組織構成",
-  groupCount: 10,
-  stakeholderCount: 6,
-  orgLevels: [
-    { level: 1, label: "頭取" },
-    { level: 2, label: "副頭取" },
-    { level: 3, label: "部長" },
-    { level: 4, label: "次長" },
-    { level: 5, label: "課長" },
-    { level: 6, label: "担当者" },
-  ],
-  groups: [
-    { refKey: "houjin-eigyo", name: "法人営業部", parentRefKey: null },
-    { refKey: "houjin-dai", name: "大企業営業室", parentRefKey: "houjin-eigyo" },
-    { refKey: "houjin-chuken", name: "中堅法人営業室", parentRefKey: "houjin-eigyo" },
-    { refKey: "rm", name: "RM部", parentRefKey: null },
-    { refKey: "shinsa", name: "審査部", parentRefKey: null },
-    { refKey: "shinsa-houjin", name: "法人審査課", parentRefKey: "shinsa" },
-    { refKey: "shinsa-yoshin", name: "与信管理課", parentRefKey: "shinsa" },
-    { refKey: "sf", name: "ストラクチャードファイナンス部", parentRefKey: null },
-    { refKey: "risk", name: "リスク管理部", parentRefKey: null },
-    { refKey: "digital", name: "デジタル戦略部", parentRefKey: null },
-  ],
-  stakeholders: [
-    {
-      refKey: "todori",
-      name: "（頭取）",
-      title: "頭取",
-      department: "経営",
-      roleInDeal: "decision_maker",
-      influenceLevel: 5,
-      attitude: "neutral",
-      orgLevel: 1,
-      groupRefKey: null,
-      parentRefKey: null,
-    },
-    {
-      refKey: "fuku-todori",
-      name: "（副頭取）",
-      title: "副頭取",
-      department: "経営",
-      roleInDeal: "approver",
-      influenceLevel: 5,
-      attitude: "neutral",
-      orgLevel: 2,
-      groupRefKey: null,
-      parentRefKey: "todori",
-    },
-    {
-      refKey: "houjin-bucho",
-      name: "（法人営業部長）",
-      title: "部長",
-      department: "法人営業部",
-      roleInDeal: "initiator",
-      influenceLevel: 4,
-      attitude: "neutral",
-      orgLevel: 3,
-      groupRefKey: "houjin-eigyo",
-      parentRefKey: null,
-    },
-    {
-      refKey: "rm-bucho",
-      name: "（RM部長）",
-      title: "部長",
-      department: "RM部",
-      roleInDeal: "evaluator",
-      influenceLevel: 4,
-      attitude: "neutral",
-      orgLevel: 3,
-      groupRefKey: "rm",
-      parentRefKey: null,
-    },
-    {
-      refKey: "shinsa-bucho",
-      name: "（審査部長）",
-      title: "部長",
-      department: "審査部",
-      roleInDeal: "gatekeeper",
-      influenceLevel: 4,
-      attitude: "neutral",
-      orgLevel: 3,
-      groupRefKey: "shinsa",
-      parentRefKey: null,
-    },
-    {
-      refKey: "digital-bucho",
-      name: "（デジタル戦略部長）",
-      title: "部長",
-      department: "デジタル戦略部",
-      roleInDeal: "evaluator",
-      influenceLevel: 3,
-      attitude: "neutral",
-      orgLevel: 3,
-      groupRefKey: "digital",
-      parentRefKey: null,
-    },
-  ],
-};
-
-const GENERAL_COMPANY: DealTemplate = {
-  id: "general-company",
-  name: "一般企業",
-  description: "経営企画・情報システム・営業部など一般的な企業の組織構成",
-  groupCount: 8,
+const BUSINESS_COMPANY: DealTemplate = {
+  id: "business-company",
+  name: "事業会社",
+  description: "経営企画・情報システム・営業部など事業会社の典型的な組織構成",
+  groupCount: 9,
   stakeholderCount: 4,
   orgLevels: [
     { level: 1, label: "代表取締役" },
@@ -264,6 +165,9 @@ const GENERAL_COMPANY: DealTemplate = {
     { level: 5, label: "担当者" },
   ],
   groups: [
+    // 上位会議体（tier 1）
+    { refKey: "keiei-kaigi", name: "経営会議", parentRefKey: null, tier: 1 },
+    // 通常部署（tier 0）
     { refKey: "keiei-kikaku", name: "経営企画部", parentRefKey: null },
     { refKey: "jouhou", name: "情報システム部", parentRefKey: null },
     { refKey: "soumu", name: "総務部", parentRefKey: null },
@@ -278,12 +182,12 @@ const GENERAL_COMPANY: DealTemplate = {
       refKey: "shacho",
       name: "（代表取締役）",
       title: "代表取締役",
-      department: "経営",
+      department: "経営会議",
       roleInDeal: "decision_maker",
       influenceLevel: 5,
       attitude: "neutral",
       orgLevel: 1,
-      groupRefKey: null,
+      groupRefKey: "keiei-kaigi",
       parentRefKey: null,
     },
     {
@@ -339,9 +243,8 @@ const BLANK: DealTemplate = {
 // --- エクスポート ---
 
 export const DEAL_TEMPLATES: DealTemplate[] = [
-  REGIONAL_BANK,
-  MEGA_BANK,
-  GENERAL_COMPANY,
+  BANK,
+  BUSINESS_COMPANY,
   BLANK,
 ];
 

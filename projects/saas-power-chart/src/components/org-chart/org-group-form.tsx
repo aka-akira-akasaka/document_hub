@@ -59,19 +59,22 @@ export function OrgGroupForm({
   const [parentGroupId, setParentGroupId] = useState(
     editGroup?.parentGroupId ?? defaultParentGroupId ?? ""
   );
+  const [tier, setTier] = useState(editGroup?.tier ?? 0);
 
   // ダイアログが開くたびにフォーム状態をリセット
   const prevOpenRef = useRef(false);
   if (open && !prevOpenRef.current) {
     // open が false→true に変わった瞬間
     if (isEdit && editGroup) {
-      // 編集時: 現在の部署名・親部署をプリセット
+      // 編集時: 現在の部署名・親部署・tierをプリセット
       setName(editGroup.name);
       setParentGroupId(editGroup.parentGroupId ?? "");
+      setTier(editGroup.tier ?? 0);
     } else {
       // 新規作成時: defaultParentGroupIdを反映、名前は空にリセット
       setParentGroupId(defaultParentGroupId ?? "");
       setName("");
+      setTier(0);
     }
   }
   prevOpenRef.current = open;
@@ -81,11 +84,15 @@ export function OrgGroupForm({
     if (!name.trim()) return;
 
     captureSnapshot();
+    // tier > 0（上位会議体）はネスト不可
+    const effectiveParentGroupId = tier > 0 ? null : (parentGroupId || null);
+
     if (isEdit && editGroup) {
       const newName = name.trim();
       updateGroup(editGroup.id, dealId, {
         name: newName,
-        parentGroupId: parentGroupId || null,
+        parentGroupId: effectiveParentGroupId,
+        tier,
       });
       // グループ名変更時: 所属メンバーのdepartmentも連動更新
       if (newName !== editGroup.name) {
@@ -98,7 +105,8 @@ export function OrgGroupForm({
       addGroup({
         dealId,
         name: name.trim(),
-        parentGroupId: parentGroupId || null,
+        parentGroupId: effectiveParentGroupId,
+        tier,
       });
     }
     onOpenChange(false);
@@ -145,10 +153,38 @@ export function OrgGroupForm({
           </div>
 
           <div className="space-y-2">
+            <Label>種別</Label>
+            <Select
+              value={tier.toString()}
+              onValueChange={(v) => {
+                const newTier = Number(v);
+                setTier(newTier);
+                // 上位会議体はネスト不可なので親部署をリセット
+                if (newTier > 0) setParentGroupId("");
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">通常部署</SelectItem>
+                <SelectItem value="1">上位会議体（役員会等）</SelectItem>
+                <SelectItem value="2">最上位会議体（株主総会等）</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {tier > 0
+                ? "上位会議体は組織図の上段に配置されます"
+                : "通常の部署としてレイアウトされます"}
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label>親部署</Label>
             <Select
               value={parentGroupId || "none"}
               onValueChange={(v) => setParentGroupId(v === "none" ? "" : v)}
+              disabled={tier > 0}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="なし（トップレベル）" />
@@ -162,6 +198,11 @@ export function OrgGroupForm({
                 ))}
               </SelectContent>
             </Select>
+            {tier > 0 && (
+              <p className="text-xs text-muted-foreground">
+                ※ 上位会議体はトップレベルに固定されます
+              </p>
+            )}
             {isTooDeep && (
               <p className="text-xs text-orange-600">
                 ※ 階層が深すぎます（最大{MAX_GROUP_DEPTH}階層）

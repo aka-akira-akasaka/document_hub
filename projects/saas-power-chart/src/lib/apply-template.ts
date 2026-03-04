@@ -51,6 +51,7 @@ export function applyTemplate(dealId: string, template: DealTemplate): void {
       name: item.name,
       parentGroupId: item.parentRefKey ? groupIdMap.get(item.parentRefKey) ?? null : null,
       color: item.color,
+      tier: item.tier ?? 0,
     });
 
     groupIdMap.set(item.refKey, created.id);

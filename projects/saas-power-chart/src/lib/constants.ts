@@ -186,6 +186,8 @@ export const GROUP_LAYOUT = {
   freeFloatGap: 24,
   /** 「人を追加する」プレースホルダーの高さ */
   placeholderHeight: 32,
+  /** tier段間の縦間隔（上位会議体と通常部署の間隔） */
+  tierGap: 60,
 } as const;
 
 /** 関係線のポジティブ/ネガティブ判定 */

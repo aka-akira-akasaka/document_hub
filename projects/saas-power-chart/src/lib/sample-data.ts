@@ -116,24 +116,24 @@ const ts = "2026-03-01T09:00:00.000Z";
 // ========================================
 export const SAMPLE_ORG_GROUPS: OrgGroup[] = [
   // ── テクノロジー本部 ──
-  { id: G_TECH, dealId: DEAL, name: "テクノロジー本部", parentGroupId: null, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_DEV, dealId: DEAL, name: "開発部", parentGroupId: G_TECH, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_PRODUCT_DEV, dealId: DEAL, name: "プロダクト開発課", parentGroupId: G_DEV, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_INFRA, dealId: DEAL, name: "インフラ課", parentGroupId: G_DEV, sortOrder: 1, createdAt: ts, updatedAt: ts },
-  { id: G_AI, dealId: DEAL, name: "AI推進室", parentGroupId: G_TECH, sortOrder: 1, createdAt: ts, updatedAt: ts },
+  { id: G_TECH, dealId: DEAL, name: "テクノロジー本部", parentGroupId: null, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_DEV, dealId: DEAL, name: "開発部", parentGroupId: G_TECH, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_PRODUCT_DEV, dealId: DEAL, name: "プロダクト開発課", parentGroupId: G_DEV, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_INFRA, dealId: DEAL, name: "インフラ課", parentGroupId: G_DEV, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_AI, dealId: DEAL, name: "AI推進室", parentGroupId: G_TECH, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
 
   // ── コーポレート本部 ──
-  { id: G_CORP, dealId: DEAL, name: "コーポレート本部", parentGroupId: null, sortOrder: 1, createdAt: ts, updatedAt: ts },
-  { id: G_PLANNING, dealId: DEAL, name: "経営企画部", parentGroupId: G_CORP, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_HR, dealId: DEAL, name: "人事部", parentGroupId: G_CORP, sortOrder: 1, createdAt: ts, updatedAt: ts },
-  { id: G_LEGAL, dealId: DEAL, name: "法務部", parentGroupId: G_CORP, sortOrder: 2, createdAt: ts, updatedAt: ts },
+  { id: G_CORP, dealId: DEAL, name: "コーポレート本部", parentGroupId: null, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_PLANNING, dealId: DEAL, name: "経営企画部", parentGroupId: G_CORP, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_HR, dealId: DEAL, name: "人事部", parentGroupId: G_CORP, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_LEGAL, dealId: DEAL, name: "法務部", parentGroupId: G_CORP, sortOrder: 2, tier: 0, createdAt: ts, updatedAt: ts },
 
   // ── ビジネス本部 ──
-  { id: G_BIZ, dealId: DEAL, name: "ビジネス本部", parentGroupId: null, sortOrder: 2, createdAt: ts, updatedAt: ts },
-  { id: G_SALES, dealId: DEAL, name: "営業部", parentGroupId: G_BIZ, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_ENTERPRISE, dealId: DEAL, name: "エンタープライズ営業課", parentGroupId: G_SALES, sortOrder: 0, createdAt: ts, updatedAt: ts },
-  { id: G_SMB, dealId: DEAL, name: "SMB営業課", parentGroupId: G_SALES, sortOrder: 1, createdAt: ts, updatedAt: ts },
-  { id: G_MARKETING, dealId: DEAL, name: "マーケティング部", parentGroupId: G_BIZ, sortOrder: 1, createdAt: ts, updatedAt: ts },
+  { id: G_BIZ, dealId: DEAL, name: "ビジネス本部", parentGroupId: null, sortOrder: 2, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_SALES, dealId: DEAL, name: "営業部", parentGroupId: G_BIZ, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_ENTERPRISE, dealId: DEAL, name: "エンタープライズ営業課", parentGroupId: G_SALES, sortOrder: 0, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_SMB, dealId: DEAL, name: "SMB営業課", parentGroupId: G_SALES, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
+  { id: G_MARKETING, dealId: DEAL, name: "マーケティング部", parentGroupId: G_BIZ, sortOrder: 1, tier: 0, createdAt: ts, updatedAt: ts },
 ];
 
 // ========================================

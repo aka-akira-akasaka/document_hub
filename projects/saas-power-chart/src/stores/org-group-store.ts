@@ -12,6 +12,7 @@ interface OrgGroupState {
     name: string;
     parentGroupId: string | null;
     color?: string;
+    tier?: number;
   }) => OrgGroup;
 
   updateGroup: (id: string, dealId: string, updates: Partial<OrgGroup>) => void;
@@ -51,6 +52,7 @@ export const useOrgGroupStore = create<OrgGroupState>()(
         parentGroupId: data.parentGroupId,
         color: data.color,
         sortOrder: maxOrder + 1,
+        tier: data.tier ?? 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

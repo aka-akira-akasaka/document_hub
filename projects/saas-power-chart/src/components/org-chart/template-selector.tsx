@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { DEAL_TEMPLATES, type DealTemplate } from "@/lib/deal-templates";
+import { useCustomTemplateStore } from "@/stores/custom-template-store";
 import { applyTemplate } from "@/lib/apply-template";
 import { flushPendingSync } from "@/lib/supabase-sync";
-import { Building2, Landmark, Building, Plus, Loader2 } from "lucide-react";
+import { Landmark, Building, Plus, Loader2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TEMPLATE_ICONS: Record<string, React.ElementType> = {
-  "regional-bank": Landmark,
-  "mega-bank": Building2,
-  "general-company": Building,
+  bank: Landmark,
+  "business-company": Building,
   blank: Plus,
 };
 
@@ -22,6 +22,10 @@ interface TemplateSelectorProps {
 export function TemplateSelector({ dealId }: TemplateSelectorProps) {
   const [dismissed, setDismissed] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const customTemplates = useCustomTemplateStore((s) => s.templates);
+
+  // プリセット + カスタムテンプレートを統合
+  const allTemplates: DealTemplate[] = [...DEAL_TEMPLATES.filter((t) => t.id !== "blank"), ...customTemplates, ...DEAL_TEMPLATES.filter((t) => t.id === "blank")];
 
   if (dismissed) return null;
 
@@ -67,9 +71,10 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {DEAL_TEMPLATES.map((template) => {
-                const Icon = TEMPLATE_ICONS[template.id] ?? Building;
+            <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+              {allTemplates.map((template) => {
+                const isCustom = template.id.startsWith("custom-");
+                const Icon = isCustom ? FileText : (TEMPLATE_ICONS[template.id] ?? Building);
                 const isBlank = template.id === "blank";
 
                 return (

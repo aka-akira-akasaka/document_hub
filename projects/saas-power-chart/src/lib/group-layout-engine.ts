@@ -67,7 +67,6 @@ export function computeGroupLayout(
   // Step 4: グループ位置をトップダウンで割り当て
   const nodes: Node[] = [];
   const groupBounds: GroupBound[] = [];
-  let currentX = 0;
 
   // フリーフローティングノードをparentIdベースのツリーレイアウトで配置
   // 保存済み座標がある場合はそれを優先
@@ -83,18 +82,38 @@ export function computeGroupLayout(
     });
   }
 
-  // ルートグループ（division）を横並び配置
+  // ルートグループをtierごとに段分け配置（高tier=上段）
+  const tierMap = new Map<number, GroupTreeNode[]>();
   for (const root of groupTree) {
-    positionGroupTree(
-      root,
-      currentX, GROUP_LAYOUT.groupAreaY,  // 相対座標（ルートなので=絶対座標）
-      currentX, GROUP_LAYOUT.groupAreaY,  // 絶対座標
-      null,                                // 親グループなし
-      nodes,
-      groupBounds,
-      draggedGroupId
-    );
-    currentX += root.width + GROUP_LAYOUT.divisionGap;
+    const tier = root.group.tier ?? 0;
+    if (!tierMap.has(tier)) tierMap.set(tier, []);
+    tierMap.get(tier)!.push(root);
+  }
+  // tier降順にソート（大きい数字が上段）
+  const sortedTiers = [...tierMap.keys()].sort((a, b) => b - a);
+
+  let currentTierY = GROUP_LAYOUT.groupAreaY;
+
+  for (const tier of sortedTiers) {
+    const tierGroups = tierMap.get(tier)!;
+    let tierX = 0;
+    let tierMaxHeight = 0;
+
+    for (const root of tierGroups) {
+      positionGroupTree(
+        root,
+        tierX, currentTierY,    // 相対座標（ルートなので=絶対座標）
+        tierX, currentTierY,    // 絶対座標
+        null,                    // 親グループなし
+        nodes,
+        groupBounds,
+        draggedGroupId
+      );
+      tierX += root.width + GROUP_LAYOUT.divisionGap;
+      tierMaxHeight = Math.max(tierMaxHeight, root.height);
+    }
+
+    currentTierY += tierMaxHeight + GROUP_LAYOUT.tierGap;
   }
 
   return { nodes, edges: reportingEdges, groupBounds };

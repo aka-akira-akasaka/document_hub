@@ -73,10 +73,6 @@ export function StakeholderForm({
   // 案件に保存済みの階層定義を使用。未設定時は空リスト（+新しい役職を追加のみ表示）
   const orgLevelOptions = dealOrgLevels && dealOrgLevels.length > 0 ? dealOrgLevels : [];
 
-  // groupIdが設定されている場合、対応グループ名をdepartmentのデフォルトにする
-  const effectiveGroupId = stakeholder?.groupId ?? createGroupId ?? null;
-  const matchingGroup = effectiveGroupId ? orgGroups.find(g => g.id === effectiveGroupId) : null;
-
   const [name, setName] = useState(stakeholder?.name ?? "");
   const [title, setTitle] = useState(stakeholder?.title ?? "");
   const [roleInDeal, setRoleInDeal] = useState<RoleInDeal>(

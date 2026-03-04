@@ -30,6 +30,7 @@ import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { TemplateSelector } from "./template-selector";
+import { SaveTemplateDialog } from "./save-template-dialog";
 import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
 
@@ -83,6 +84,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   );
 
   const [levelEditorOpen, setLevelEditorOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const groupFormOpen = useUiStore((s) => s.groupFormOpen);
   const groupFormEditId = useUiStore((s) => s.groupFormEditId);
   const groupFormParentId = useUiStore((s) => s.groupFormParentId);
@@ -297,6 +299,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}
           onOpenLevelEditor={() => setLevelEditorOpen(true)}
+          onSaveTemplate={() => setSaveTemplateOpen(true)}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -332,6 +335,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         onOpenChange={(open) => { if (!open) closeGroupForm(); }}
         editGroup={editGroupObj}
         defaultParentGroupId={groupFormParentId}
+      />
+
+      {/* テンプレート保存ダイアログ */}
+      <SaveTemplateDialog
+        dealId={dealId}
+        open={saveTemplateOpen}
+        onOpenChange={setSaveTemplateOpen}
       />
 
     </div>

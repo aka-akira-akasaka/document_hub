@@ -71,6 +71,7 @@ export interface DbOrgGroup {
   parent_group_id: string | null;
   color: string | null;
   sort_order: number;
+  tier: number;
   created_at: string;
   updated_at: string;
 }
@@ -152,6 +153,7 @@ export function dbToOrgGroup(row: DbOrgGroup): OrgGroup {
     parentGroupId: row.parent_group_id,
     color: row.color ?? undefined,
     sortOrder: row.sort_order,
+    tier: row.tier ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -234,6 +236,7 @@ export function orgGroupToDb(g: OrgGroup): DbOrgGroup {
     parent_group_id: g.parentGroupId,
     color: g.color ?? null,
     sort_order: g.sortOrder,
+    tier: g.tier ?? 0,
     created_at: g.createdAt,
     updated_at: g.updatedAt,
   };

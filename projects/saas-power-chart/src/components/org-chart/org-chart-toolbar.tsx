@@ -11,6 +11,7 @@ import {
   Network,
   Plus,
   Redo2,
+  Save,
   Undo2,
   User,
 } from "lucide-react";
@@ -20,6 +21,7 @@ interface OrgChartToolbarProps {
   onAddNode: () => void;
   onAddGroup: () => void;
   onOpenLevelEditor: () => void;
+  onSaveTemplate: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -31,6 +33,7 @@ export function OrgChartToolbar({
   onAddNode,
   onAddGroup,
   onOpenLevelEditor,
+  onSaveTemplate,
   onUndo,
   onRedo,
   canUndo,
@@ -176,6 +179,22 @@ export function OrgChartToolbar({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">役職の階層設定</TooltipContent>
+      </Tooltip>
+
+      <div className="border-t my-0.5" />
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onSaveTemplate}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">テンプレートとして保存</TooltipContent>
       </Tooltip>
     </div>
   );
