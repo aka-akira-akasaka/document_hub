@@ -19,7 +19,12 @@ export function applyTemplate(dealId: string, template: DealTemplate): void {
   useHistoryStore.getState().captureSnapshot();
 
   const { addGroup } = useOrgGroupStore.getState();
-  const { addStakeholder } = useStakeholderStore.getState();
+  const { addStakeholder, setOrgLevels } = useStakeholderStore.getState();
+
+  // --- 役職階層の登録 ---
+  if (template.orgLevels.length > 0) {
+    setOrgLevels(dealId, template.orgLevels);
+  }
 
   // refKey → 実際の UUID マッピング
   const groupIdMap = new Map<string, string>();

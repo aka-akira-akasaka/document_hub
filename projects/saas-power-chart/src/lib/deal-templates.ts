@@ -29,12 +29,18 @@ export interface TemplateStakeholder {
   parentRefKey: string | null; // 上司の stakeholder refKey
 }
 
+export interface TemplateOrgLevel {
+  level: number;
+  label: string;
+}
+
 export interface DealTemplate {
   id: string;
   name: string;
   description: string;
   groupCount: number;
   stakeholderCount: number;
+  orgLevels: TemplateOrgLevel[];
   groups: TemplateGroup[];
   stakeholders: TemplateStakeholder[];
 }
@@ -47,6 +53,12 @@ const REGIONAL_BANK: DealTemplate = {
   description: "本店営業部・融資部・審査部など地銀の典型的な組織構成",
   groupCount: 9,
   stakeholderCount: 6,
+  orgLevels: [
+    { level: 1, label: "頭取・役員" },
+    { level: 2, label: "部長" },
+    { level: 3, label: "課長" },
+    { level: 4, label: "担当者" },
+  ],
   groups: [
     { refKey: "honten-eigyo", name: "本店営業部", parentRefKey: null },
     { refKey: "honten-houjin", name: "法人営業課", parentRefKey: "honten-eigyo" },
@@ -140,6 +152,12 @@ const MEGA_BANK: DealTemplate = {
   description: "法人営業部・RM部・審査部などメガバンクの大規模組織構成",
   groupCount: 10,
   stakeholderCount: 6,
+  orgLevels: [
+    { level: 1, label: "頭取・役員" },
+    { level: 2, label: "部長" },
+    { level: 3, label: "次長・課長" },
+    { level: 4, label: "担当者" },
+  ],
   groups: [
     { refKey: "houjin-eigyo", name: "法人営業部", parentRefKey: null },
     { refKey: "houjin-dai", name: "大企業営業室", parentRefKey: "houjin-eigyo" },
@@ -234,6 +252,12 @@ const GENERAL_COMPANY: DealTemplate = {
   description: "経営企画・情報システム・営業部など一般的な企業の組織構成",
   groupCount: 8,
   stakeholderCount: 4,
+  orgLevels: [
+    { level: 1, label: "役員" },
+    { level: 2, label: "部長" },
+    { level: 3, label: "課長" },
+    { level: 4, label: "担当者" },
+  ],
   groups: [
     { refKey: "keiei-kikaku", name: "経営企画部", parentRefKey: null },
     { refKey: "jouhou", name: "情報システム部", parentRefKey: null },
@@ -302,6 +326,7 @@ const BLANK: DealTemplate = {
   description: "テンプレートを使わず手動で組織図を構築",
   groupCount: 0,
   stakeholderCount: 0,
+  orgLevels: [],
   groups: [],
   stakeholders: [],
 };
