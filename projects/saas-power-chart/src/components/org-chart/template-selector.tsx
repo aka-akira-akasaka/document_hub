@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { DEAL_TEMPLATES, type DealTemplate } from "@/lib/deal-templates";
 import { applyTemplate } from "@/lib/apply-template";
 import { flushPendingSync } from "@/lib/supabase-sync";
@@ -30,7 +31,7 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
       setDismissed(true);
       return;
     }
-    setApplyingId(template.id);
+    flushSync(() => setApplyingId(template.id));
     try {
       // deals のDB永続化を保証してからテンプレート適用（RLS: org_groups は deal_id 経由で認可）
       await flushPendingSync();

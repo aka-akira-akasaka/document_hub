@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +40,7 @@ export function DealCreateDialog() {
     e.preventDefault();
     if (!name.trim() || !clientName.trim() || isCreating) return;
 
-    setIsCreating(true);
+    flushSync(() => setIsCreating(true));
     try {
       const deal = addDeal({
         name: name.trim(),
