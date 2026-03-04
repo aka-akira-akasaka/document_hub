@@ -31,6 +31,8 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
     // deals のDB永続化を保証してからテンプレート適用（RLS: org_groups は deal_id 経由で認可）
     await flushPendingSync();
     applyTemplate(dealId, template);
+    // テンプレートで追加されたデータを即座にDB永続化（デバウンス500ms待ちを回避）
+    await flushPendingSync();
   };
 
   return (
