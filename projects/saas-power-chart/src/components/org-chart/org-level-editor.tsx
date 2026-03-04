@@ -6,11 +6,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, GripVertical, Settings2, Table2, Building } from "lucide-react";
+import { Plus, Trash2, GripVertical, Table2 } from "lucide-react";
 import { useStakeholderStore, type OrgLevelEntry } from "@/stores/stakeholder-store";
 import { useOrgGroupStore, type TierEntry } from "@/stores/org-group-store";
 import { toast } from "sonner";
@@ -34,8 +34,10 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
 
-  // タブ: 役職設定 / 組織種別 / 一覧
-  const [viewMode, setViewMode] = useState<"levels" | "tiers" | "table">("levels");
+  // メインタブ
+  const [mainTab, setMainTab] = useState<string>("levels");
+  // 役職タブ内のサブビュー: edit / table
+  const [levelSubView, setLevelSubView] = useState<"edit" | "table">("edit");
 
   // ── 役職階層のローカル編集状態 ──
   const [levels, setLevels] = useState<OrgLevelEntry[]>(() =>
@@ -58,7 +60,8 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
       setLevels(currentLevels && currentLevels.length > 0 ? [...currentLevels] : []);
       const currentTiers = useOrgGroupStore.getState().tierConfigByDeal[dealId];
       setTiers(currentTiers && currentTiers.length > 0 ? [...currentTiers] : []);
-      setViewMode("levels");
+      setMainTab("levels");
+      setLevelSubView("edit");
     }
   }, [open, dealId]);
 
@@ -282,87 +285,155 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
     </>
   );
 
-  const descriptions: Record<string, string> = {
-    levels: "この案件で使用する役職階層を定義します。上から順に高い役職になります。ドラッグで並べ替えできます。",
-    tiers: "部署の種別を定義します。種別ごとに部署を分類し、レイアウトの階層に反映されます。",
-    table: "役職階層 × 部署のマトリクスで人員配置を一覧確認できます。",
-  };
+  // 一覧テーブルの幅が広いのでメインタブ+サブビューで判定
+  const isWide = mainTab === "levels" && levelSubView === "table";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={
-          viewMode === "table"
+          isWide
             ? "sm:max-w-[90vw] max-w-[90vw] max-h-[85vh]"
             : "sm:max-w-[420px]"
         }
       >
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>階層設定</DialogTitle>
-            <div className="flex gap-1">
+          <DialogTitle>階層設定</DialogTitle>
+        </DialogHeader>
+
+        <Tabs value={mainTab} onValueChange={setMainTab}>
+          <TabsList className="w-full">
+            <TabsTrigger value="levels" className="flex-1">役職</TabsTrigger>
+            <TabsTrigger value="tiers" className="flex-1">組織種別</TabsTrigger>
+          </TabsList>
+
+          {/* ── 役職タブ ── */}
+          <TabsContent value="levels" className="space-y-3 mt-3">
+            {/* サブビュー切替 */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {levelSubView === "edit"
+                  ? "上から順に高い役職になります。ドラッグで並べ替えできます。"
+                  : "役職階層 × 部署のマトリクスで人員配置を一覧確認できます。"}
+              </p>
               <Button
                 type="button"
-                variant={viewMode === "levels" ? "default" : "ghost"}
+                variant={levelSubView === "table" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setViewMode("levels")}
-              >
-                <Settings2 className="h-3.5 w-3.5 mr-1" />
-                役職
-              </Button>
-              <Button
-                type="button"
-                variant={viewMode === "tiers" ? "default" : "ghost"}
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setViewMode("tiers")}
-              >
-                <Building className="h-3.5 w-3.5 mr-1" />
-                組織種別
-              </Button>
-              <Button
-                type="button"
-                variant={viewMode === "table" ? "default" : "ghost"}
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setViewMode("table")}
+                className="h-7 px-2 text-xs shrink-0 ml-2"
+                onClick={() => setLevelSubView(levelSubView === "edit" ? "table" : "edit")}
               >
                 <Table2 className="h-3.5 w-3.5 mr-1" />
                 一覧
               </Button>
             </div>
-          </div>
-          <DialogDescription>
-            {descriptions[viewMode]}
-          </DialogDescription>
-        </DialogHeader>
 
-        {viewMode === "levels" ? (
-          <>
-            {renderEditList(
-              levels,
-              "L",
-              handleLevelLabelChange,
-              handleLevelRemove,
-              handleLevelAdd,
-              handleLevelDrop,
-              "階層を追加",
-              "例: 部長",
-            )}
-            <div className="flex justify-end pt-2">
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  キャンセル
-                </Button>
-                <Button type="button" onClick={handleSaveLevels}>
-                  保存
-                </Button>
+            {levelSubView === "edit" ? (
+              <>
+                {renderEditList(
+                  levels,
+                  "L",
+                  handleLevelLabelChange,
+                  handleLevelRemove,
+                  handleLevelAdd,
+                  handleLevelDrop,
+                  "階層を追加",
+                  "例: 部長",
+                )}
+                <div className="flex justify-end pt-2">
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                      キャンセル
+                    </Button>
+                    <Button type="button" onClick={handleSaveLevels}>
+                      保存
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="overflow-auto max-h-[60vh]">
+                {pivotData.columns.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    部署が登録されていません。先に部署を追加してください。
+                  </div>
+                ) : (
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr>
+                        <th className="sticky left-0 z-10 bg-muted/80 backdrop-blur border border-border px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
+                          役職
+                        </th>
+                        {pivotData.columns.map((col) => (
+                          <th
+                            key={col.id}
+                            className="border border-border px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap bg-muted/50"
+                          >
+                            {col.depth > 0 && (
+                              <span className="text-muted-foreground/40 mr-1">
+                                {"└".padStart(col.depth, " ")}
+                              </span>
+                            )}
+                            {col.name}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pivotData.rows.map((row) => {
+                        const hasAnyPeople = pivotData.columns.some(
+                          (col) => (row.cells[col.id]?.length ?? 0) > 0
+                        );
+                        return (
+                          <tr
+                            key={row.level.level}
+                            className={hasAnyPeople ? "" : "opacity-50"}
+                          >
+                            <td className="sticky left-0 z-10 bg-white border border-border px-3 py-2 font-medium whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground font-mono mr-1.5">
+                                L{row.level.level}
+                              </span>
+                              {row.level.label}
+                            </td>
+                            {pivotData.columns.map((col) => {
+                              const names = row.cells[col.id] ?? [];
+                              return (
+                                <td
+                                  key={col.id}
+                                  className="border border-border px-3 py-2 align-top"
+                                >
+                                  {names.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {names.map((name, i) => (
+                                        <span
+                                          key={i}
+                                          className="inline-block bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-xs font-medium"
+                                        >
+                                          {name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground/30">—</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            </div>
-          </>
-        ) : viewMode === "tiers" ? (
-          <>
+            )}
+          </TabsContent>
+
+          {/* ── 組織種別タブ ── */}
+          <TabsContent value="tiers" className="space-y-3 mt-3">
+            <p className="text-xs text-muted-foreground">
+              部署の種別を定義します。種別ごとに部署を分類し、レイアウトの階層に反映されます。
+            </p>
             {renderEditList(
               tiers,
               "T",
@@ -383,83 +454,8 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
                 </Button>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="overflow-auto max-h-[60vh]">
-            {pivotData.columns.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                部署が登録されていません。先に部署を追加してください。
-              </div>
-            ) : (
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-muted/80 backdrop-blur border border-border px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
-                      役職
-                    </th>
-                    {pivotData.columns.map((col) => (
-                      <th
-                        key={col.id}
-                        className="border border-border px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap bg-muted/50"
-                      >
-                        {col.depth > 0 && (
-                          <span className="text-muted-foreground/40 mr-1">
-                            {"└".padStart(col.depth, " ")}
-                          </span>
-                        )}
-                        {col.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pivotData.rows.map((row) => {
-                    const hasAnyPeople = pivotData.columns.some(
-                      (col) => (row.cells[col.id]?.length ?? 0) > 0
-                    );
-                    return (
-                      <tr
-                        key={row.level.level}
-                        className={hasAnyPeople ? "" : "opacity-50"}
-                      >
-                        <td className="sticky left-0 z-10 bg-white border border-border px-3 py-2 font-medium whitespace-nowrap">
-                          <span className="text-xs text-muted-foreground font-mono mr-1.5">
-                            L{row.level.level}
-                          </span>
-                          {row.level.label}
-                        </td>
-                        {pivotData.columns.map((col) => {
-                          const names = row.cells[col.id] ?? [];
-                          return (
-                            <td
-                              key={col.id}
-                              className="border border-border px-3 py-2 align-top"
-                            >
-                              {names.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {names.map((name, i) => (
-                                    <span
-                                      key={i}
-                                      className="inline-block bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-xs font-medium"
-                                    >
-                                      {name}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground/30">—</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
