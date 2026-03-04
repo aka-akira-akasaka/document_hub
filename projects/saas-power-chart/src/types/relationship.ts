@@ -10,7 +10,7 @@ export type RelationshipType =
 export type RelationshipTargetType = "stakeholder" | "group";
 
 /** 矢印の方向 */
-export type RelationshipDirection = "forward" | "reverse" | "bidirectional";
+export type RelationshipDirection = "forward" | "reverse" | "bidirectional" | "none";
 
 export interface Relationship {
   id: string;

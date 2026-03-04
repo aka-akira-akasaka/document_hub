@@ -10,7 +10,7 @@ import {
 } from "@xyflow/react";
 import type { RelationshipType, RelationshipDirection } from "@/types/relationship";
 import { isPositiveRelationship } from "@/lib/constants";
-import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal } from "lucide-react";
+import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** エッジのカスタム色プリセット */
@@ -70,6 +70,9 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const [edgePath, labelX, labelY] = isGroupEdge
     ? getSmoothStepPath(pathParams)
     : getBezierPath(pathParams);
+
+  // 矢印マーカーをラインの全体方向に合わせる（ノード面に対し直角ではなく）
+  const angleDeg = Math.atan2(targetY - sourceY, targetX - sourceX) * (180 / Math.PI);
 
   // 編集状態
   const [isEditing, setIsEditing] = useState(false);
@@ -148,7 +151,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="10"
             refY="6"
-            orient="auto"
+            orient={angleDeg}
             markerUnits="userSpaceOnUse"
           >
             <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
@@ -161,7 +164,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="2"
             refY="6"
-            orient="auto"
+            orient={angleDeg}
             markerUnits="userSpaceOnUse"
           >
             <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
@@ -232,6 +235,17 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                 >
                   <MoveHorizontal className="w-3.5 h-3.5" />
                 </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "p-1 rounded transition-colors",
+                    editDirection === "none" ? "bg-blue-100 text-blue-700" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                  )}
+                  onClick={() => setEditDirection("none")}
+                  title="矢印なし"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
 
                 {/* 区切り */}
                 <div className="w-px h-4 bg-gray-200 mx-0.5" />
@@ -251,18 +265,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                     title={c.label}
                   />
                 ))}
-                {/* デフォルトに戻す（×） */}
-                <button
-                  type="button"
-                  className={cn(
-                    "w-4 h-4 rounded-full border-2 text-[8px] flex items-center justify-center shrink-0",
-                    !editColor ? "border-gray-800" : "border-gray-300 hover:border-gray-500"
-                  )}
-                  onClick={() => setEditColor("")}
-                  title="既定色"
-                >
-                  <span className="text-gray-500">×</span>
-                </button>
               </div>
 
               {/* ラベル入力 + 確定 + 削除 */}
