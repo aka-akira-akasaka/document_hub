@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { DealList } from "@/components/deals/deal-list";
-import { DealCreateDialog } from "@/components/deals/deal-create-dialog";
 import { Button } from "@/components/ui/button";
 import { useDealStore } from "@/stores/deal-store";
 
@@ -21,11 +20,8 @@ export default function DashboardPage() {
     return (
       <div className="flex-1 bg-gray-50">
         <main className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold">案件一覧</h1>
-              <p className="text-sm text-muted-foreground mt-1">読み込み中...</p>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-xl font-bold">最近の案件</h1>
           </div>
         </main>
       </div>
@@ -44,28 +40,23 @@ function DashboardContent() {
   return (
     <div className="flex-1 bg-gray-50">
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">案件一覧</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {deals.length}件の案件
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild className="text-gray-500 hover:text-gray-700">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-xl font-bold">最近の案件</h1>
+          {trashedCount > 0 && (
+            <Button variant="ghost" size="sm" asChild className="text-gray-500 hover:text-gray-700">
               <Link href="/trash">
                 <Trash2 className="h-4 w-4 mr-1.5" />
                 ゴミ箱
-                {trashedCount > 0 && (
-                  <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 leading-none">
-                    {trashedCount}
-                  </span>
-                )}
+                <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 leading-none">
+                  {trashedCount}
+                </span>
               </Link>
             </Button>
-            {deals.length > 0 && <DealCreateDialog />}
-          </div>
+          )}
         </div>
+
+        {/* 案件一覧（新規作成カード含む） */}
         <DealList />
       </main>
     </div>

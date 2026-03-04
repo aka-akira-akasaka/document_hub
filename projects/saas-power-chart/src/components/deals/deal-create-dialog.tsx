@@ -27,7 +27,11 @@ import { DEAL_STAGE_LABELS, DEAL_STAGE_OPTIONS } from "@/lib/constants";
 import type { DealStage } from "@/types/deal";
 import { Plus, Loader2 } from "lucide-react";
 
-export function DealCreateDialog() {
+interface DealCreateDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function DealCreateDialog({ trigger }: DealCreateDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
@@ -70,10 +74,12 @@ export function DealCreateDialog() {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isCreating) setOpen(v); }}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          新規案件
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            新規案件
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent aria-describedby="deal-create-desc" onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
         <DialogHeader>
