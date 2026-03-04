@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useDealStore } from "@/stores/deal-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
@@ -34,9 +35,8 @@ export default function TrashPage() {
 }
 
 function TrashContent() {
-  const trashedDeals = useDealStore((s) =>
-    s.deals.filter((d) => !!d.trashedAt)
-  );
+  const allDeals = useDealStore((s) => s.deals);
+  const trashedDeals = useMemo(() => allDeals.filter((d) => !!d.trashedAt), [allDeals]);
 
   return (
     <div className="flex-1 bg-gray-50">
