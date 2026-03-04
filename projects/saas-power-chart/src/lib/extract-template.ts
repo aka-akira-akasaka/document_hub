@@ -2,7 +2,7 @@
  * 現在の案件データからテンプレートを抽出するユーティリティ
  */
 
-import type { DealTemplate, TemplateGroup, TemplateStakeholder } from "@/lib/deal-templates";
+import type { DealTemplate, TemplateGroup, TemplateStakeholder, TemplateTierConfig } from "@/lib/deal-templates";
 import type { OrgGroup } from "@/types/org-group";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
@@ -16,7 +16,8 @@ export function extractTemplate(
   description: string,
   orgGroups: OrgGroup[],
   stakeholders: Stakeholder[],
-  orgLevels: OrgLevelEntry[]
+  orgLevels: OrgLevelEntry[],
+  tierConfig?: TemplateTierConfig[]
 ): DealTemplate {
   // グループID → refKeyマッピング
   const groupRefMap = new Map<string, string>();
@@ -60,6 +61,7 @@ export function extractTemplate(
     groupCount: templateGroups.length,
     stakeholderCount: templateStakeholders.length,
     orgLevels: [...orgLevels],
+    tierConfig: tierConfig && tierConfig.length > 0 ? [...tierConfig] : undefined,
     groups: templateGroups,
     stakeholders: templateStakeholders,
   };

@@ -10,7 +10,7 @@ export interface CustomDealTemplate extends DealTemplate {
 interface CustomTemplateState {
   templates: CustomDealTemplate[];
   addTemplate: (template: DealTemplate) => CustomDealTemplate;
-  updateTemplate: (id: string, updates: Partial<Pick<DealTemplate, "name" | "description">>) => void;
+  updateTemplate: (id: string, updates: Partial<DealTemplate>) => void;
   deleteTemplate: (id: string) => void;
 }
 
@@ -33,9 +33,14 @@ export const useCustomTemplateStore = create<CustomTemplateState>()(
 
       updateTemplate: (id, updates) =>
         set((state) => ({
-          templates: state.templates.map((t) =>
-            t.id === id ? { ...t, ...updates } : t
-          ),
+          templates: state.templates.map((t) => {
+            if (t.id !== id) return t;
+            const merged = { ...t, ...updates };
+            // groups/stakeholders が更新された場合はカウントを自動再計算
+            if (updates.groups) merged.groupCount = updates.groups.length;
+            if (updates.stakeholders) merged.stakeholderCount = updates.stakeholders.length;
+            return merged;
+          }),
         })),
 
       deleteTemplate: (id) =>

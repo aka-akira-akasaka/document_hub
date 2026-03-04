@@ -129,9 +129,12 @@ async function performInit(userId: string) {
         supabase.from("tier_configs").select("*"),
       ]);
 
-    // エラーチェック
-    for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes]) {
+    // エラーチェック（tier_configs はテーブル未作成の可能性があるためオプショナル扱い）
+    for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
       if (res.error) throw res.error;
+    }
+    if (tierConfigsRes.error) {
+      console.warn("tier_configs テーブル未作成（スキップ）:", tierConfigsRes.error.message);
     }
 
     const deals = (dealsRes.data as DbDeal[]).map(dbToDeal);
@@ -139,7 +142,7 @@ async function performInit(userId: string) {
     const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
-    const tierConfigs = (tierConfigsRes.data as DbTierConfig[]);
+    const tierConfigs = ((tierConfigsRes.data ?? []) as DbTierConfig[]);
 
     // localStorage からの移行チェック（データが空の場合のみ）
     if (deals.length === 0) {
@@ -368,10 +371,23 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
   try {
     const all = Object.values(byDeal).flat();
     if (all.length > 0) {
+      const rows = all.map(orgGroupToDb);
       const { error } = await supabase
         .from("org_groups")
-        .upsert(all.map(orgGroupToDb), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // tier カラム未追加の場合、tier を除外してリトライ
+        if (error.message?.includes("tier")) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const rowsWithoutTier = rows.map(({ tier: _, ...rest }) => rest);
+          const { error: retryErr } = await supabase
+            .from("org_groups")
+            .upsert(rowsWithoutTier, { onConflict: "id" });
+          if (retryErr) throw retryErr;
+        } else {
+          throw error;
+        }
+      }
     }
 
     const localIds = new Set(all.map((g) => g.id));
@@ -411,6 +427,13 @@ async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
 async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
   const supabase = createClient();
   try {
+    // テーブル存在チェック（未作成なら静かにスキップ）
+    const probe = await supabase.from("tier_configs").select("id").limit(0);
+    if (probe.error) {
+      console.warn("tier_configs テーブル未作成（同期スキップ）");
+      return;
+    }
+
     // tier_configs は deal_id + tier がユニーク制約
     // 全件削除して再挿入が最もシンプル（org_level_configs と同パターン）
     for (const [dealId, entries] of Object.entries(byDeal)) {

@@ -38,6 +38,7 @@ export function SaveTemplateDialog({
   const [description, setDescription] = useState("");
 
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
+  const tierConfig = useOrgGroupStore((s) => s.tierConfigByDeal[dealId]);
   const stakeholders = useStakeholderStore(
     (s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS
   );
@@ -55,7 +56,8 @@ export function SaveTemplateDialog({
       description.trim(),
       orgGroups,
       stakeholders,
-      orgLevels
+      orgLevels,
+      tierConfig
     );
     addTemplate(template);
     toast.success(`テンプレート「${name.trim()}」を保存しました`);
