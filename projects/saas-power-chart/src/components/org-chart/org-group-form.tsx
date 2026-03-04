@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus, Check, X } from "lucide-react";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useHistoryStore } from "@/stores/history-store";
@@ -50,6 +51,7 @@ export function OrgGroupForm({
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const deleteGroup = useOrgGroupStore((s) => s.deleteGroup);
   const getGroupDepth = useOrgGroupStore((s) => s.getGroupDepth);
+  const setTierConfig = useOrgGroupStore((s) => s.setTierConfig);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
   const groups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
   const tierConfig = useOrgGroupStore((s) => s.tierConfigByDeal[dealId]);
@@ -61,6 +63,10 @@ export function OrgGroupForm({
     editGroup?.parentGroupId ?? defaultParentGroupId ?? ""
   );
   const [tier, setTier] = useState(editGroup?.tier ?? 0);
+
+  // インライン種別追加の状態
+  const [isAddingTier, setIsAddingTier] = useState(false);
+  const [newTierLabel, setNewTierLabel] = useState("");
 
   // ダイアログが開くたびにフォーム状態をリセット
   const prevOpenRef = useRef(false);
@@ -75,8 +81,12 @@ export function OrgGroupForm({
       // 新規作成時: defaultParentGroupIdを反映、名前は空にリセット
       setParentGroupId(defaultParentGroupId ?? "");
       setName("");
-      setTier(0);
+      // tierConfigの最初のエントリに合わせる（存在しない tier 値を避ける）
+      const currentConfig = useOrgGroupStore.getState().tierConfigByDeal[dealId];
+      setTier(currentConfig && currentConfig.length > 0 ? currentConfig[0].tier : 0);
     }
+    setIsAddingTier(false);
+    setNewTierLabel("");
   }
   prevOpenRef.current = open;
 
@@ -120,6 +130,19 @@ export function OrgGroupForm({
     onOpenChange(false);
   };
 
+  // インラインで新しい種別を追加
+  const handleAddNewTier = () => {
+    const label = newTierLabel.trim();
+    if (!label) return;
+    const currentConfig = tierConfig ?? [];
+    const nextTier = currentConfig.length > 0 ? Math.max(...currentConfig.map((t) => t.tier)) + 1 : 0;
+    const newEntry = { tier: nextTier, label };
+    setTierConfig(dealId, [...currentConfig, newEntry]);
+    setTier(nextTier);
+    setNewTierLabel("");
+    setIsAddingTier(false);
+  };
+
   // 親グループの選択肢（自分自身と子孫は除外）
   const excludeIds = editGroup
     ? new Set([editGroup.id, ...useOrgGroupStore.getState().getDescendantIds(editGroup.id, dealId)])
@@ -132,6 +155,11 @@ export function OrgGroupForm({
     ? getGroupDepth(parentGroupId, dealId)
     : -1;
   const isTooDeep = selectedParentDepth >= MAX_GROUP_DEPTH - 1;
+
+  // tierConfigのソート済みリスト
+  const sortedTierConfig = tierConfig
+    ? [...tierConfig].sort((a, b) => a.tier - b.tier)
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,10 +181,10 @@ export function OrgGroupForm({
             />
           </div>
 
-          {/* 種別: tierConfigが定義されていれば動的表示、なければ非表示 */}
-          {tierConfig && tierConfig.length > 0 && (
-            <div className="space-y-2">
-              <Label>種別</Label>
+          {/* 種別セレクター（tierConfigがあれば動的、なければ作成ボタンのみ） */}
+          <div className="space-y-2">
+            <Label>種別</Label>
+            {sortedTierConfig.length > 0 ? (
               <Select
                 value={tier.toString()}
                 onValueChange={(v) => {
@@ -170,23 +198,77 @@ export function OrgGroupForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {tierConfig
-                    .slice()
-                    .sort((a, b) => a.tier - b.tier)
-                    .map((t) => (
-                      <SelectItem key={t.tier} value={t.tier.toString()}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
+                  {sortedTierConfig.map((t) => (
+                    <SelectItem key={t.tier} value={t.tier.toString()}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                種別が未定義です。下のボタンから追加できます。
+              </p>
+            )}
+
+            {/* インライン種別追加 */}
+            {isAddingTier ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={newTierLabel}
+                  onChange={(e) => setNewTierLabel(e.target.value)}
+                  placeholder="例: 会議体"
+                  className="flex-1 h-8 text-sm"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddNewTier();
+                    } else if (e.key === "Escape") {
+                      setIsAddingTier(false);
+                      setNewTierLabel("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                  onClick={handleAddNewTier}
+                  disabled={!newTierLabel.trim()}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-gray-400 hover:text-gray-600 shrink-0"
+                  onClick={() => { setIsAddingTier(false); setNewTierLabel(""); }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                onClick={() => setIsAddingTier(true)}
+              >
+                <Plus className="h-3 w-3" />
+                <span>種別を追加</span>
+              </button>
+            )}
+
+            {sortedTierConfig.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 {tier > 0
                   ? "この種別は組織図の上段に配置されます"
                   : "通常の部署としてレイアウトされます"}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label>親部署</Label>

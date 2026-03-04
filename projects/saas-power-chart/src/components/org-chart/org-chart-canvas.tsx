@@ -104,11 +104,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
 
   useEffect(() => {
     if (draggingNodeId) {
-      // ドラッグ中: ドラッグ中のノードの位置はマウス追従を維持し、それ以外を更新
+      // ドラッグ中: ドラッグ中のノード＋その子ノードの位置を維持し、それ以外を更新
+      // （グループD&D時に中の人ノードが先に動くアニメーションを防止）
       setNodes((prev) => {
         const layoutMap = new Map(layoutNodes.map((n) => [n.id, n]));
         return prev.map((node) => {
-          if (node.id === draggingNodeId) return node;
+          if (node.id === draggingNodeId || node.parentId === draggingNodeId) return node;
           const updated = layoutMap.get(node.id);
           return updated ?? node;
         });

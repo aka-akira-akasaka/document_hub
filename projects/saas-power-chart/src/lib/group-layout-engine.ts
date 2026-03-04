@@ -92,11 +92,28 @@ export function computeGroupLayout(
   // tier降順にソート（大きい数字が上段）
   const sortedTiers = [...tierMap.keys()].sort((a, b) => b - a);
 
+  // 各tierの合計幅を先に計算（中央揃え用）
+  const tierWidths = new Map<number, number>();
+  for (const tier of sortedTiers) {
+    const tierGroups = tierMap.get(tier)!;
+    let totalWidth = 0;
+    for (const root of tierGroups) {
+      totalWidth += root.width;
+    }
+    totalWidth += Math.max(0, tierGroups.length - 1) * GROUP_LAYOUT.divisionGap;
+    tierWidths.set(tier, totalWidth);
+  }
+  const maxTierWidth = sortedTiers.length > 0
+    ? Math.max(...sortedTiers.map((t) => tierWidths.get(t)!))
+    : 0;
+
   let currentTierY = GROUP_LAYOUT.groupAreaY;
 
   for (const tier of sortedTiers) {
     const tierGroups = tierMap.get(tier)!;
-    let tierX = 0;
+    const totalWidth = tierWidths.get(tier)!;
+    // 最も幅の広いtierを基準に中央揃え
+    let tierX = (maxTierWidth - totalWidth) / 2;
     let tierMaxHeight = 0;
 
     for (const root of tierGroups) {
