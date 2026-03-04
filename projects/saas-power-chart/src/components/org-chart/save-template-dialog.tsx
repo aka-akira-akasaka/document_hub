@@ -17,9 +17,11 @@ import { extractTemplate } from "@/lib/extract-template";
 import { toast } from "sonner";
 import type { OrgGroup } from "@/types/org-group";
 import type { Stakeholder } from "@/types/stakeholder";
+import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 
 const EMPTY_GROUPS: OrgGroup[] = [];
 const EMPTY_STAKEHOLDERS: Stakeholder[] = [];
+const EMPTY_LEVELS: OrgLevelEntry[] = [];
 
 interface SaveTemplateDialogProps {
   dealId: string;
@@ -40,7 +42,7 @@ export function SaveTemplateDialog({
     (s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS
   );
   const orgLevels = useStakeholderStore(
-    (s) => s.orgLevelConfigByDeal[dealId] ?? []
+    (s) => s.orgLevelConfigByDeal[dealId] ?? EMPTY_LEVELS
   );
   const addTemplate = useCustomTemplateStore((s) => s.addTemplate);
 
