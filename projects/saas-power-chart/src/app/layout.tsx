@@ -28,7 +28,7 @@ export default function RootLayout({
         <AuthProvider>
           <TooltipProvider>
             {/* トップバー + メインコンテンツ の縦並びレイアウト */}
-            <div className="flex flex-col min-h-screen">
+            <div className="flex flex-col h-screen overflow-hidden">
               <TopBar />
               <div className="flex-1 flex flex-col min-w-0">{children}</div>
             </div>
