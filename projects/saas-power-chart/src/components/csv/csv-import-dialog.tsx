@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
+import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useHistoryStore } from "@/stores/history-store";
-import { parseCSV, downloadCSV, type ParseResult } from "@/lib/csv-parser";
-import { parseYAML, downloadYAML, YAML_TEMPLATE } from "@/lib/yaml-parser";
+import { parseCSV, downloadCSV, type CsvExtendedParseResult } from "@/lib/csv-parser";
+import { parseYAML, downloadYAML, YAML_TEMPLATE, type ExtendedParseResult, type ImportGroupData } from "@/lib/yaml-parser";
 import { CSV_COLUMNS, CSV_COLUMN_LABELS, CSV_TEMPLATE_EXAMPLE } from "@/types/csv";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { toast } from "sonner";
@@ -37,14 +38,56 @@ interface CsvImportDialogProps {
   dealId: string;
 }
 
+/** パース結果の統合型 */
+interface UnifiedParseResult {
+  valid: import("@/types/stakeholder").Stakeholder[];
+  errors: { row: number; message: string; data: Record<string, string> }[];
+  totalRows: number;
+  groups: ImportGroupData[];
+  tierConfig: { tier: number; label: string }[];
+  orgLevels: { level: number; label: string }[];
+  groupNameRefs: Map<string, string>;
+}
+
+/** YAML/CSVパース結果をUnified形式に変換 */
+function toUnified(result: ExtendedParseResult | CsvExtendedParseResult): UnifiedParseResult {
+  if ("tierConfig" in result && "orgLevels" in result) {
+    // YAML
+    const r = result as ExtendedParseResult;
+    return {
+      valid: r.valid,
+      errors: r.errors,
+      totalRows: r.totalRows,
+      groups: r.groups,
+      tierConfig: r.tierConfig,
+      orgLevels: r.orgLevels,
+      groupNameRefs: r.groupNameRefs,
+    };
+  }
+  // CSV
+  const r = result as CsvExtendedParseResult;
+  return {
+    valid: r.valid,
+    errors: r.errors,
+    totalRows: r.totalRows,
+    groups: r.groups,
+    tierConfig: [],
+    orgLevels: [],
+    groupNameRefs: r.groupNameRefs,
+  };
+}
+
 export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
   const open = useUiStore((s) => s.csvImportDialogOpen);
   const closeCsvImport = useUiStore((s) => s.closeCsvImport);
   const importStakeholders = useStakeholderStore((s) => s.importStakeholders);
+  const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
+  const addGroup = useOrgGroupStore((s) => s.addGroup);
+  const setTierConfig = useOrgGroupStore((s) => s.setTierConfig);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
-  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [parseResult, setParseResult] = useState<UnifiedParseResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>("append");
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
@@ -68,7 +111,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
         const result = isYamlFile(file.name)
           ? parseYAML(text, dealId)
           : parseCSV(text, dealId);
-        setParseResult(result);
+        setParseResult(toUnified(result));
         setShowOverwriteConfirm(false);
       };
       reader.readAsText(file);
@@ -106,10 +149,56 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
     }
 
     captureSnapshot();
-    importStakeholders(dealId, parseResult.valid, importMode);
+
+    // --- tierConfig の適用 ---
+    if (parseResult.tierConfig.length > 0) {
+      setTierConfig(dealId, parseResult.tierConfig);
+    }
+
+    // --- orgLevels の適用 ---
+    if (parseResult.orgLevels.length > 0) {
+      setOrgLevels(dealId, parseResult.orgLevels);
+    }
+
+    // --- グループの作成（親→子の順序で） ---
+    const groupNameToId = new Map<string, string>();
+    if (parseResult.groups.length > 0) {
+      const pending = [...parseResult.groups];
+      const maxIter = pending.length * 2;
+      let iter = 0;
+      while (pending.length > 0 && iter < maxIter) {
+        iter++;
+        const item = pending.shift()!;
+        // 親がまだ作成されていない場合は後回し
+        if (item.parentName && !groupNameToId.has(item.parentName)) {
+          pending.push(item);
+          continue;
+        }
+        const created = addGroup({
+          dealId,
+          name: item.name,
+          parentGroupId: item.parentName ? groupNameToId.get(item.parentName) ?? null : null,
+          color: item.color,
+          tier: item.tier,
+        });
+        groupNameToId.set(item.name, created.id);
+      }
+    }
+
+    // --- Stakeholderのgroup名参照をIDに解決 ---
+    const resolvedStakeholders = parseResult.valid.map((s) => {
+      const groupName = parseResult.groupNameRefs.get(s.id);
+      if (groupName && groupNameToId.has(groupName)) {
+        return { ...s, groupId: groupNameToId.get(groupName)! };
+      }
+      return s;
+    });
+
+    importStakeholders(dealId, resolvedStakeholders, importMode);
 
     const modeLabel = importMode === "overwrite" ? "上書きインポート" : "追加インポート";
-    toast.success(`${parseResult.valid.length}件を${modeLabel}しました`);
+    const groupMsg = groupNameToId.size > 0 ? `（${groupNameToId.size}グループ含む）` : "";
+    toast.success(`${parseResult.valid.length}件を${modeLabel}しました${groupMsg}`);
     handleClose();
   };
 
@@ -165,11 +254,11 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
               <p className="font-medium text-gray-500">CSV形式</p>
               <p>
                 カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
-                関係構築担当, 上位者ID, メール, 電話番号, 備考
+                関係構築担当, 上位者ID, メール, 電話番号, 備考, 所属グループ名, グループ種別
               </p>
-              <p className="font-medium text-gray-500 mt-2">YAML形式</p>
+              <p className="font-medium text-gray-500 mt-2">YAML形式（推奨）</p>
               <p>
-                ツリー構造で階層関係を表現（name, title, department, children）
+                組織種別・役職階層・グループ構造をすべて保存。エクスポート→インポートで完全再現
               </p>
               <div className="text-left inline-block space-y-0.5 mt-1">
                 <p>
@@ -219,6 +308,11 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
               {parseResult.errors.length > 0 && (
                 <span className="text-red-600">
                   エラー: <strong>{parseResult.errors.length}</strong>件
+                </span>
+              )}
+              {parseResult.groups.length > 0 && (
+                <span className="text-blue-600">
+                  グループ: <strong>{parseResult.groups.length}</strong>件
                 </span>
               )}
             </div>

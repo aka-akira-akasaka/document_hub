@@ -1,7 +1,9 @@
 import Papa from "papaparse";
 import { z } from "zod";
 import type { Stakeholder } from "@/types/stakeholder";
+import type { OrgGroup } from "@/types/org-group";
 import { CSV_COLUMNS, CSV_LABEL_TO_COLUMN, type CsvRow } from "@/types/csv";
+import type { ImportGroupData } from "./yaml-parser";
 
 const VALID_ROLES = [
   "decision_maker",
@@ -48,6 +50,9 @@ const csvRowSchema = z.object({
   notes: z.string().optional().default(""),
   org_level: z.string().optional().default(""),
   group_id: z.string().optional().default(""),
+  group_name: z.string().optional().default(""),
+  group_tier: z.string().optional().default(""),
+  group_parent: z.string().optional().default(""),
 });
 
 export interface ParseError {
@@ -62,7 +67,14 @@ export interface ParseResult {
   totalRows: number;
 }
 
-export function parseCSV(csvText: string, dealId: string): ParseResult {
+/** CSV拡張パース結果（グループ情報を含む） */
+export interface CsvExtendedParseResult extends ParseResult {
+  groups: ImportGroupData[];
+  /** stakeholder ID → group名 の参照マップ */
+  groupNameRefs: Map<string, string>;
+}
+
+export function parseCSV(csvText: string, dealId: string): CsvExtendedParseResult {
   const result = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
@@ -74,6 +86,9 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
 
   const valid: Stakeholder[] = [];
   const errors: ParseError[] = [];
+  const groupNameRefs = new Map<string, string>();
+  // グループ名→{tier, parentName} のユニーク集合
+  const groupMap = new Map<string, { tier: number; parentName: string | null }>();
 
   for (let i = 0; i < result.data.length; i++) {
     const raw = result.data[i];
@@ -109,13 +124,36 @@ export function parseCSV(csvText: string, dealId: string): ParseResult {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // group_name が指定されていればグループ名参照として記録
+    const groupName = d.group_name?.trim();
+    if (groupName) {
+      groupNameRefs.set(stakeholder.id, groupName);
+      if (!groupMap.has(groupName)) {
+        groupMap.set(groupName, {
+          tier: d.group_tier ? Number(d.group_tier) : 0,
+          parentName: d.group_parent?.trim() || null,
+        });
+      }
+    }
+
     valid.push(stakeholder);
   }
 
-  return { valid, errors, totalRows: result.data.length };
+  // ユニークグループリストを構築
+  const groups: ImportGroupData[] = [];
+  for (const [name, data] of groupMap) {
+    groups.push({ name, tier: data.tier, parentName: data.parentName });
+  }
+
+  return { valid, errors, totalRows: result.data.length, groups, groupNameRefs };
 }
 
-export function stakeholderToCsvRow(s: Stakeholder): CsvRow {
+export function stakeholderToCsvRow(s: Stakeholder, orgGroups?: OrgGroup[]): CsvRow {
+  // グループ情報の解決
+  const group = orgGroups?.find((g) => g.id === s.groupId);
+  const parentGroup = group?.parentGroupId ? orgGroups?.find((g) => g.id === group.parentGroupId) : null;
+
   return {
     id: s.id,
     name: s.name,
@@ -132,11 +170,14 @@ export function stakeholderToCsvRow(s: Stakeholder): CsvRow {
     notes: s.notes,
     org_level: String(s.orgLevel),
     group_id: s.groupId ?? "",
+    group_name: group?.name ?? "",
+    group_tier: group ? String(group.tier) : "",
+    group_parent: parentGroup?.name ?? "",
   };
 }
 
-export function exportCSV(stakeholders: Stakeholder[]): string {
-  const rows = stakeholders.map(stakeholderToCsvRow);
+export function exportCSV(stakeholders: Stakeholder[], orgGroups?: OrgGroup[]): string {
+  const rows = stakeholders.map((s) => stakeholderToCsvRow(s, orgGroups));
   return Papa.unparse(rows, { columns: CSV_COLUMNS });
 }
 

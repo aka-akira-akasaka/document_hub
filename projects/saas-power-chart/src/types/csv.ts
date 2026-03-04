@@ -14,6 +14,9 @@ export interface CsvRow {
   notes: string;
   org_level: string;
   group_id: string;
+  group_name: string;
+  group_tier: string;
+  group_parent: string;
 }
 
 export const CSV_COLUMNS: (keyof CsvRow)[] = [
@@ -32,6 +35,9 @@ export const CSV_COLUMNS: (keyof CsvRow)[] = [
   "notes",
   "org_level",
   "group_id",
+  "group_name",
+  "group_tier",
+  "group_parent",
 ];
 
 /** Japanese display names for CSV columns */
@@ -51,6 +57,9 @@ export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
   notes: "備考",
   org_level: "組織階層レベル",
   group_id: "所属グループID",
+  group_name: "所属グループ名",
+  group_tier: "グループ種別",
+  group_parent: "親グループ名",
 };
 
 /** Reverse mapping: Japanese label → English key */
@@ -75,4 +84,7 @@ export const CSV_TEMPLATE_EXAMPLE: Record<keyof CsvRow, string> = {
   notes: "最終決裁者",
   org_level: "2",
   group_id: "",
+  group_name: "経営企画部",
+  group_tier: "0",
+  group_parent: "",
 };
