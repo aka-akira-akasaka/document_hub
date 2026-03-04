@@ -52,29 +52,31 @@ export function DealCreateDialog() {
       // デバウンスされた同期処理を即座に実行してDB永続化を保証
       await flushPendingSync();
 
-      setName("");
-      setClientName("");
-      setStage("prospecting");
-      setDescription("");
-      setOpen(false);
+      // ダイアログは閉じず、ページ遷移でアンマウントされるまでローディング継続
       router.push(`/deals/${deal.id}`);
-    } finally {
+    } catch {
       setIsCreating(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { if (!isCreating) setOpen(v); }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           新規案件
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
         <DialogHeader>
           <DialogTitle>新規案件を作成</DialogTitle>
         </DialogHeader>
+        {isCreating ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">案件を作成しています...</p>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">案件名</Label>
@@ -137,6 +139,7 @@ export function DealCreateDialog() {
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
