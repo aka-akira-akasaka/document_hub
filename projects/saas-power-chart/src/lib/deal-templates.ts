@@ -164,9 +164,9 @@ const BANK: DealTemplate = {
 const BUSINESS_COMPANY: DealTemplate = {
   id: "business-company",
   name: "事業会社",
-  description: "経営企画・情報システム・営業部など事業会社の典型的な組織構成",
-  groupCount: 9,
-  stakeholderCount: 4,
+  description: "経営企画・情報システム・営業・管理本部など事業会社の典型的な組織構成",
+  groupCount: 5,
+  stakeholderCount: 5,
   tierConfig: [
     { tier: 0, label: "部署" },
     { tier: 1, label: "会議体" },
@@ -184,12 +184,8 @@ const BUSINESS_COMPANY: DealTemplate = {
     // 通常部署（tier 0）
     { refKey: "keiei-kikaku", name: "経営企画部", parentRefKey: null },
     { refKey: "jouhou", name: "情報システム部", parentRefKey: null },
-    { refKey: "soumu", name: "総務部", parentRefKey: null },
-    { refKey: "keiri", name: "経理部", parentRefKey: null },
     { refKey: "eigyo", name: "営業部", parentRefKey: null },
-    { refKey: "eigyo-1", name: "営業一課", parentRefKey: "eigyo" },
-    { refKey: "eigyo-2", name: "営業二課", parentRefKey: "eigyo" },
-    { refKey: "seizou", name: "製造部", parentRefKey: null },
+    { refKey: "kanri", name: "管理本部", parentRefKey: null },
   ],
   stakeholders: [
     {
@@ -238,6 +234,18 @@ const BUSINESS_COMPANY: DealTemplate = {
       attitude: "neutral",
       orgLevel: 3,
       groupRefKey: "eigyo",
+      parentRefKey: null,
+    },
+    {
+      refKey: "kanri-bucho",
+      name: "（管理本部長）",
+      title: "部長",
+      department: "管理本部",
+      roleInDeal: "evaluator",
+      influenceLevel: 3,
+      attitude: "neutral",
+      orgLevel: 3,
+      groupRefKey: "kanri",
       parentRefKey: null,
     },
   ],
