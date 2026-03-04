@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -46,16 +46,20 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // ダイアログが開くたびにストアから最新を取得
+  // Note: Radix Dialog の onOpenChange は外部からの open prop 変更では呼ばれないため useEffect で補完
+  useEffect(() => {
+    if (open) {
+      const current = useStakeholderStore.getState().orgLevelConfigByDeal[dealId];
+      setLevels(current && current.length > 0 ? [...current] : []);
+      setViewMode("edit");
+    }
+  }, [open, dealId]);
+
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
-      if (nextOpen) {
-        const current = useStakeholderStore.getState().orgLevelConfigByDeal[dealId];
-        setLevels(current && current.length > 0 ? [...current] : []);
-        setViewMode("edit");
-      }
       onOpenChange(nextOpen);
     },
-    [dealId, onOpenChange]
+    [onOpenChange]
   );
 
   const handleLabelChange = useCallback((index: number, label: string) => {
