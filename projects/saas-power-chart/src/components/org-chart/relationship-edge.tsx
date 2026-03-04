@@ -4,6 +4,7 @@ import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   getSmoothStepPath,
+  getBezierPath,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -77,40 +78,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    const dx = targetX - sourceX;
-    const dy = targetY - sourceY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < 1) {
-      edgePath = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
-    } else {
-      // ソース→ターゲット方向の単位ベクトル
-      const nx = dx / dist;
-      const ny = dy / dist;
-      // 垂直方向（カーブ用）
-      const perpX = -ny;
-      const perpY = nx;
-
-      // ハンドル方向とライン方向のずれからカーブ量を計算
-      // ハンドルが左右なら sourcePosition は "left"|"right" → 水平成分
-      // ハンドルが上下なら sourcePosition は "top"|"bottom" → 垂直成分
-      const handleDirX = sourcePosition === "left" ? -1 : sourcePosition === "right" ? 1 : 0;
-      const handleDirY = sourcePosition === "top" ? -1 : sourcePosition === "bottom" ? 1 : 0;
-      // ハンドル方向とライン方向の外積（符号でカーブ方向決定）
-      const cross = handleDirX * ny - handleDirY * nx;
-      const curvature = cross * Math.min(dist * 0.2, 40);
-
-      const handleLen = dist * 0.35;
-      const cp1x = sourceX + nx * handleLen + perpX * curvature;
-      const cp1y = sourceY + ny * handleLen + perpY * curvature;
-      const cp2x = targetX - nx * handleLen + perpX * curvature;
-      const cp2y = targetY - ny * handleLen + perpY * curvature;
-
-      edgePath = `M ${sourceX},${sourceY} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${targetX},${targetY}`;
-    }
-
-    labelX = (sourceX + targetX) / 2;
-    labelY = (sourceY + targetY) / 2;
+    // ReactFlowのデフォルトBézierと同じパスを使用（ドラッグプレビュー線と一致させるため）
+    [edgePath, labelX, labelY] = getBezierPath(pathParams);
   }
 
   // 編集状態
