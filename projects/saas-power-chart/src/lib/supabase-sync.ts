@@ -346,10 +346,21 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
   try {
     const all = Object.values(byDeal).flat();
     if (all.length > 0) {
+      const rows = all.map(relationshipToDb);
       const { error } = await supabase
         .from("relationships")
-        .upsert(all.map(relationshipToDb), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // 新カラム未追加の場合、新カラムを除外してリトライ
+        const rowsCompat = rows.map(({
+          direction: _d, color: _c, source_type: _st, target_type: _tt,
+          source_handle: _sh, target_handle: _th, ...rest
+        }) => rest);
+        const { error: retryErr } = await supabase
+          .from("relationships")
+          .upsert(rowsCompat, { onConflict: "id" });
+        if (retryErr) throw retryErr;
+      }
     }
 
     const localIds = new Set(all.map((r) => r.id));
@@ -376,17 +387,13 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
         .from("org_groups")
         .upsert(rows, { onConflict: "id" });
       if (error) {
-        // tier カラム未追加の場合、tier を除外してリトライ
-        if (error.message?.includes("tier")) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const rowsWithoutTier = rows.map(({ tier: _, ...rest }) => rest);
-          const { error: retryErr } = await supabase
-            .from("org_groups")
-            .upsert(rowsWithoutTier, { onConflict: "id" });
-          if (retryErr) throw retryErr;
-        } else {
-          throw error;
-        }
+        // tier カラム未追加等のスキーマ不一致時、tier を除外してリトライ
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const rowsWithoutTier = rows.map(({ tier: _, ...rest }) => rest);
+        const { error: retryErr } = await supabase
+          .from("org_groups")
+          .upsert(rowsWithoutTier, { onConflict: "id" });
+        if (retryErr) throw retryErr;
       }
     }
 
