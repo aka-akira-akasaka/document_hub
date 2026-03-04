@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Check, X } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useHistoryStore } from "@/stores/history-store";
@@ -181,44 +181,16 @@ export function OrgGroupForm({
             />
           </div>
 
-          {/* 種別セレクター（tierConfigがあれば動的、なければ作成ボタンのみ） */}
+          {/* 種別セレクター */}
           <div className="space-y-2">
-            <Label>種別</Label>
-            {sortedTierConfig.length > 0 ? (
-              <Select
-                value={tier.toString()}
-                onValueChange={(v) => {
-                  const newTier = Number(v);
-                  setTier(newTier);
-                  // tier > 0 はネスト不可なので親部署をリセット
-                  if (newTier > 0) setParentGroupId("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortedTierConfig.map((t) => (
-                    <SelectItem key={t.tier} value={t.tier.toString()}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                種別が未定義です。下のボタンから追加できます。
-              </p>
-            )}
-
-            {/* インライン種別追加 */}
+            <Label>種別 *</Label>
             {isAddingTier ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Input
                   value={newTierLabel}
                   onChange={(e) => setNewTierLabel(e.target.value)}
-                  placeholder="例: 会議体"
-                  className="flex-1 h-8 text-sm"
+                  placeholder="新しい組織種別名"
+                  className="h-9 text-sm flex-1"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -232,36 +204,58 @@ export function OrgGroupForm({
                 />
                 <Button
                   type="button"
+                  size="sm"
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                  className="h-9 w-9 p-0"
                   onClick={handleAddNewTier}
                   disabled={!newTierLabel.trim()}
                 >
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="w-4 h-4" />
                 </Button>
                 <Button
                   type="button"
+                  size="sm"
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-gray-400 hover:text-gray-600 shrink-0"
+                  className="h-9 px-2 text-xs text-gray-500"
                   onClick={() => { setIsAddingTier(false); setNewTierLabel(""); }}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  取消
                 </Button>
               </div>
             ) : (
-              <button
-                type="button"
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 transition-colors"
-                onClick={() => setIsAddingTier(true)}
+              <Select
+                value={tier.toString()}
+                onValueChange={(v) => {
+                  if (v === "__add_new__") {
+                    setIsAddingTier(true);
+                    return;
+                  }
+                  const newTier = Number(v);
+                  setTier(newTier);
+                  // tier > 0 はネスト不可なので親部署をリセット
+                  if (newTier > 0) setParentGroupId("");
+                }}
               >
-                <Plus className="h-3 w-3" />
-                <span>種別を追加</span>
-              </button>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="種別を選択..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedTierConfig.map((t) => (
+                    <SelectItem key={t.tier} value={t.tier.toString()}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__add_new__" className="text-blue-600">
+                    <span className="flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" />
+                      新しい組織種別を追加
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             )}
 
-            {sortedTierConfig.length > 0 && (
+            {sortedTierConfig.length > 0 && !isAddingTier && (
               <p className="text-xs text-muted-foreground">
                 {tier > 0
                   ? "この種別は組織図の上段に配置されます"
