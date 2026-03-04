@@ -300,7 +300,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               {customLabel && (
                 <span
                   className={cn(
-                    "text-[10px] font-medium px-2 py-0.5 rounded-sm whitespace-nowrap text-white",
+                    "inline-block text-[10px] leading-none font-medium px-2 py-1 rounded-sm whitespace-nowrap text-white",
                     badgeBg
                   )}
                   style={customColor ? { backgroundColor: customColor } : undefined}
