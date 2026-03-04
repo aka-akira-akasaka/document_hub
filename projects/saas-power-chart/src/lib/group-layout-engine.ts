@@ -352,6 +352,30 @@ function positionGroupTree(
   }
   nodes.push(groupNode);
 
+  // 並べ替えプレビュー中: ドロップ先を示すインジケーター追加
+  if (isDragging) {
+    const indicator: Node = {
+      id: "reorder-drop-indicator",
+      type: "reorderDropIndicator",
+      position: { x: relX, y: relY },
+      data: {},
+      style: {
+        width: node.width,
+        height: node.height,
+        transition: "transform 200ms ease-in-out",
+      },
+      draggable: false,
+      selectable: false,
+      connectable: false,
+      focusable: false,
+      zIndex: -1,
+    };
+    if (parentGroupNodeId) {
+      indicator.parentId = parentGroupNodeId;
+    }
+    nodes.push(indicator);
+  }
+
   // グループの絶対位置をドロップ先検出用に記録
   groupBounds.push({
     groupId: node.group.id,

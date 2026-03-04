@@ -21,6 +21,7 @@ import { Plus, Check } from "lucide-react";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useHistoryStore } from "@/stores/history-store";
+import { useUiStore } from "@/stores/ui-store";
 import type { OrgGroup } from "@/types/org-group";
 import type { Stakeholder } from "@/types/stakeholder";
 import { MAX_GROUP_DEPTH } from "@/lib/constants";
@@ -113,12 +114,14 @@ export function OrgGroupForm({
         }
       }
     } else {
-      addGroup({
+      const newGroup = addGroup({
         dealId,
         name: name.trim(),
         parentGroupId: effectiveParentGroupId,
         tier,
       });
+      // 作成した部署が画面中央に表示されるようスクロール予約
+      useUiStore.getState().setScrollToGroup(newGroup.id);
     }
     onOpenChange(false);
   };

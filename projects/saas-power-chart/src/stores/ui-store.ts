@@ -108,6 +108,11 @@ interface UiState {
   } | null;
   setReorderPreview: (preview: { parentGroupId: string | null; draggedGroupId: string; insertIndex: number } | null) => void;
   clearReorderPreview: () => void;
+
+  /** 新規作成されたグループにスクロールする */
+  scrollToGroupId: string | null;
+  setScrollToGroup: (id: string) => void;
+  clearScrollToGroup: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -188,4 +193,8 @@ export const useUiStore = create<UiState>()((set) => ({
   reorderPreview: null,
   setReorderPreview: (preview) => set({ reorderPreview: preview }),
   clearReorderPreview: () => set({ reorderPreview: null, draggingNodeId: null }),
+
+  scrollToGroupId: null,
+  setScrollToGroup: (id) => set({ scrollToGroupId: id }),
+  clearScrollToGroup: () => set({ scrollToGroupId: null }),
 }));

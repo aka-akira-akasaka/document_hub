@@ -8,6 +8,7 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type NodeMouseHandler,
   type Connection,
 } from "@xyflow/react";
@@ -17,6 +18,7 @@ import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgGroupNode } from "./org-group-node";
 import { AddPersonPlaceholderNode } from "./add-person-placeholder-node";
+import { ReorderDropIndicatorNode } from "./reorder-drop-indicator";
 import { OrgChartToolbar } from "./org-chart-toolbar";
 import { AddNodeMenu } from "./add-node-menu";
 import { OrgLevelEditor } from "./org-level-editor";
@@ -37,7 +39,30 @@ import { toast } from "sonner";
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
 
-const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode };
+/** 新規作成された部署に自動スクロールするヘルパー（ReactFlow内部で使用） */
+function ScrollToNewGroup() {
+  const scrollToGroupId = useUiStore((s) => s.scrollToGroupId);
+  const clearScrollToGroup = useUiStore((s) => s.clearScrollToGroup);
+  const { fitView, getZoom } = useReactFlow();
+
+  useEffect(() => {
+    if (!scrollToGroupId) return;
+    const timer = setTimeout(() => {
+      fitView({
+        nodes: [{ id: `group-${scrollToGroupId}` }],
+        duration: 300,
+        padding: 0.3,
+        maxZoom: getZoom(),
+      });
+      clearScrollToGroup();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [scrollToGroupId, fitView, getZoom, clearScrollToGroup]);
+
+  return null;
+}
+
+const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 // ReactFlowに渡すオプションをモジュールレベルで定義（毎レンダー新オブジェクト生成による無限ループ防止）
@@ -299,7 +324,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         proOptions={PRO_OPTIONS}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
-        {/* LayerBackground は廃止済み — グループモードに統一 */}
+        <ScrollToNewGroup />
         <OrgChartToolbar
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}
