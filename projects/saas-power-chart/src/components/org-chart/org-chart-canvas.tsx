@@ -29,9 +29,7 @@ import { useUiStore } from "@/stores/ui-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
 import { useHistoryStore } from "@/stores/history-store";
-import { EmptyState } from "@/components/layout/empty-state";
-import { Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TemplateSelector } from "./template-selector";
 import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
 
@@ -271,18 +269,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
     <div className="flex-1 relative">
       {/* 空状態のオーバーレイ（ツールバーは常に表示） */}
       {isEmpty && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-          <div className="pointer-events-auto">
-            <EmptyState
-              icon={Users}
-              title="まだ人がいません"
-              description="左のツールバーから人や部署を追加してパワーチャートを作成しましょう。"
-              action={
-                <Button onClick={handleAddNode}>人を追加する</Button>
-              }
-            />
-          </div>
-        </div>
+        <TemplateSelector dealId={dealId} />
       )}
       <ReactFlow
         nodes={nodes}
