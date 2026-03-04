@@ -92,18 +92,6 @@ function PdfExportEffect({ dealName }: { dealName: string }) {
   return null;
 }
 
-/** PDF出力時にエディター専用UIを非表示にするスタイル */
-const PDF_EXPORT_STYLES = `
-.pdf-exporting .react-flow__panel,
-.pdf-exporting .react-flow__minimap,
-.pdf-exporting .react-flow__background,
-.pdf-exporting .react-flow__handle,
-.pdf-exporting [data-nodetype="addPersonPlaceholder"],
-.pdf-exporting [data-pdf-hide] {
-  display: none !important;
-}
-`;
-
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
@@ -342,8 +330,6 @@ export function OrgChartCanvas({ dealId, dealName }: OrgChartCanvasProps) {
 
   return (
     <div className="flex-1 relative">
-      {/* PDF出力時にエディターUIを非表示にするスタイル */}
-      <style dangerouslySetInnerHTML={{ __html: PDF_EXPORT_STYLES }} />
       {/* 空状態のオーバーレイ（ツールバーは常に表示） */}
       {isEmpty && (
         <TemplateSelector dealId={dealId} />

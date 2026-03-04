@@ -1,15 +1,19 @@
-import { toPng } from "html-to-image";
-import { jsPDF } from "jspdf";
-
 /**
  * ReactFlow キャンバスを PNG キャプチャし、PDF として保存する。
  * キャプチャ前にエディター専用 UI を非表示にし、完了後に復元する。
+ *
+ * html-to-image / jspdf はブラウザ専用のため動的インポートで取得する。
  */
 export async function exportOrgChartToPdf(
   container: HTMLElement,
   dealName: string,
   fitView: () => void,
 ): Promise<void> {
+  const [{ toPng }, { jsPDF }] = await Promise.all([
+    import("html-to-image"),
+    import("jspdf"),
+  ]);
+
   // 1. エディターUI非表示
   container.classList.add("pdf-exporting");
 
