@@ -135,6 +135,11 @@ export function parseCSV(csvText: string, dealId: string): CsvExtendedParseResul
           parentName: d.group_parent?.trim() || null,
         });
       }
+      // 親グループも groupMap に追加（直接のステークホルダーがいない中間グループ対応）
+      const parentName = d.group_parent?.trim();
+      if (parentName && !groupMap.has(parentName)) {
+        groupMap.set(parentName, { tier: 0, parentName: null });
+      }
     }
 
     valid.push(stakeholder);

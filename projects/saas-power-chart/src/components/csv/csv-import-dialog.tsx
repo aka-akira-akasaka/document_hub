@@ -85,6 +85,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
   const addGroup = useOrgGroupStore((s) => s.addGroup);
   const setTierConfig = useOrgGroupStore((s) => s.setTierConfig);
+  const clearOrgGroupData = useOrgGroupStore((s) => s.clearDealData);
   const captureSnapshot = useHistoryStore((s) => s.captureSnapshot);
 
   const [parseResult, setParseResult] = useState<UnifiedParseResult | null>(null);
@@ -149,6 +150,11 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
     }
 
     captureSnapshot();
+
+    // --- 上書きモード: 既存グループ・tierConfigをクリア ---
+    if (importMode === "overwrite") {
+      clearOrgGroupData(dealId);
+    }
 
     // --- tierConfig の適用 ---
     if (parseResult.tierConfig.length > 0) {
