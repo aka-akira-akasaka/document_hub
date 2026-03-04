@@ -9,6 +9,7 @@ import { computeGroupLayout, type GroupBound } from "@/lib/group-layout-engine";
 import { GROUP_LAYOUT } from "@/lib/constants";
 import { assignHandlesToEdges } from "@/lib/handle-utils";
 import { useHistoryStore } from "@/stores/history-store";
+import { useLayoutSettingsStore } from "@/stores/layout-settings-store";
 import { toast } from "sonner";
 
 const EMPTY_S: import("@/types/stakeholder").Stakeholder[] = [];
@@ -68,9 +69,10 @@ export function useGroupChartLayout(dealId: string) {
   const groupBoundsRef = useRef<GroupBound[]>([]);
   const reorderPreview = useUiStore((s) => s.reorderPreview);
   const orgLevelConfig = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
+  const maxColumnsPerRow = useLayoutSettingsStore((s) => s.maxColumnsPerRow);
 
   const { layoutNodes, allEdges } = useMemo(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, orgLevelConfig });
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, orgLevelConfig, maxColumnsPerRow });
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     // groupBoundsをRefに保存（コールバック内で参照するため）
@@ -79,7 +81,7 @@ export function useGroupChartLayout(dealId: string) {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
     };
-  }, [stakeholders, orgGroups, relEdges, reorderPreview, orgLevelConfig]);
+  }, [stakeholders, orgGroups, relEdges, reorderPreview, orgLevelConfig, maxColumnsPerRow]);
 
   // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
   const nodes: Node[] = layoutNodes;

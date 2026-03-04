@@ -40,6 +40,8 @@ export interface GroupLayoutOptions {
   } | null;
   /** 役職階層定義（表示順でソートするため） */
   orgLevelConfig?: { level: number }[];
+  /** 同一役職の1行あたり最大列数（デフォルト: 無制限） */
+  maxColumnsPerRow?: number;
 }
 
 /**
@@ -62,8 +64,9 @@ export function computeGroupLayout(
   const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups, options?.orgLevelConfig);
 
   // Step 3: グループサイズをボトムアップで計算
+  const maxColumns = options?.maxColumnsPerRow;
   for (const root of groupTree) {
-    computeGroupSize(root);
+    computeGroupSize(root, maxColumns);
   }
 
   // Step 4: グループ位置をトップダウンで割り当て
@@ -126,7 +129,8 @@ export function computeGroupLayout(
         null,                    // 親グループなし
         nodes,
         groupBounds,
-        draggedGroupId
+        draggedGroupId,
+        maxColumns
       );
       tierX += root.width + GROUP_LAYOUT.divisionGap;
       tierMaxHeight = Math.max(tierMaxHeight, root.height);
@@ -270,19 +274,36 @@ function groupMembersByLevel(members: Stakeholder[]): Stakeholder[][] {
 }
 
 /**
+ * 列数制限を適用: 1行が maxColumns を超える場合に折り返す
+ */
+function applyColumnLimit(rows: Stakeholder[][], maxColumns: number): Stakeholder[][] {
+  if (maxColumns <= 0) return rows;
+  const result: Stakeholder[][] = [];
+  for (const row of rows) {
+    for (let i = 0; i < row.length; i += maxColumns) {
+      result.push(row.slice(i, i + maxColumns));
+    }
+  }
+  return result;
+}
+
+/**
  * グループサイズをボトムアップで計算
  * 同orgLevelのメンバーは横並びで配置するため、行ごとの最大幅で計算
  */
-function computeGroupSize(node: GroupTreeNode): void {
+function computeGroupSize(node: GroupTreeNode, maxColumns?: number): void {
   // 子グループを先に計算
   for (const child of node.children) {
-    computeGroupSize(child);
+    computeGroupSize(child, maxColumns);
   }
 
   const { headerHeight, footerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, nodeHGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
 
-  // メンバーをorgLevelごとにグループ化
-  const levelRows = groupMembersByLevel(node.members);
+  // メンバーをorgLevelごとにグループ化 → 列数制限を適用
+  let levelRows = groupMembersByLevel(node.members);
+  if (maxColumns && maxColumns > 0) {
+    levelRows = applyColumnLimit(levelRows, maxColumns);
+  }
   const rowCount = levelRows.length;
 
   // メンバー領域の高さ（行数ベース）
@@ -339,7 +360,8 @@ function positionGroupTree(
   parentGroupNodeId: string | null,
   nodes: Node[],
   groupBounds: GroupBound[],
-  draggedGroupId?: string | null
+  draggedGroupId?: string | null,
+  maxColumns?: number
 ): void {
   const groupNodeId = `group-${node.group.id}`;
   const { headerHeight, innerPadding, nodeWidth, nodeHeight, nodeGap, nodeHGap, subGroupGap, placeholderHeight } = GROUP_LAYOUT;
@@ -400,7 +422,10 @@ function positionGroupTree(
   });
 
   // 直属メンバーをorgLevelごとに横並び配置（相対座標 + parentId）
-  const levelRows = groupMembersByLevel(node.members);
+  let levelRows = groupMembersByLevel(node.members);
+  if (maxColumns && maxColumns > 0) {
+    levelRows = applyColumnLimit(levelRows, maxColumns);
+  }
   let memberY = headerHeight + innerPadding;
 
   for (const row of levelRows) {
@@ -456,7 +481,8 @@ function positionGroupTree(
         groupNodeId,                  // 親グループのReactFlow ID
         nodes,
         groupBounds,
-        draggedGroupId
+        draggedGroupId,
+        maxColumns
       );
       subGroupX += child.width + subGroupGap;
     }

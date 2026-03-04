@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, FileStack } from "lucide-react";
+import { Settings, FileStack, LayoutGrid } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { TemplateManagement } from "@/components/settings/template-management";
+import { NodeSettings } from "@/components/settings/node-settings";
 
 interface SettingsCard {
   id: string;
@@ -23,6 +24,12 @@ const SETTINGS_CARDS: SettingsCard[] = [
     title: "テンプレート管理",
     description: "案件作成時に使用するテンプレートを管理",
     icon: FileStack,
+  },
+  {
+    id: "node-settings",
+    title: "ノード設定",
+    description: "組織図のレイアウトや表示に関する設定",
+    icon: LayoutGrid,
   },
 ];
 
@@ -68,6 +75,14 @@ export default function SettingsPage() {
       {/* テンプレート管理モーダル */}
       <TemplateManagement
         open={activeCard === "templates"}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setActiveCard(null);
+        }}
+      />
+
+      {/* ノード設定モーダル */}
+      <NodeSettings
+        open={activeCard === "node-settings"}
         onOpenChange={(isOpen) => {
           if (!isOpen) setActiveCard(null);
         }}
