@@ -342,6 +342,8 @@ export function OrgChartCanvas({ dealId, dealName }: OrgChartCanvasProps) {
 
   return (
     <div className="flex-1 relative">
+      {/* PDF出力時にエディターUIを非表示にするスタイル */}
+      <style dangerouslySetInnerHTML={{ __html: PDF_EXPORT_STYLES }} />
       {/* 空状態のオーバーレイ（ツールバーは常に表示） */}
       {isEmpty && (
         <TemplateSelector dealId={dealId} />
@@ -369,8 +371,6 @@ export function OrgChartCanvas({ dealId, dealName }: OrgChartCanvasProps) {
       >
         <ScrollToNewGroup />
         <PdfExportEffect dealName={dealName} />
-        {/* eslint-disable-next-line react/no-danger */}
-        <style dangerouslySetInnerHTML={{ __html: PDF_EXPORT_STYLES }} />
         <OrgChartToolbar
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}
