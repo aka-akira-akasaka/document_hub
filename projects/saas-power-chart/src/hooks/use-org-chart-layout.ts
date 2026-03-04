@@ -74,8 +74,5 @@ export function useOrgChartLayout(dealId: string) {
     []
   );
 
-  // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）
-  const applyAutoLayout = useCallback(() => {}, []);
-
-  return { nodes, edges, layers, onNodeDragStop, applyAutoLayout };
+  return { nodes, edges, layers, onNodeDragStop };
 }

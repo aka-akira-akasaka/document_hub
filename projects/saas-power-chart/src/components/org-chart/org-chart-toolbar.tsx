@@ -8,7 +8,6 @@ import {
   Layers,
   Maximize2,
   Minus,
-  Network,
   Plus,
   Redo2,
   Save,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 
 interface OrgChartToolbarProps {
-  onAutoLayout: () => void;
   onAddNode: () => void;
   onAddGroup: () => void;
   onOpenLevelEditor: () => void;
@@ -29,7 +27,6 @@ interface OrgChartToolbarProps {
 }
 
 export function OrgChartToolbar({
-  onAutoLayout,
   onAddNode,
   onAddGroup,
   onOpenLevelEditor,
@@ -118,20 +115,6 @@ export function OrgChartToolbar({
       </Tooltip>
 
       <div className="border-t my-0.5" />
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onAutoLayout}
-          >
-            <Network className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">自動レイアウト</TooltipContent>
-      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger asChild>

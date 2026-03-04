@@ -326,10 +326,5 @@ export function useGroupChartLayout(dealId: string) {
     [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
   );
 
-  // 自動レイアウト（座標はレイアウトエンジンが決定するため実質no-op）
-  const applyAutoLayout = useCallback(() => {
-    // レイアウトエンジンが全ノードの位置を計算するため、明示的な位置保存は不要
-  }, []);
-
-  return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag, applyAutoLayout };
+  return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag };
 }

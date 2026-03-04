@@ -187,8 +187,8 @@ function buildGroupTree(
     const draggedIdx = siblings.findIndex((n) => n.group.id === draggedGroupId);
     if (draggedIdx !== -1 && draggedIdx !== insertIndex) {
       const [dragged] = siblings.splice(draggedIdx, 1);
-      const targetIdx = insertIndex > draggedIdx ? insertIndex - 1 : insertIndex;
-      siblings.splice(Math.min(targetIdx, siblings.length), 0, dragged);
+      // insertIndex は otherSiblings（除外後の配列）基準で計算されている
+      siblings.splice(Math.min(insertIndex, siblings.length), 0, dragged);
     }
   }
 
