@@ -35,6 +35,8 @@ import { TemplateSelector } from "./template-selector";
 import { SaveTemplateDialog } from "./save-template-dialog";
 import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
+import { useDealStore } from "@/stores/deal-store";
+import { exportOrgChartToPdf } from "@/lib/pdf-export";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
@@ -58,6 +60,36 @@ function ScrollToNewGroup() {
     }, 200);
     return () => clearTimeout(timer);
   }, [scrollToGroupId, fitView, getZoom, clearScrollToGroup]);
+
+  return null;
+}
+
+/** PDF出力: DealHeaderからのリクエストを検知してキャプチャ実行（ReactFlow内部で使用） */
+function PdfExportEffect({ dealId }: { dealId: string }) {
+  const pdfExportRequested = useUiStore((s) => s.pdfExportRequested);
+  const clearPdfExportRequest = useUiStore((s) => s.clearPdfExportRequest);
+  const setIsPdfExporting = useUiStore((s) => s.setIsPdfExporting);
+  const dealName = useDealStore((s) => s.deals.find((d) => d.id === dealId)?.name ?? "export");
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (!pdfExportRequested) return;
+    clearPdfExportRequest();
+
+    const container = document.querySelector(".react-flow") as HTMLElement;
+    if (!container) return;
+
+    setIsPdfExporting(true);
+    exportOrgChartToPdf(container, dealName, () =>
+      fitView({ padding: 0.1, duration: 0 })
+    )
+      .then(() => toast.success("PDFを出力しました"))
+      .catch((e) => {
+        toast.error("PDF出力に失敗しました");
+        console.error(e);
+      })
+      .finally(() => setIsPdfExporting(false));
+  }, [pdfExportRequested, clearPdfExportRequest, setIsPdfExporting, fitView, dealName]);
 
   return null;
 }
@@ -325,6 +357,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
         <ScrollToNewGroup />
+        <PdfExportEffect dealId={dealId} />
         <OrgChartToolbar
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}

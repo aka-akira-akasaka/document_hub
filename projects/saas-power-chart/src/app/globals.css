@@ -124,3 +124,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PDF出力時にエディター専用UIを非表示にするスタイル */
+.pdf-exporting .react-flow__panel,
+.pdf-exporting .react-flow__minimap,
+.pdf-exporting .react-flow__background,
+.pdf-exporting .react-flow__handle,
+.pdf-exporting [data-nodetype="addPersonPlaceholder"],
+.pdf-exporting [data-pdf-hide] {
+  display: none !important;
+}

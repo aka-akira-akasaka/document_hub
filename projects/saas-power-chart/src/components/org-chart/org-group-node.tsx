@@ -138,37 +138,39 @@ function OrgGroupNodeComponent({ data }: NodeProps) {
           </span>
           <span className="text-gray-400 text-sm shrink-0">:</span>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="text-gray-400 hover:text-gray-600 p-0.5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[160px]">
-            <DropdownMenuItem onSelect={handleAddSubGroup}>
-              <FolderPlus className="w-4 h-4 mr-2" />
-              サブ部署を追加
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleEdit}>
-              <Pencil className="w-4 h-4 mr-2" />
-              編集
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={handleDelete}
-              className="text-red-600 focus:text-red-600"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              削除
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div data-pdf-hide="">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="text-gray-400 hover:text-gray-600 p-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuItem onSelect={handleAddSubGroup}>
+                <FolderPlus className="w-4 h-4 mr-2" />
+                サブ部署を追加
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleEdit}>
+                <Pencil className="w-4 h-4 mr-2" />
+                編集
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={handleDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                削除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* フッター: この部署の中に部署を追加する */}
-      <div className="absolute bottom-0 left-0 right-0 px-3 py-1.5">
+      <div className="absolute bottom-0 left-0 right-0 px-3 py-1.5" data-pdf-hide="">
         <button
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors"
           onClick={handleAddSubGroup as React.MouseEventHandler}

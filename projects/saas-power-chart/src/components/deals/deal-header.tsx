@@ -11,13 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
-import { ArrowLeft, Download, Upload } from "lucide-react";
+import { ArrowLeft, Download, Upload, FileText, Loader2 } from "lucide-react";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface DealHeaderProps {
   deal: Deal;
   onImportClick: () => void;
   onCsvExportClick: () => void;
   onYamlExportClick: () => void;
+  onPdfExportClick: () => void;
+  isPdfExporting: boolean;
 }
 
 export function DealHeader({
@@ -25,6 +28,8 @@ export function DealHeader({
   onImportClick,
   onCsvExportClick,
   onYamlExportClick,
+  onPdfExportClick,
+  isPdfExporting,
 }: DealHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b bg-white">
@@ -65,6 +70,15 @@ export function DealHeader({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onYamlExportClick}>
               YAMLエクスポート
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onPdfExportClick} disabled={isPdfExporting}>
+              {isPdfExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 mr-2" />
+              )}
+              PDF出力（組織図）
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -40,6 +40,8 @@ function DealLayoutContent({
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const isActive = !!deal && !deal.trashedAt;
   const openCsvImport = useUiStore((s) => s.openCsvImport);
+  const requestPdfExport = useUiStore((s) => s.requestPdfExport);
+  const isPdfExporting = useUiStore((s) => s.isPdfExporting);
   const { handleExport, handleYamlExport } = useCsvExport({
     dealId,
     dealName: deal?.name ?? "export",
@@ -60,6 +62,8 @@ function DealLayoutContent({
         onImportClick={openCsvImport}
         onCsvExportClick={handleExport}
         onYamlExportClick={handleYamlExport}
+        onPdfExportClick={requestPdfExport}
+        isPdfExporting={isPdfExporting}
       />
       <DealTabs dealId={dealId} />
       <div className="flex-1 flex flex-col">{children}</div>

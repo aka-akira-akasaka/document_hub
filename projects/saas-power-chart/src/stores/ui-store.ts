@@ -114,6 +114,12 @@ interface UiState {
   setScrollToGroup: (id: string) => void;
   clearScrollToGroup: () => void;
 
+  /** PDF出力 */
+  pdfExportRequested: boolean;
+  isPdfExporting: boolean;
+  requestPdfExport: () => void;
+  clearPdfExportRequest: () => void;
+  setIsPdfExporting: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -199,4 +205,9 @@ export const useUiStore = create<UiState>()((set) => ({
   setScrollToGroup: (id) => set({ scrollToGroupId: id }),
   clearScrollToGroup: () => set({ scrollToGroupId: null }),
 
+  pdfExportRequested: false,
+  isPdfExporting: false,
+  requestPdfExport: () => set({ pdfExportRequested: true }),
+  clearPdfExportRequest: () => set({ pdfExportRequested: false }),
+  setIsPdfExporting: (v) => set({ isPdfExporting: v }),
 }));

@@ -206,6 +206,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
               className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 space-y-2"
               onClick={(e) => e.stopPropagation()}
               style={{ minWidth: 220 }}
+              data-pdf-hide=""
             >
               {/* 方向トグル */}
               <div className="flex items-center gap-1">
@@ -317,7 +318,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                 </span>
               )}
               {/* アイコンをラベル右肩に絶対配置（ラベルの中央揃えに影響しない） */}
-              <div className={cn(
+              <div data-pdf-hide="" className={cn(
                 "flex items-center gap-0.5",
                 customLabel
                   ? "absolute -top-2.5 left-full ml-0.5"
