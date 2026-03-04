@@ -16,6 +16,7 @@ create table public.deals (
   description text not null default '',
   target_amount numeric,
   expected_close_date text,
+  trashed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
