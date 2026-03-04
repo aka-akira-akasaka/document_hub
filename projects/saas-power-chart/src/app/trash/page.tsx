@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { EmptyState } from "@/components/layout/empty-state";
-import { Trash2, RotateCcw, Trash, Users } from "lucide-react";
+import { Trash2, RotateCcw, Trash, Users, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import type { Deal } from "@/types/deal";
 
@@ -42,6 +43,11 @@ function TrashContent() {
     <div className="flex-1 bg-gray-50">
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center gap-2 mb-6">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <Trash2 className="h-5 w-5 text-gray-500" />
           <h1 className="text-2xl font-bold">ゴミ箱</h1>
           <span className="text-sm text-muted-foreground ml-2">
