@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DEAL_TEMPLATES, type DealTemplate } from "@/lib/deal-templates";
 import { applyTemplate } from "@/lib/apply-template";
+import { flushPendingSync } from "@/lib/supabase-sync";
 import { Building2, Landmark, Building, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +23,13 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
 
   if (dismissed) return null;
 
-  const handleSelect = (template: DealTemplate) => {
+  const handleSelect = async (template: DealTemplate) => {
     if (template.id === "blank") {
       setDismissed(true);
       return;
     }
+    // deals のDB永続化を保証してからテンプレート適用（RLS: org_groups は deal_id 経由で認可）
+    await flushPendingSync();
     applyTemplate(dealId, template);
   };
 
