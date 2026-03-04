@@ -39,7 +39,7 @@ import { toast } from "sonner";
 let unsubscribers: (() => void)[] = [];
 let currentUserId: string | null = null;
 let syncEnabled = false;
-let initInProgress = false;
+let initPromise: Promise<void> | null = null;
 
 // デバウンス用タイマー + 保留中の同期関数
 const timers: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -74,13 +74,23 @@ export async function flushPendingSync() {
 // ============================================
 
 export async function initSupabaseSync(userId: string) {
-  // 排他制御: 同時実行を防止（getUser と onAuthStateChange の競合回避）
-  if (initInProgress) return;
+  // 別の初期化が進行中なら、完了を待ってから戻る（getUser と onAuthStateChange の競合回避）
+  if (initPromise) {
+    await initPromise;
+    return;
+  }
   // 同じユーザーで同期済みなら何もしない（不要な teardown によるデータ消失を防止）
   if (currentUserId === userId && syncEnabled) return;
 
-  initInProgress = true;
+  initPromise = performInit(userId);
+  try {
+    await initPromise;
+  } finally {
+    initPromise = null;
+  }
+}
 
+async function performInit(userId: string) {
   // ユーザーが変わった場合のみ teardown（同期解除 + ストアリセット）
   if (currentUserId && currentUserId !== userId) {
     teardownSupabaseSync();
@@ -155,8 +165,6 @@ export async function initSupabaseSync(userId: string) {
   } catch (err) {
     console.error("Supabase sync init failed:", err);
     toast.error("データの読み込みに失敗しました");
-  } finally {
-    initInProgress = false;
   }
 }
 
