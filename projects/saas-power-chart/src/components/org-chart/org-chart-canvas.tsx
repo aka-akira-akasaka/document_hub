@@ -35,6 +35,7 @@ import { TemplateSelector } from "./template-selector";
 import { SaveTemplateDialog } from "./save-template-dialog";
 import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
+import { exportOrgChartToPdf } from "@/lib/pdf-export";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
@@ -62,6 +63,47 @@ function ScrollToNewGroup() {
   return null;
 }
 
+/** PDF出力: DealHeaderからのリクエストを検知してキャプチャ実行（ReactFlow内部で使用） */
+function PdfExportEffect({ dealName }: { dealName: string }) {
+  const pdfExportRequested = useUiStore((s) => s.pdfExportRequested);
+  const clearPdfExportRequest = useUiStore((s) => s.clearPdfExportRequest);
+  const setIsPdfExporting = useUiStore((s) => s.setIsPdfExporting);
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (!pdfExportRequested) return;
+    clearPdfExportRequest();
+
+    const container = document.querySelector(".react-flow") as HTMLElement;
+    if (!container) return;
+
+    setIsPdfExporting(true);
+    exportOrgChartToPdf(container, dealName, () =>
+      fitView({ padding: 0.1, duration: 0 })
+    )
+      .then(() => toast.success("PDFを出力しました"))
+      .catch((e) => {
+        toast.error("PDF出力に失敗しました");
+        console.error(e);
+      })
+      .finally(() => setIsPdfExporting(false));
+  }, [pdfExportRequested, clearPdfExportRequest, setIsPdfExporting, fitView, dealName]);
+
+  return null;
+}
+
+/** PDF出力時にエディター専用UIを非表示にするスタイル */
+const PDF_EXPORT_STYLES = `
+.pdf-exporting .react-flow__panel,
+.pdf-exporting .react-flow__minimap,
+.pdf-exporting .react-flow__background,
+.pdf-exporting .react-flow__handle,
+.pdf-exporting [data-nodetype="addPersonPlaceholder"],
+.pdf-exporting [data-pdf-hide] {
+  display: none !important;
+}
+`;
+
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
@@ -72,9 +114,10 @@ const DEFAULT_EDGE_OPTIONS = { deletable: true };
 
 interface OrgChartCanvasProps {
   dealId: string;
+  dealName: string;
 }
 
-export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
+export function OrgChartCanvas({ dealId, dealName }: OrgChartCanvasProps) {
   // グループ未設定の案件で、部署情報があるステークホルダーがいれば自動グループ生成
   useAutoGroupSeed(dealId);
 
@@ -325,6 +368,9 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
         <ScrollToNewGroup />
+        <PdfExportEffect dealName={dealName} />
+        {/* eslint-disable-next-line react/no-danger */}
+        <style dangerouslySetInnerHTML={{ __html: PDF_EXPORT_STYLES }} />
         <OrgChartToolbar
           onAddNode={handleAddNode}
           onAddGroup={handleAddGroup}
