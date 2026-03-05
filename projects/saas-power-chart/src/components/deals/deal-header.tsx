@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
-import { ArrowLeft, Download, Upload, FileText, Loader2, Share2 } from "lucide-react";
+import { ArrowLeft, Copy, Download, Upload, FileText, Loader2, Share2 } from "lucide-react";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface DealHeaderProps {
@@ -22,6 +22,7 @@ interface DealHeaderProps {
   onYamlExportClick: () => void;
   onPdfExportClick: () => void;
   onShareClick: () => void;
+  onDuplicateClick?: () => void;
   isPdfExporting: boolean;
 }
 
@@ -33,6 +34,7 @@ export function DealHeader({
   onYamlExportClick,
   onPdfExportClick,
   onShareClick,
+  onDuplicateClick,
   isPdfExporting,
 }: DealHeaderProps) {
   return (
@@ -72,6 +74,12 @@ export function DealHeader({
           <Button variant="outline" size="sm" onClick={onImportClick}>
             <Upload className="h-4 w-4 mr-1" />
             インポート
+          </Button>
+        )}
+        {deal.shareRole && onDuplicateClick && (
+          <Button variant="outline" size="sm" onClick={onDuplicateClick}>
+            <Copy className="h-4 w-4 mr-1" />
+            この案件をコピー
           </Button>
         )}
         <DropdownMenu>

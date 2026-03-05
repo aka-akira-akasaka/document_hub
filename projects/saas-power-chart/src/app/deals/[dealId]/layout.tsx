@@ -12,6 +12,8 @@ import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
+import { duplicateDeal } from "@/lib/deal-duplicator";
+import { toast } from "sonner";
 
 /**
  * Hydrationガードラッパー
@@ -51,6 +53,16 @@ function DealLayoutContent({
   });
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
+  const handleDuplicate = async () => {
+    try {
+      const newId = await duplicateDeal(dealId);
+      router.push(`/deals/${newId}`);
+      toast.success("案件をコピーしました");
+    } catch {
+      toast.error("案件のコピーに失敗しました");
+    }
+  };
+
   useEffect(() => {
     if (!isActive) {
       router.push("/");
@@ -69,6 +81,7 @@ function DealLayoutContent({
         onYamlExportClick={handleYamlExport}
         onPdfExportClick={requestPdfExport}
         onShareClick={() => setShareDialogOpen(true)}
+        onDuplicateClick={handleDuplicate}
         isPdfExporting={isPdfExporting}
       />
       {isReadOnly && (
