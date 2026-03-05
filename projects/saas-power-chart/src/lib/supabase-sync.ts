@@ -116,17 +116,73 @@ export async function initSupabaseSync(userId: string) {
 }
 
 /**
- * リアルタイム同期用: 強制的にデータを再取得してストアを更新する。
- * initSupabaseSync とは異なり、同期済みチェックをスキップする。
+ * リアルタイム同期用: データのみ再取得してストアを更新する。
+ * subscribe/teardown を触らず、hydrate のみ行う軽量版。
  */
 export async function refetchDealData() {
   if (!currentUserId || !syncEnabled) return;
+  const userId = currentUserId;
+  const supabase = createClient();
+
   try {
-    // syncEnabled を一時的に無効化（re-fetch 中の subscribe 発火を防止）
+    // syncEnabled を一時的に無効化（hydrate 時の subscribe 発火を防止）
     syncEnabled = false;
-    await performInit(currentUserId);
+
+    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, dealSharesRes] =
+      await Promise.all([
+        supabase.from("deals").select("*"),
+        supabase.from("stakeholders").select("*"),
+        supabase.from("relationships").select("*"),
+        supabase.from("org_groups").select("*"),
+        supabase.from("org_level_configs").select("*"),
+        supabase.from("deal_shares").select("*"),
+      ]);
+
+    for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
+      if (res.error) throw res.error;
+    }
+
+    const dealShares = ((dealSharesRes.data ?? []) as DbDealShare[]).map(dbToDealShare);
+    const sharesByDeal: Record<string, DealShare[]> = {};
+    const myShareRoleByDeal = new Map<string, ShareRole>();
+    for (const s of dealShares) {
+      (sharesByDeal[s.dealId] ??= []).push(s);
+      if (s.sharedWithUserId === userId) {
+        myShareRoleByDeal.set(s.dealId, s.role as ShareRole);
+      }
+    }
+
+    const rawDbDeals = dealsRes.data as DbDeal[];
+    const deals = rawDbDeals.map((row) => {
+      const deal = dbToDeal(row);
+      if (row.user_id !== userId) {
+        deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
+      }
+      return deal;
+    });
+    const stakeholders = (stakeholdersRes.data as DbStakeholder[]).map(dbToStakeholder);
+    const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
+    const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
+    const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
+
+    const stakeholdersByDeal: Record<string, Stakeholder[]> = {};
+    const relationshipsByDeal: Record<string, Relationship[]> = {};
+    const orgLevelConfigByDeal: Record<string, OrgLevelEntry[]> = {};
+    const groupsByDeal: Record<string, OrgGroup[]> = {};
+
+    for (const s of stakeholders) { (stakeholdersByDeal[s.dealId] ??= []).push(s); }
+    for (const r of relationships) { (relationshipsByDeal[r.dealId] ??= []).push(r); }
+    for (const row of orgLevels) { (orgLevelConfigByDeal[row.deal_id] ??= []).push(dbToOrgLevel(row)); }
+    for (const g of orgGroups) { (groupsByDeal[g.dealId] ??= []).push(g); }
+
+    useDealStore.getState().hydrate(deals);
+    useStakeholderStore.getState().hydrate(stakeholdersByDeal, relationshipsByDeal, orgLevelConfigByDeal);
+    useOrgGroupStore.getState().hydrate(groupsByDeal);
+    useDealShareStore.getState().hydrate(sharesByDeal);
   } catch (err) {
     console.error("refetchDealData failed:", err);
+  } finally {
+    syncEnabled = true;
   }
 }
 
