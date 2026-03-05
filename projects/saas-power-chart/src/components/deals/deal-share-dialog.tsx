@@ -371,11 +371,6 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate">{share.sharedWithEmail}</p>
-                  {!share.sharedWithUserId && (
-                    <Badge variant="outline" className="text-[10px] h-4 px-1">
-                      招待中
-                    </Badge>
-                  )}
                 </div>
                 <Select
                   value={share.role}
