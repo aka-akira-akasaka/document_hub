@@ -481,9 +481,9 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
         .from("relationships")
         .upsert(rows, { onConflict: "id" });
       if (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const rowsCompat = rows.map(({
-          direction: _d, color: _c, source_type: _st, target_type: _tt,
-          source_handle: _sh, target_handle: _th, ...rest
+          direction: _d, color: _c, source_type: _st, target_type: _tt, ...rest
         }) => rest);
         const { error: retryErr } = await supabase
           .from("relationships")

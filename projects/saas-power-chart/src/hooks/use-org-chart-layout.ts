@@ -64,6 +64,8 @@ export function useOrgChartLayout(dealId: string) {
       type: "relationship",
       zIndex: 1000,
       data: { type: r.type, label: r.label, direction: r.direction ?? (r.bidirectional ? "bidirectional" : "forward"), color: r.color, onDelete: handleEdgeDelete, onUpdate: handleEdgeUpdate },
+      ...(r.sourceHandle ? { sourceHandle: r.sourceHandle } : {}),
+      ...(r.targetHandle ? { targetHandle: r.targetHandle } : {}),
     }));
     return assignHandlesToEdges(baseEdges, nodes);
   }, [relationships, handleEdgeDelete, handleEdgeUpdate, nodes]);
