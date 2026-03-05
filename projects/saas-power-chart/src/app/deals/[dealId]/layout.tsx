@@ -6,7 +6,7 @@ import { DealHeader } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
 import { CsvImportDialog } from "@/components/csv/csv-import-dialog";
-// import { DealShareDialog } from "@/components/deals/deal-share-dialog";
+import { DealShareDialog } from "@/components/deals/deal-share-dialog";
 import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
@@ -80,7 +80,6 @@ function DealLayoutContent({
       <div className="flex-1 flex flex-col">{children}</div>
       <StakeholderSheet dealId={dealId} />
       <CsvImportDialog dealId={dealId} />
-      {/* DEBUG: DealShareDialog一時無効化
       {isOwner && (
         <DealShareDialog
           dealId={dealId}
@@ -88,7 +87,6 @@ function DealLayoutContent({
           onOpenChange={setShareDialogOpen}
         />
       )}
-      */}
     </div>
   );
 }

@@ -21,7 +21,9 @@ import { useDealShareStore } from "@/stores/deal-share-store";
 import { useAuth } from "@/components/auth/auth-provider";
 import { toast } from "sonner";
 import { UserPlus, Trash2 } from "lucide-react";
-import type { ShareRole } from "@/types/deal-share";
+import type { DealShare, ShareRole } from "@/types/deal-share";
+
+const EMPTY_SHARES: DealShare[] = [];
 
 interface DealShareDialogProps {
   dealId: string;
@@ -31,7 +33,7 @@ interface DealShareDialogProps {
 
 export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogProps) {
   const { user } = useAuth();
-  const shares = useDealShareStore((s) => s.sharesByDeal[dealId] ?? []);
+  const shares = useDealShareStore((s) => s.sharesByDeal[dealId] ?? EMPTY_SHARES);
   const addShare = useDealShareStore((s) => s.addShare);
   const updateShare = useDealShareStore((s) => s.updateShare);
   const removeShare = useDealShareStore((s) => s.removeShare);
