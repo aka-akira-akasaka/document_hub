@@ -12,6 +12,7 @@ interface DealShareState {
     ownerId: string;
     email: string;
     role: ShareRole;
+    sharedWithUserId?: string | null;
   }) => DealShare;
 
   /** 共有を更新（権限変更） */
@@ -38,7 +39,7 @@ export const useDealShareStore = create<DealShareState>()(
         dealId: data.dealId,
         ownerId: data.ownerId,
         sharedWithEmail: data.email,
-        sharedWithUserId: null,
+        sharedWithUserId: data.sharedWithUserId ?? null,
         role: data.role,
         createdAt: now,
         updatedAt: now,

@@ -186,7 +186,7 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
     };
   }, [email, fetchSuggestions]);
 
-  const handleAdd = (targetEmail?: string) => {
+  const handleAdd = async (targetEmail?: string) => {
     const trimmed = (targetEmail ?? email).trim().toLowerCase();
     if (!trimmed) return;
 
@@ -204,7 +204,21 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
     }
     if (!user) return;
 
-    addShare({ dealId, ownerId: dealOwnerId ?? user.id, email: trimmed, role });
+    // profiles から userId を即時解決（登録済みユーザーなら shared_with_user_id を設定）
+    let resolvedUserId: string | null = null;
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", trimmed)
+        .maybeSingle();
+      resolvedUserId = data?.id ?? null;
+    } catch {
+      // 解決できなくても共有自体は作成する
+    }
+
+    addShare({ dealId, ownerId: dealOwnerId ?? user.id, email: trimmed, role, sharedWithUserId: resolvedUserId });
     setEmail("");
     setSuggestions([]);
     setShowSuggestions(false);
