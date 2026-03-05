@@ -114,19 +114,24 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
               閲覧のみ
             </Badge>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                <Button variant="ghost" size="icon" className="h-7 w-7 -mr-1 -mt-1 text-gray-400 hover:text-gray-600">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+            <div className="flex items-center gap-1 -mr-1 -mt-1">
+              <Badge className="text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-100">
+                自分が作成
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   ゴミ箱に移動
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
           )}
         </div>
 
