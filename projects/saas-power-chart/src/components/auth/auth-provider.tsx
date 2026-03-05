@@ -46,20 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       initUserIdRef.current = newUser.id;
 
-      // 未解決の共有招待をuser_idで解決（DBトリガーのフォールバック）
-      try {
-        const supabase = createClient();
-        await supabase
-          .from("deal_shares")
-          .update({
-            shared_with_user_id: newUser.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("shared_with_email", newUser.email ?? "")
-          .is("shared_with_user_id", null);
-      } catch {
-        // テーブル未作成時など、エラーは静かに無視
-      }
+      // 未解決の共有招待をuser_idで解決（非ブロッキング: initSupabaseSync を遅延させない）
+      const supabase = createClient();
+      void supabase
+        .from("deal_shares")
+        .update({
+          shared_with_user_id: newUser.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("shared_with_email", newUser.email ?? "")
+        .is("shared_with_user_id", null);
 
       await initSupabaseSync(newUser.id);
     } else {

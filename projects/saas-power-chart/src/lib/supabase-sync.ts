@@ -124,46 +124,43 @@ async function performInit(userId: string) {
   const supabase = createClient();
 
   try {
-    // 全データを並行取得（deal_shares含む）
-    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes, dealSharesRes] =
+    // コアデータを並行取得（tier_configs は遅延ロード）
+    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, dealSharesRes] =
       await Promise.all([
         supabase.from("deals").select("*"),
         supabase.from("stakeholders").select("*"),
         supabase.from("relationships").select("*"),
         supabase.from("org_groups").select("*"),
         supabase.from("org_level_configs").select("*"),
-        supabase.from("tier_configs").select("*"),
         supabase.from("deal_shares").select("*"),
       ]);
 
-    // エラーチェック（tier_configs / deal_shares はテーブル未作成の可能性があるためオプショナル扱い）
+    // エラーチェック
     for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
       if (res.error) throw res.error;
-    }
-    if (tierConfigsRes.error) {
-      console.warn("tier_configs テーブル未作成（スキップ）:", tierConfigsRes.error.message);
     }
     if (dealSharesRes.error) {
       console.warn("deal_shares テーブル未作成（スキップ）:", dealSharesRes.error.message);
     }
 
-    // 共有情報を先に処理（deals の shareRole 付与に使用）
+    // 共有情報を処理（deals の shareRole 付与に使用）
     const dealShares = ((dealSharesRes.data ?? []) as DbDealShare[]).map(dbToDealShare);
     const sharesByDeal: Record<string, DealShare[]> = {};
+    // shareRole ルックアップ用 Map（O(1)）
+    const myShareRoleByDeal = new Map<string, ShareRole>();
     for (const s of dealShares) {
       (sharesByDeal[s.dealId] ??= []).push(s);
+      if (s.sharedWithUserId === userId) {
+        myShareRoleByDeal.set(s.dealId, s.role as ShareRole);
+      }
     }
 
-    // deals に共有情報を付与
+    // deals に共有情報を付与（Map で O(1) ルックアップ）
     const rawDbDeals = dealsRes.data as DbDeal[];
     const deals = rawDbDeals.map((row) => {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
-        // 共有案件: 対応するshareレコードからroleを取得
-        const myShare = dealShares.find(
-          (s) => s.dealId === row.id && s.sharedWithUserId === userId
-        );
-        deal.shareRole = (myShare?.role as ShareRole) ?? "viewer";
+        deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
       }
       return deal;
     });
@@ -171,13 +168,11 @@ async function performInit(userId: string) {
     const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
     const orgLevels = (orgLevelsRes.data as DbOrgLevelConfig[]);
-    const tierConfigs = ((tierConfigsRes.data ?? []) as DbTierConfig[]);
 
     // localStorage からの移行チェック（データが空の場合のみ）
     if (deals.length === 0) {
       const migrated = await migrateFromLocalStorage(userId);
-      if (migrated) return; // 移行完了時は再度 initSupabaseSync が呼ばれる
-      // 移行対象がなくてもフォールスルーして subscriptions を設定する
+      if (migrated) return;
     }
 
     // dealId ごとにグルーピング
@@ -185,7 +180,6 @@ async function performInit(userId: string) {
     const relationshipsByDeal: Record<string, Relationship[]> = {};
     const orgLevelConfigByDeal: Record<string, OrgLevelEntry[]> = {};
     const groupsByDeal: Record<string, OrgGroup[]> = {};
-    const tierConfigByDeal: Record<string, TierEntry[]> = {};
 
     for (const s of stakeholders) {
       (stakeholdersByDeal[s.dealId] ??= []).push(s);
@@ -200,10 +194,6 @@ async function performInit(userId: string) {
     for (const g of orgGroups) {
       (groupsByDeal[g.dealId] ??= []).push(g);
     }
-    for (const row of tierConfigs) {
-      const dealId = row.deal_id;
-      (tierConfigByDeal[dealId] ??= []).push(dbToTierEntry(row));
-    }
 
     // Zustand ストアに反映
     useDealStore.getState().hydrate(deals);
@@ -212,8 +202,11 @@ async function performInit(userId: string) {
       relationshipsByDeal,
       orgLevelConfigByDeal
     );
-    useOrgGroupStore.getState().hydrate(groupsByDeal, tierConfigByDeal);
+    useOrgGroupStore.getState().hydrate(groupsByDeal);
     useDealShareStore.getState().hydrate(sharesByDeal);
+
+    // tier_configs を非ブロッキングで後追いロード（404 でもメインロードを遅延させない）
+    loadTierConfigsAsync(supabase);
 
     // 変更監視を開始（初回のみ — 既に購読中なら重複しない）
     if (!syncEnabled) {
@@ -223,6 +216,31 @@ async function performInit(userId: string) {
   } catch (err) {
     console.error("Supabase sync init failed:", err);
     toast.error("データの読み込みに失敗しました");
+  }
+}
+
+// ============================================
+// tier_configs 遅延ロード（メインロードをブロックしない）
+// ============================================
+
+async function loadTierConfigsAsync(supabase: ReturnType<typeof createClient>) {
+  try {
+    const { data, error } = await supabase.from("tier_configs").select("*");
+    if (error) {
+      console.warn("tier_configs テーブル未作成（スキップ）:", error.message);
+      return;
+    }
+    const tierConfigs = (data as DbTierConfig[]);
+    const tierConfigByDeal: Record<string, TierEntry[]> = {};
+    for (const row of tierConfigs) {
+      const dealId = row.deal_id;
+      (tierConfigByDeal[dealId] ??= []).push(dbToTierEntry(row));
+    }
+    // 既存の groupsByDeal を維持しつつ tierConfigByDeal のみ更新
+    const currentGroups = useOrgGroupStore.getState().groupsByDeal;
+    useOrgGroupStore.getState().hydrate(currentGroups, tierConfigByDeal);
+  } catch {
+    // エラーは静かに無視
   }
 }
 
@@ -521,13 +539,6 @@ async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
 async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
   const supabase = createClient();
   try {
-    // テーブル存在チェック（未作成なら静かにスキップ）
-    const probe = await supabase.from("tier_configs").select("id").limit(0);
-    if (probe.error) {
-      console.warn("tier_configs テーブル未作成（同期スキップ）");
-      return;
-    }
-
     const ownedDealIds = getOwnedDealIds();
     // tier_configs は deal_id + tier がユニーク制約
     // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
