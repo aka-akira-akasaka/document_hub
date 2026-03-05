@@ -12,8 +12,11 @@ import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
+import { useDealShareStore } from "@/stores/deal-share-store";
 import { duplicateDeal } from "@/lib/deal-duplicator";
 import { toast } from "sonner";
+
+const EMPTY_SHARE_ARR: import("@/types/deal-share").DealShare[] = [];
 
 /**
  * Hydrationガードラッパー
@@ -52,6 +55,10 @@ function DealLayoutContent({
     dealName: deal?.name ?? "export",
   });
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  // 共有案件の場合、既存 share レコードからオーナーIDを取得
+  const dealOwnerId = useDealShareStore(
+    (s) => (s.sharesByDeal[dealId] ?? EMPTY_SHARE_ARR)[0]?.ownerId
+  );
 
   const handleDuplicate = async () => {
     try {
@@ -93,9 +100,10 @@ function DealLayoutContent({
       <div className="flex-1 flex flex-col">{children}</div>
       <StakeholderSheet dealId={dealId} />
       <CsvImportDialog dealId={dealId} />
-      {isOwner && (
+      {(isOwner || deal.shareRole === "editor") && (
         <DealShareDialog
           dealId={dealId}
+          dealOwnerId={dealOwnerId}
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
         />

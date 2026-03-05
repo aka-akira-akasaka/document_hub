@@ -97,11 +97,13 @@ function UserAvatar({
 
 interface DealShareDialogProps {
   dealId: string;
+  /** 案件オーナーのユーザーID（editorが共有追加する際に使用） */
+  dealOwnerId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogProps) {
+export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: DealShareDialogProps) {
   const { user } = useAuth();
   const shares = useDealShareStore((s) => s.sharesByDeal[dealId] ?? EMPTY_SHARES);
   const addShare = useDealShareStore((s) => s.addShare);
@@ -202,7 +204,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
     }
     if (!user) return;
 
-    addShare({ dealId, ownerId: user.id, email: trimmed, role });
+    addShare({ dealId, ownerId: dealOwnerId ?? user.id, email: trimmed, role });
     setEmail("");
     setSuggestions([]);
     setShowSuggestions(false);

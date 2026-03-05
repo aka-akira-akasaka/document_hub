@@ -13,7 +13,7 @@ import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useDealStore } from "@/stores/deal-store";
 import type { Deal } from "@/types/deal";
-import { MoreVertical, Trash2, Users, Users2, BarChart3 } from "lucide-react";
+import { MoreVertical, Trash2, Users, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -61,10 +61,14 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
             <Users className="h-3 w-3" />
             <span>{count}</span>
           </div>
-          {isShared && (
-            <Badge variant="outline" className="shrink-0 text-[10px] gap-1">
-              <Users2 className="h-3 w-3" />
-              共有
+          {deal.shareRole === "editor" && (
+            <Badge className="shrink-0 text-[10px] gap-1 bg-blue-100 text-blue-700 hover:bg-blue-100">
+              編集可
+            </Badge>
+          )}
+          {deal.shareRole === "viewer" && (
+            <Badge className="shrink-0 text-[10px] gap-1 bg-amber-100 text-amber-700 hover:bg-amber-100">
+              閲覧のみ
             </Badge>
           )}
           <span className="text-xs text-muted-foreground shrink-0">{formattedDate}</span>
@@ -96,10 +100,13 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
             <BarChart3 className="h-5 w-5 text-blue-600" />
           </div>
-          {isShared ? (
-            <Badge variant="outline" className="text-[10px] gap-1 -mr-1 -mt-1">
-              <Users2 className="h-3 w-3" />
-              共有
+          {deal.shareRole === "editor" ? (
+            <Badge className="text-[10px] -mr-1 -mt-1 bg-blue-100 text-blue-700 hover:bg-blue-100">
+              編集可
+            </Badge>
+          ) : deal.shareRole === "viewer" ? (
+            <Badge className="text-[10px] -mr-1 -mt-1 bg-amber-100 text-amber-700 hover:bg-amber-100">
+              閲覧のみ
             </Badge>
           ) : (
             <DropdownMenu>

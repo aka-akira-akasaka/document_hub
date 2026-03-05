@@ -345,13 +345,23 @@ function setupSubscriptions(userId: string) {
 }
 
 // ============================================
-// ヘルパー: 自分がオーナーの案件IDセットを取得
+// ヘルパー: 書き込み可能な案件IDセットを取得
 // ============================================
 
+/** 自分がオーナーの案件ID */
 function getOwnedDealIds(): Set<string> {
   return new Set(
     useDealStore.getState().deals
       .filter((d) => !d.shareRole)
+      .map((d) => d.id)
+  );
+}
+
+/** 自分がオーナー OR editor の案件ID（子テーブル同期用） */
+function getWritableDealIds(): Set<string> {
+  return new Set(
+    useDealStore.getState().deals
+      .filter((d) => !d.shareRole || d.shareRole === "editor")
       .map((d) => d.id)
   );
 }
@@ -408,10 +418,10 @@ async function syncDeals(deals: Deal[], userId: string) {
 async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
   const supabase = createClient();
   try {
-    // 自分がオーナーの案件のデータのみ同期
-    const ownedDealIds = getOwnedDealIds();
-    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
-    const all = ownedEntries.flatMap(([, list]) => list);
+    // 書き込み可能な案件（オーナー + editor）のデータを同期
+    const writableDealIds = getWritableDealIds();
+    const writableEntries = Object.entries(byDeal).filter(([dealId]) => writableDealIds.has(dealId));
+    const all = writableEntries.flatMap(([, list]) => list);
 
     if (all.length > 0) {
       const { error } = await supabase
@@ -420,8 +430,10 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
       if (error) throw error;
     }
 
-    // 削除検出: 自分がオーナーの案件に属するレコードのみ対象
-    const localIds = new Set(all.map((s) => s.id));
+    // 削除検出: 自分がオーナーの案件に属するレコードのみ対象（共有案件のデータを誤削除しない）
+    const ownedDealIds = getOwnedDealIds();
+    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
+    const localIds = new Set(ownedAll.map((s) => s.id));
     const { data: remote } = await supabase.from("stakeholders").select("id, deal_id");
     const toDelete = (remote ?? [])
       .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
@@ -439,9 +451,9 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
 async function syncRelationships(byDeal: Record<string, Relationship[]>) {
   const supabase = createClient();
   try {
-    const ownedDealIds = getOwnedDealIds();
-    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
-    const all = ownedEntries.flatMap(([, list]) => list);
+    const writableDealIds = getWritableDealIds();
+    const writableEntries = Object.entries(byDeal).filter(([dealId]) => writableDealIds.has(dealId));
+    const all = writableEntries.flatMap(([, list]) => list);
 
     if (all.length > 0) {
       const rows = all.map(relationshipToDb);
@@ -449,7 +461,6 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
         .from("relationships")
         .upsert(rows, { onConflict: "id" });
       if (error) {
-        // 新カラム未追加の場合、新カラムを除外してリトライ
         const rowsCompat = rows.map(({
           direction: _d, color: _c, source_type: _st, target_type: _tt,
           source_handle: _sh, target_handle: _th, ...rest
@@ -461,7 +472,9 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
       }
     }
 
-    const localIds = new Set(all.map((r) => r.id));
+    const ownedDealIds = getOwnedDealIds();
+    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
+    const localIds = new Set(ownedAll.map((r) => r.id));
     const { data: remote } = await supabase.from("relationships").select("id, deal_id");
     const toDelete = (remote ?? [])
       .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
@@ -479,9 +492,9 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
 async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
   const supabase = createClient();
   try {
-    const ownedDealIds = getOwnedDealIds();
-    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
-    const all = ownedEntries.flatMap(([, list]) => list);
+    const writableDealIds = getWritableDealIds();
+    const writableEntries = Object.entries(byDeal).filter(([dealId]) => writableDealIds.has(dealId));
+    const all = writableEntries.flatMap(([, list]) => list);
 
     if (all.length > 0) {
       const rows = all.map(orgGroupToDb);
@@ -489,7 +502,6 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
         .from("org_groups")
         .upsert(rows, { onConflict: "id" });
       if (error) {
-        // tier カラム未追加等のスキーマ不一致時、tier を除外してリトライ
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const rowsWithoutTier = rows.map(({ tier: _, ...rest }) => rest);
         const { error: retryErr } = await supabase
@@ -499,7 +511,9 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
       }
     }
 
-    const localIds = new Set(all.map((g) => g.id));
+    const ownedDealIds = getOwnedDealIds();
+    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
+    const localIds = new Set(ownedAll.map((g) => g.id));
     const { data: remote } = await supabase.from("org_groups").select("id, deal_id");
     const toDelete = (remote ?? [])
       .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
@@ -517,11 +531,9 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
 async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
   const supabase = createClient();
   try {
-    const ownedDealIds = getOwnedDealIds();
-    // OrgLevelConfig は deal_id + level がユニーク制約
-    // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
+    const writableDealIds = getWritableDealIds();
     for (const [dealId, entries] of Object.entries(byDeal)) {
-      if (!ownedDealIds.has(dealId)) continue;
+      if (!writableDealIds.has(dealId)) continue;
       await supabase.from("org_level_configs").delete().eq("deal_id", dealId);
       if (entries.length > 0) {
         const { error } = await supabase

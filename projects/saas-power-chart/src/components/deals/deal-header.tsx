@@ -64,7 +64,7 @@ export function DealHeader({
             {deal.shareRole === "editor" ? "編集可" : "閲覧のみ"}
           </Badge>
         )}
-        {isOwner && (
+        {(isOwner || deal.shareRole === "editor") && (
           <Button variant="outline" size="sm" onClick={onShareClick}>
             <Share2 className="h-4 w-4 mr-1" />
             共有
