@@ -182,6 +182,13 @@ export async function refetchDealData() {
   } catch (err) {
     console.error("refetchDealData failed:", err);
   } finally {
+    // hydrate 中に蓄積されたデバウンスタイマーを全クリア
+    // （hydrate でストア変更 → subscribe → debounce → sync という不要な書き戻しを防止）
+    for (const key of Object.keys(timers)) {
+      clearTimeout(timers[key]);
+      delete timers[key];
+      delete pendingSyncs[key];
+    }
     syncEnabled = true;
   }
 }
