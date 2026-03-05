@@ -4,7 +4,7 @@ import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   getSmoothStepPath,
-  getBezierPath,
+  Position,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -12,6 +12,33 @@ import type { RelationshipType, RelationshipDirection } from "@/types/relationsh
 import { isPositiveRelationship } from "@/lib/constants";
 import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ============================================
+// ReactFlow getBezierPath 互換の制御点計算
+// 矢印の向きを曲線の接線方向に合わせるため自前実装
+// ============================================
+
+function ctrlOffset(distance: number, curvature: number): number {
+  if (distance >= 0) return 0.5 * distance;
+  return curvature * 25 * Math.sqrt(-distance);
+}
+
+function ctrlPoint(
+  pos: Position, x1: number, y1: number, x2: number, y2: number, c: number,
+): [number, number] {
+  switch (pos) {
+    case Position.Left:   return [x1 - ctrlOffset(x1 - x2, c), y1];
+    case Position.Right:  return [x1 + ctrlOffset(x2 - x1, c), y1];
+    case Position.Top:    return [x1, y1 - ctrlOffset(y1 - y2, c)];
+    case Position.Bottom: return [x1, y1 + ctrlOffset(y2 - y1, c)];
+  }
+}
+
+/** 三次ベジェ上の点 B(t) を求める */
+function cubicAt(t: number, p0: number, p1: number, p2: number, p3: number): number {
+  const m = 1 - t;
+  return m * m * m * p0 + 3 * m * m * t * p1 + 3 * m * t * t * p2 + t * t * t * p3;
+}
 
 /** エッジのカスタム色プリセット */
 const COLOR_PRESETS = [
@@ -71,19 +98,39 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
 
-  // グループ: getSmoothStepPath（直角パス）
-  // 人物間: ソース→ターゲット方向に沿ったカスタムベジェ
-  //   → orient="auto" で矢印がライン方向に自然に向く
+  // グループ: getSmoothStepPath（直角パス）— orient="auto" で十分
+  // 人物間: getBezierPath 互換の三次ベジェ — 矢印角度を自前計算
   let edgePath: string;
   let labelX: number;
   let labelY: number;
+  // 人物間エッジの矢印角度（グループエッジは undefined → orient="auto"）
+  let endAngleDeg: number | undefined;
+  let startAngleDeg: number | undefined;
 
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    // 人物間: ドラッグ時のプレビュー線と同じ getBezierPath を使用
-    // ハンドル方向（sourcePosition/targetPosition）を尊重した三次ベジェ曲線
-    [edgePath, labelX, labelY] = getBezierPath(pathParams);
+    // 制御点を計算（ReactFlow getBezierPath と同一アルゴリズム）
+    const curv = 0.25;
+    const [c1x, c1y] = ctrlPoint(sourcePosition, sourceX, sourceY, targetX, targetY, curv);
+    const [c2x, c2y] = ctrlPoint(targetPosition, targetX, targetY, sourceX, sourceY, curv);
+
+    // パス文字列（getBezierPath と同一出力）
+    edgePath = `M${sourceX},${sourceY} C${c1x},${c1y} ${c2x},${c2y} ${targetX},${targetY}`;
+    // ラベル位置（三次ベジェの t=0.5 中点）
+    labelX = sourceX * 0.125 + c1x * 0.375 + c2x * 0.375 + targetX * 0.125;
+    labelY = sourceY * 0.125 + c1y * 0.375 + c2y * 0.375 + targetY * 0.125;
+
+    // 矢印角度: 曲線上の t≈0.85 地点から端点への方向
+    // orient="auto" だと制御点が軸揃えのため常に垂直/水平になる問題を回避
+    const T = 0.85;
+    const nearEndX = cubicAt(T, sourceX, c1x, c2x, targetX);
+    const nearEndY = cubicAt(T, sourceY, c1y, c2y, targetY);
+    endAngleDeg = Math.atan2(targetY - nearEndY, targetX - nearEndX) * (180 / Math.PI);
+
+    const nearStartX = cubicAt(1 - T, sourceX, c1x, c2x, targetX);
+    const nearStartY = cubicAt(1 - T, sourceY, c1y, c2y, targetY);
+    startAngleDeg = Math.atan2(nearStartY - sourceY, nearStartX - sourceX) * (180 / Math.PI);
   }
 
   // 編集状態
@@ -163,7 +210,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="10"
             refY="6"
-            orient="auto"
+            orient={endAngleDeg != null ? endAngleDeg : "auto"}
             markerUnits="userSpaceOnUse"
           >
             <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
@@ -176,7 +223,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
             markerHeight="12"
             refX="2"
             refY="6"
-            orient="auto"
+            orient={startAngleDeg != null ? startAngleDeg : "auto"}
             markerUnits="userSpaceOnUse"
           >
             <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
