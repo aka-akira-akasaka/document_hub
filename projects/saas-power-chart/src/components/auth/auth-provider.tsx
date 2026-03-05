@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("shared_with_email", newUser.email ?? "")
         .is("shared_with_user_id", null);
 
-      await initSupabaseSync(newUser.id);
+      await initSupabaseSync(newUser.id, newUser.email ?? undefined);
     } else {
       initUserIdRef.current = null;
       // 即座に teardown せず、少し待つ（トークンリフレッシュ時の一時的 null 対策）

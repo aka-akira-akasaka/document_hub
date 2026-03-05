@@ -49,6 +49,7 @@ import { toast } from "sonner";
 // --- 内部状態 ---
 let unsubscribers: (() => void)[] = [];
 let currentUserId: string | null = null;
+let currentUserEmail: string | null = null;
 let syncEnabled = false;
 let initPromise: Promise<void> | null = null;
 
@@ -98,7 +99,8 @@ export async function flushPendingSync() {
 // 初期化: Supabase → Zustand
 // ============================================
 
-export async function initSupabaseSync(userId: string) {
+export async function initSupabaseSync(userId: string, userEmail?: string) {
+  if (userEmail) currentUserEmail = userEmail;
   // 別の初期化が進行中なら、完了を待ってから戻る（getUser と onAuthStateChange の競合回避）
   if (initPromise) {
     await initPromise;
@@ -153,27 +155,11 @@ export async function refetchDealData() {
     }
 
     const rawDbDeals = dealsRes.data as DbDeal[];
-
-    // 共有案件のオーナー email を profiles から取得
-    const refetchOwnerIds = rawDbDeals
-      .filter((row) => row.user_id !== userId)
-      .map((row) => row.user_id);
-    const refetchOwnerMap = new Map<string, string>();
-    if (refetchOwnerIds.length > 0) {
-      const { data: op } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("id", refetchOwnerIds);
-      for (const p of op ?? []) {
-        refetchOwnerMap.set((p as { id: string; email: string }).id, (p as { id: string; email: string }).email);
-      }
-    }
-
     const deals = rawDbDeals.map((row) => {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
-        deal.ownerEmail = refetchOwnerMap.get(row.user_id) ?? undefined;
+        deal.ownerEmail = (row as unknown as Record<string, unknown>).owner_email as string | undefined;
       }
       return deal;
     });
@@ -254,26 +240,12 @@ async function performInit(userId: string) {
     // deals に共有情報を付与（Map で O(1) ルックアップ）
     const rawDbDeals = dealsRes.data as DbDeal[];
 
-    // 共有案件のオーナー email を profiles から取得
-    const ownerUserIds = rawDbDeals
-      .filter((row) => row.user_id !== userId)
-      .map((row) => row.user_id);
-    const ownerEmailMap = new Map<string, string>();
-    if (ownerUserIds.length > 0) {
-      const { data: ownerProfiles } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("id", ownerUserIds);
-      for (const p of ownerProfiles ?? []) {
-        ownerEmailMap.set((p as { id: string; email: string }).id, (p as { id: string; email: string }).email);
-      }
-    }
-
     const deals = rawDbDeals.map((row) => {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
-        deal.ownerEmail = ownerEmailMap.get(row.user_id) ?? undefined;
+        // owner_email は deals テーブルに非正規化で保存されている
+        deal.ownerEmail = (row as unknown as Record<string, unknown>).owner_email as string | undefined;
       }
       return deal;
     });
@@ -734,9 +706,11 @@ async function syncDealShares(byDeal: Record<string, DealShare[]>, userId: strin
         email: s.sharedWithEmail,
         role: s.role,
       }));
+      const updatePayload: Record<string, unknown> = { shared_emails: sharedEmails };
+      if (currentUserEmail) updatePayload.owner_email = currentUserEmail;
       await supabase
         .from("deals")
-        .update({ shared_emails: sharedEmails })
+        .update(updatePayload)
         .eq("id", dealId);
     }
   } catch (err) {
