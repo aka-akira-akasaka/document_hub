@@ -130,7 +130,7 @@ function DealLayoutContent({
         onDuplicateClick={handleDuplicate}
         isPdfExporting={isPdfExporting}
         sharedUsers={sharedUsers}
-        onlineUserIds={new Set(onlineUsers.map((u) => u.email))}
+        onlineUsers={onlineUsers}
       />
       {isReadOnly && (
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-700">

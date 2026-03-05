@@ -45,8 +45,8 @@ interface DealHeaderProps {
   onDuplicateClick?: () => void;
   isPdfExporting: boolean;
   sharedUsers?: SharedUserInfo[];
-  /** 現在オンラインのユーザーのメールアドレスSet */
-  onlineUserIds?: Set<string>;
+  /** 現在オンラインのユーザー（Presence） */
+  onlineUsers?: { userId: string; email: string; fullName: string; avatarUrl: string | null }[];
 }
 
 export function DealHeader({
@@ -60,8 +60,17 @@ export function DealHeader({
   onDuplicateClick,
   isPdfExporting,
   sharedUsers = [],
-  onlineUserIds,
+  onlineUsers = [],
 }: DealHeaderProps) {
+  // オンラインユーザーのメールSet
+  const onlineEmails = new Set(onlineUsers.map((u) => u.email));
+  // sharedUsers にいないオンラインユーザー（= オーナー等）を含めた全アバターリスト
+  const sharedEmails = new Set(sharedUsers.map((u) => u.email.toLowerCase()));
+  const extraOnline: SharedUserInfo[] = onlineUsers
+    .filter((u) => !sharedEmails.has(u.email.toLowerCase()))
+    .map((u) => ({ email: u.email, fullName: u.fullName, avatarUrl: u.avatarUrl, role: "owner" }));
+  const allAvatarUsers = [...extraOnline, ...sharedUsers];
+
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b bg-white">
       <div className="flex items-center gap-3">
@@ -89,11 +98,11 @@ export function DealHeader({
             {deal.shareRole === "editor" ? "編集可" : "閲覧のみ"}
           </Badge>
         )}
-        {/* 共有ユーザーアバター重ね（Google Docs風） */}
-        {sharedUsers.length > 0 && (
+        {/* 共有ユーザー + オンラインユーザーのアバター重ね（Google Docs風） */}
+        {allAvatarUsers.length > 0 && (
           <div className="flex items-center -space-x-2 mr-1">
-            {sharedUsers.slice(0, 4).map((u) => {
-              const isOnline = onlineUserIds?.has(u.email);
+            {allAvatarUsers.slice(0, 4).map((u) => {
+              const isOnline = onlineEmails.has(u.email);
               return (
                 <Tooltip key={u.email}>
                   <TooltipTrigger asChild>
@@ -119,16 +128,16 @@ export function DealHeader({
                   <TooltipContent side="bottom" className="text-xs">
                     <p className="font-medium">{u.fullName || u.email}</p>
                     <p className="text-muted-foreground">
-                      {u.role === "editor" ? "編集可" : "閲覧のみ"}
+                      {u.role === "owner" ? "オーナー" : u.role === "editor" ? "編集可" : "閲覧のみ"}
                       {isOnline ? " · オンライン" : ""}
                     </p>
                   </TooltipContent>
                 </Tooltip>
               );
             })}
-            {sharedUsers.length > 4 && (
+            {allAvatarUsers.length > 4 && (
               <div className="h-7 w-7 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-medium text-gray-600">
-                +{sharedUsers.length - 4}
+                +{allAvatarUsers.length - 4}
               </div>
             )}
           </div>

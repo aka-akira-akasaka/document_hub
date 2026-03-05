@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { useReactFlow } from "@xyflow/react";
+import { useViewport } from "@xyflow/react";
 import type { RemoteCursor } from "@/hooks/use-realtime-cursors";
 
 interface CursorOverlayProps {
@@ -10,21 +10,23 @@ interface CursorOverlayProps {
 
 /** 他ユーザーのカーソルをキャンバス上にオーバーレイ表示（Figma風） */
 function CursorOverlayComponent({ cursors }: CursorOverlayProps) {
-  const { flowToScreenPosition } = useReactFlow();
+  const viewport = useViewport();
 
   if (cursors.size === 0) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
       {Array.from(cursors.values()).map((cursor) => {
-        const screenPos = flowToScreenPosition({ x: cursor.x, y: cursor.y });
+        // フロー座標 → ビューポート座標（ReactFlowコンテナ内の相対座標）
+        const x = cursor.x * viewport.zoom + viewport.x;
+        const y = cursor.y * viewport.zoom + viewport.y;
         return (
           <div
             key={cursor.userId}
             className="absolute transition-all duration-100 ease-out"
             style={{
-              left: screenPos.x,
-              top: screenPos.y,
+              left: x,
+              top: y,
               transform: "translate(-2px, -2px)",
             }}
           >
