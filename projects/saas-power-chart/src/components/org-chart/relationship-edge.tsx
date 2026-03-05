@@ -4,7 +4,6 @@ import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   getSmoothStepPath,
-  Position,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -12,33 +11,6 @@ import type { RelationshipType, RelationshipDirection } from "@/types/relationsh
 import { isPositiveRelationship } from "@/lib/constants";
 import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ============================================
-// ReactFlow getBezierPath 互換の制御点計算
-// 矢印の向きを曲線の接線方向に合わせるため自前実装
-// ============================================
-
-function ctrlOffset(distance: number, curvature: number): number {
-  if (distance >= 0) return 0.5 * distance;
-  return curvature * 25 * Math.sqrt(-distance);
-}
-
-function ctrlPoint(
-  pos: Position, x1: number, y1: number, x2: number, y2: number, c: number,
-): [number, number] {
-  switch (pos) {
-    case Position.Left:   return [x1 - ctrlOffset(x1 - x2, c), y1];
-    case Position.Right:  return [x1 + ctrlOffset(x2 - x1, c), y1];
-    case Position.Top:    return [x1, y1 - ctrlOffset(y1 - y2, c)];
-    case Position.Bottom: return [x1, y1 + ctrlOffset(y2 - y1, c)];
-  }
-}
-
-/** 三次ベジェ上の点 B(t) を求める */
-function cubicAt(t: number, p0: number, p1: number, p2: number, p3: number): number {
-  const m = 1 - t;
-  return m * m * m * p0 + 3 * m * m * t * p1 + 3 * m * t * t * p2 + t * t * t * p3;
-}
 
 /** エッジのカスタム色プリセット */
 const COLOR_PRESETS = [
@@ -98,56 +70,28 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
 
-  // グループ: getSmoothStepPath（直角パス）— orient="auto" で十分
-  // 人物間: getBezierPath 互換の三次ベジェ — 矢印座標を直接計算
+  // グループ: getSmoothStepPath（直角パス）
+  // 人物間: カスタム二次ベジェ（制御点が軸揃えにならないため orient="auto" で自然な矢印方向）
   let edgePath: string;
   let labelX: number;
   let labelY: number;
-  // 人物間エッジ: シェブロン矢印の翼座標（transform 不要）
-  let endArrow: { w1x: number; w1y: number; w2x: number; w2y: number } | null = null;
-  let startArrow: { w1x: number; w1y: number; w2x: number; w2y: number } | null = null;
 
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    // 制御点を計算（ReactFlow getBezierPath と同一アルゴリズム）
-    const curv = 0.25;
-    const [c1x, c1y] = ctrlPoint(sourcePosition, sourceX, sourceY, targetX, targetY, curv);
-    const [c2x, c2y] = ctrlPoint(targetPosition, targetX, targetY, sourceX, sourceY, curv);
-
-    // パス文字列（getBezierPath と同一出力）
-    edgePath = `M${sourceX},${sourceY} C${c1x},${c1y} ${c2x},${c2y} ${targetX},${targetY}`;
-    // ラベル位置（三次ベジェの t=0.5 中点）
-    labelX = sourceX * 0.125 + c1x * 0.375 + c2x * 0.375 + targetX * 0.125;
-    labelY = sourceY * 0.125 + c1y * 0.375 + c2y * 0.375 + targetY * 0.125;
-
-    // シェブロン矢印の翼座標を直接計算（transform 不使用、座標のみ）
-    const ARROW_LEN = 8;
-    const ARROW_OPEN = 25 * Math.PI / 180; // 25° 開き角
-    const T = 0.85;
-
-    if (hasEndMarker) {
-      const nex = cubicAt(T, sourceX, c1x, c2x, targetX);
-      const ney = cubicAt(T, sourceY, c1y, c2y, targetY);
-      const a = Math.atan2(targetY - ney, targetX - nex);
-      endArrow = {
-        w1x: targetX - ARROW_LEN * Math.cos(a - ARROW_OPEN),
-        w1y: targetY - ARROW_LEN * Math.sin(a - ARROW_OPEN),
-        w2x: targetX - ARROW_LEN * Math.cos(a + ARROW_OPEN),
-        w2y: targetY - ARROW_LEN * Math.sin(a + ARROW_OPEN),
-      };
-    }
-    if (hasStartMarker) {
-      const nsx = cubicAt(1 - T, sourceX, c1x, c2x, targetX);
-      const nsy = cubicAt(1 - T, sourceY, c1y, c2y, targetY);
-      const a = Math.atan2(nsy - sourceY, nsx - sourceX) + Math.PI; // 逆向き
-      startArrow = {
-        w1x: sourceX - ARROW_LEN * Math.cos(a - ARROW_OPEN),
-        w1y: sourceY - ARROW_LEN * Math.sin(a - ARROW_OPEN),
-        w2x: sourceX - ARROW_LEN * Math.cos(a + ARROW_OPEN),
-        w2y: sourceY - ARROW_LEN * Math.sin(a + ARROW_OPEN),
-      };
-    }
+    // 人物間: ソース→ターゲット直線に垂直にオフセットした制御点の二次ベジェ
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const curvature = Math.min(dist * 0.25, 80);
+    // 垂直方向にオフセット（左側にカーブ）
+    const nx = -dy / (dist || 1) * curvature;
+    const ny = dx / (dist || 1) * curvature;
+    const cx = (sourceX + targetX) / 2 + nx;
+    const cy = (sourceY + targetY) / 2 + ny;
+    edgePath = `M ${sourceX} ${sourceY} Q ${cx} ${cy} ${targetX} ${targetY}`;
+    labelX = (sourceX + 2 * cx + targetX) / 4;
+    labelY = (sourceY + 2 * cy + targetY) / 4;
   }
 
   // 編集状態
@@ -218,70 +162,47 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   return (
     <>
-      {/* グループエッジ用 SVG マーカー（orient="auto" で軸揃えOK） */}
-      {isGroupEdge && (
-        <defs>
-          {hasEndMarker && (
-            <marker
-              id={`arrow-end-${id}`}
-              markerWidth="12"
-              markerHeight="12"
-              refX="10"
-              refY="6"
-              orient="auto"
-              markerUnits="userSpaceOnUse"
-            >
-              <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
-            </marker>
-          )}
-          {hasStartMarker && (
-            <marker
-              id={`arrow-start-${id}`}
-              markerWidth="12"
-              markerHeight="12"
-              refX="2"
-              refY="6"
-              orient="auto"
-              markerUnits="userSpaceOnUse"
-            >
-              <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
-            </marker>
-          )}
-        </defs>
-      )}
-      {/* エッジパス */}
+      {/* カスタム矢印マーカー定義 */}
+      <defs>
+        {hasEndMarker && (
+          <marker
+            id={`arrow-end-${id}`}
+            markerWidth="12"
+            markerHeight="12"
+            refX="10"
+            refY="6"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
+          </marker>
+        )}
+        {hasStartMarker && (
+          <marker
+            id={`arrow-start-${id}`}
+            markerWidth="12"
+            markerHeight="12"
+            refX="2"
+            refY="6"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
+          </marker>
+        )}
+      </defs>
+      {/* エッジパス（カスタムマーカー付き） */}
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={hasEndMarker && isGroupEdge ? `url(#arrow-end-${id})` : undefined}
-        markerStart={hasStartMarker && isGroupEdge ? `url(#arrow-start-${id})` : undefined}
+        markerEnd={hasEndMarker ? `url(#arrow-end-${id})` : undefined}
+        markerStart={hasStartMarker ? `url(#arrow-start-${id})` : undefined}
         style={{
           stroke: strokeColor,
           strokeWidth: 2,
           strokeDasharray: strokeDash,
         }}
       />
-      {/* 人物間エッジ: シェブロン矢印（座標直接計算、transform不使用） */}
-      {endArrow && (
-        <path
-          d={`M${endArrow.w1x},${endArrow.w1y} L${targetX},${targetY} L${endArrow.w2x},${endArrow.w2y}`}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
-      {startArrow && (
-        <path
-          d={`M${startArrow.w1x},${startArrow.w1y} L${sourceX},${sourceY} L${startArrow.w2x},${startArrow.w2y}`}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
 
       <EdgeLabelRenderer>
         <div
