@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/components/auth/auth-provider";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
 import { ArrowLeft, Copy, Download, Upload, FileText, Loader2, Share2 } from "lucide-react";
@@ -62,14 +63,26 @@ export function DealHeader({
   sharedUsers = [],
   onlineUsers = [],
 }: DealHeaderProps) {
-  // オンラインユーザーのメールSet
-  const onlineEmails = new Set(onlineUsers.map((u) => u.email));
-  // sharedUsers にいないオンラインユーザー（= オーナー等）を含めた全アバターリスト
-  const sharedEmails = new Set(sharedUsers.map((u) => u.email.toLowerCase()));
+  const { user: currentUser } = useAuth();
+  // オンラインユーザーのメールSet（自分を含む）
+  const currentEmail = currentUser?.email ?? "";
+  const onlineEmails = new Set([...onlineUsers.map((u) => u.email), currentEmail]);
+
+  // sharedUsers + オンラインユーザー + 自分自身を統合したアバターリスト
+  const knownEmails = new Set(sharedUsers.map((u) => u.email.toLowerCase()));
+  // オンラインだが sharedUsers にいないユーザー（他のオーナー等）
   const extraOnline: SharedUserInfo[] = onlineUsers
-    .filter((u) => !sharedEmails.has(u.email.toLowerCase()))
+    .filter((u) => !knownEmails.has(u.email.toLowerCase()) && u.email !== currentEmail)
     .map((u) => ({ email: u.email, fullName: u.fullName, avatarUrl: u.avatarUrl, role: "owner" }));
-  const allAvatarUsers = [...extraOnline, ...sharedUsers];
+  // 自分自身（常に先頭に表示、sharedUsers に含まれていない場合のみ）
+  const selfInList = knownEmails.has(currentEmail.toLowerCase());
+  const selfEntry: SharedUserInfo[] = selfInList ? [] : [{
+    email: currentEmail,
+    fullName: (currentUser?.user_metadata?.full_name as string) ?? currentEmail,
+    avatarUrl: (currentUser?.user_metadata?.avatar_url as string) ?? null,
+    role: isOwner ? "owner" : (deal.shareRole ?? "viewer"),
+  }];
+  const allAvatarUsers = [...selfEntry, ...extraOnline, ...sharedUsers];
 
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b bg-white">
