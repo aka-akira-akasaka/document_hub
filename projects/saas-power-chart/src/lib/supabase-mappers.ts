@@ -8,6 +8,7 @@ import type { Relationship, RelationshipType, RelationshipDirection, Relationshi
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 import type { TierEntry } from "@/stores/org-group-store";
+import type { DealShare, ShareRole } from "@/types/deal-share";
 
 // ============================================
 // DB 行の型定義
@@ -91,6 +92,17 @@ export interface DbTierConfig {
   deal_id: string;
   tier: number;
   label: string;
+}
+
+export interface DbDealShare {
+  id: string;
+  deal_id: string;
+  owner_id: string;
+  shared_with_email: string;
+  shared_with_user_id: string | null;
+  role: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================
@@ -282,5 +294,35 @@ export function tierEntryToDb(
     deal_id: dealId,
     tier: entry.tier,
     label: entry.label,
+  };
+}
+
+// ============================================
+// DealShare 変換
+// ============================================
+
+export function dbToDealShare(row: DbDealShare): DealShare {
+  return {
+    id: row.id,
+    dealId: row.deal_id,
+    ownerId: row.owner_id,
+    sharedWithEmail: row.shared_with_email,
+    sharedWithUserId: row.shared_with_user_id,
+    role: row.role as ShareRole,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function dealShareToDb(share: DealShare): DbDealShare {
+  return {
+    id: share.id,
+    deal_id: share.dealId,
+    owner_id: share.ownerId,
+    shared_with_email: share.sharedWithEmail,
+    shared_with_user_id: share.sharedWithUserId,
+    role: share.role,
+    created_at: share.createdAt,
+    updated_at: share.updatedAt,
   };
 }

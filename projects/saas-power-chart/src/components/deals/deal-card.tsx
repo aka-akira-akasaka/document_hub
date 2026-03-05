@@ -13,7 +13,7 @@ import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useDealStore } from "@/stores/deal-store";
 import type { Deal } from "@/types/deal";
-import { MoreVertical, Trash2, Users, BarChart3 } from "lucide-react";
+import { MoreVertical, Trash2, Users, Users2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
   );
   const count = stakeholders?.length ?? 0;
   const trashDeal = useDealStore((s) => s.trashDeal);
+  const isShared = !!deal.shareRole;
 
   const handleTrash = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -60,20 +61,28 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
             <Users className="h-3 w-3" />
             <span>{count}</span>
           </div>
+          {isShared && (
+            <Badge variant="outline" className="shrink-0 text-[10px] gap-1">
+              <Users2 className="h-3 w-3" />
+              共有
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground shrink-0">{formattedDate}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                ゴミ箱に移動
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isShared && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  ゴミ箱に移動
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </Link>
     );
@@ -87,19 +96,26 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
             <BarChart3 className="h-5 w-5 text-blue-600" />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7 -mr-1 -mt-1 text-gray-400 hover:text-gray-600">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                ゴミ箱に移動
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isShared ? (
+            <Badge variant="outline" className="text-[10px] gap-1 -mr-1 -mt-1">
+              <Users2 className="h-3 w-3" />
+              共有
+            </Badge>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 -mr-1 -mt-1 text-gray-400 hover:text-gray-600">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  ゴミ箱に移動
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* 下段: タイトル + メタ情報 */}

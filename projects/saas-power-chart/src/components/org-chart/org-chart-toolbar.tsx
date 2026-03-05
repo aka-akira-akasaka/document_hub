@@ -24,6 +24,7 @@ interface OrgChartToolbarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  readOnly?: boolean;
 }
 
 export function OrgChartToolbar({
@@ -35,6 +36,7 @@ export function OrgChartToolbar({
   onRedo,
   canUndo,
   canRedo,
+  readOnly,
 }: OrgChartToolbarProps) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
@@ -82,103 +84,107 @@ export function OrgChartToolbar({
         <TooltipContent side="right">全体表示</TooltipContent>
       </Tooltip>
 
-      <div className="border-t my-0.5" />
+      {!readOnly && (
+        <>
+          <div className="border-t my-0.5" />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onUndo}
-            disabled={!canUndo}
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">元に戻す (⌘Z)</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onUndo}
+                disabled={!canUndo}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">元に戻す (⌘Z)</TooltipContent>
+          </Tooltip>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onRedo}
-            disabled={!canRedo}
-          >
-            <Redo2 className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">やり直し (⌘⇧Z)</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onRedo}
+                disabled={!canRedo}
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">やり直し (⌘⇧Z)</TooltipContent>
+          </Tooltip>
 
-      <div className="border-t my-0.5" />
+          <div className="border-t my-0.5" />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onAddNode}
-          >
-            <span className="relative inline-flex">
-              <User className="h-4 w-4" />
-              <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
-            </span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">人を追加する</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onAddNode}
+              >
+                <span className="relative inline-flex">
+                  <User className="h-4 w-4" />
+                  <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">人を追加する</TooltipContent>
+          </Tooltip>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onAddGroup}
-          >
-            <span className="relative inline-flex">
-              <Building2 className="h-4 w-4" />
-              <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
-            </span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">部署を追加する</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onAddGroup}
+              >
+                <span className="relative inline-flex">
+                  <Building2 className="h-4 w-4" />
+                  <span className="absolute -top-1.5 -right-2 text-[9px] font-black leading-none">+</span>
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">部署を追加する</TooltipContent>
+          </Tooltip>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onOpenLevelEditor}
-          >
-            <Layers className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">役職・組織の階層設定</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onOpenLevelEditor}
+              >
+                <Layers className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">役職・組織の階層設定</TooltipContent>
+          </Tooltip>
 
-      <div className="border-t my-0.5" />
+          <div className="border-t my-0.5" />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onSaveTemplate}
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">テンプレートとして保存</TooltipContent>
-      </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onSaveTemplate}
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">テンプレートとして保存</TooltipContent>
+          </Tooltip>
+        </>
+      )}
     </div>
   );
 }

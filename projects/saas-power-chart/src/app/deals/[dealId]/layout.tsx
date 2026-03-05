@@ -1,16 +1,17 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DealHeader } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
 import { CsvImportDialog } from "@/components/csv/csv-import-dialog";
-// BatchAddDialogは廃止（インポート機能に統合）
+import { DealShareDialog } from "@/components/deals/deal-share-dialog";
 import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
 
 /**
  * Hydrationガードラッパー
@@ -39,6 +40,8 @@ function DealLayoutContent({
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const isActive = !!deal && !deal.trashedAt;
+  const isOwner = useIsOwner(dealId);
+  const isReadOnly = useIsReadOnly(dealId);
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const requestPdfExport = useUiStore((s) => s.requestPdfExport);
   const isPdfExporting = useUiStore((s) => s.isPdfExporting);
@@ -46,6 +49,7 @@ function DealLayoutContent({
     dealId,
     dealName: deal?.name ?? "export",
   });
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isActive) {
@@ -59,17 +63,30 @@ function DealLayoutContent({
     <div className="flex-1 bg-gray-50 flex flex-col">
       <DealHeader
         deal={deal}
+        isOwner={isOwner}
         onImportClick={openCsvImport}
         onCsvExportClick={handleExport}
         onYamlExportClick={handleYamlExport}
         onPdfExportClick={requestPdfExport}
+        onShareClick={() => setShareDialogOpen(true)}
         isPdfExporting={isPdfExporting}
       />
+      {isReadOnly && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-700">
+          この案件は閲覧のみの共有です
+        </div>
+      )}
       <DealTabs dealId={dealId} />
       <div className="flex-1 flex flex-col">{children}</div>
       <StakeholderSheet dealId={dealId} />
       <CsvImportDialog dealId={dealId} />
-      {/* BatchAddDialogは廃止 */}
+      {isOwner && (
+        <DealShareDialog
+          dealId={dealId}
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+        />
+      )}
     </div>
   );
 }

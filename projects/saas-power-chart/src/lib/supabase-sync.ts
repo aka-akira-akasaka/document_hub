@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useDealStore } from "@/stores/deal-store";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useOrgGroupStore } from "@/stores/org-group-store";
+import { useDealShareStore } from "@/stores/deal-share-store";
 import {
   dbToDeal,
   dbToStakeholder,
@@ -18,20 +19,25 @@ import {
   dbToOrgGroup,
   dbToOrgLevel,
   dbToTierEntry,
+  dbToDealShare,
   dealToDb,
   stakeholderToDb,
   relationshipToDb,
   orgGroupToDb,
   orgLevelToDb,
   tierEntryToDb,
+  dealShareToDb,
   type DbDeal,
   type DbStakeholder,
   type DbRelationship,
   type DbOrgGroup,
   type DbOrgLevelConfig,
   type DbTierConfig,
+  type DbDealShare,
 } from "@/lib/supabase-mappers";
 import type { Deal } from "@/types/deal";
+import type { ShareRole } from "@/types/deal-share";
+import type { DealShare } from "@/types/deal-share";
 import type { Stakeholder } from "@/types/stakeholder";
 import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
@@ -118,8 +124,8 @@ async function performInit(userId: string) {
   const supabase = createClient();
 
   try {
-    // 全データを並行取得
-    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes] =
+    // 全データを並行取得（deal_shares含む）
+    const [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes, tierConfigsRes, dealSharesRes] =
       await Promise.all([
         supabase.from("deals").select("*"),
         supabase.from("stakeholders").select("*"),
@@ -127,17 +133,40 @@ async function performInit(userId: string) {
         supabase.from("org_groups").select("*"),
         supabase.from("org_level_configs").select("*"),
         supabase.from("tier_configs").select("*"),
+        supabase.from("deal_shares").select("*"),
       ]);
 
-    // エラーチェック（tier_configs はテーブル未作成の可能性があるためオプショナル扱い）
+    // エラーチェック（tier_configs / deal_shares はテーブル未作成の可能性があるためオプショナル扱い）
     for (const res of [dealsRes, stakeholdersRes, relationshipsRes, orgGroupsRes, orgLevelsRes]) {
       if (res.error) throw res.error;
     }
     if (tierConfigsRes.error) {
       console.warn("tier_configs テーブル未作成（スキップ）:", tierConfigsRes.error.message);
     }
+    if (dealSharesRes.error) {
+      console.warn("deal_shares テーブル未作成（スキップ）:", dealSharesRes.error.message);
+    }
 
-    const deals = (dealsRes.data as DbDeal[]).map(dbToDeal);
+    // 共有情報を先に処理（deals の shareRole 付与に使用）
+    const dealShares = ((dealSharesRes.data ?? []) as DbDealShare[]).map(dbToDealShare);
+    const sharesByDeal: Record<string, DealShare[]> = {};
+    for (const s of dealShares) {
+      (sharesByDeal[s.dealId] ??= []).push(s);
+    }
+
+    // deals に共有情報を付与
+    const rawDbDeals = dealsRes.data as DbDeal[];
+    const deals = rawDbDeals.map((row) => {
+      const deal = dbToDeal(row);
+      if (row.user_id !== userId) {
+        // 共有案件: 対応するshareレコードからroleを取得
+        const myShare = dealShares.find(
+          (s) => s.dealId === row.id && s.sharedWithUserId === userId
+        );
+        deal.shareRole = (myShare?.role as ShareRole) ?? "viewer";
+      }
+      return deal;
+    });
     const stakeholders = (stakeholdersRes.data as DbStakeholder[]).map(dbToStakeholder);
     const relationships = (relationshipsRes.data as DbRelationship[]).map(dbToRelationship);
     const orgGroups = (orgGroupsRes.data as DbOrgGroup[]).map(dbToOrgGroup);
@@ -184,6 +213,7 @@ async function performInit(userId: string) {
       orgLevelConfigByDeal
     );
     useOrgGroupStore.getState().hydrate(groupsByDeal, tierConfigByDeal);
+    useDealShareStore.getState().hydrate(sharesByDeal);
 
     // 変更監視を開始（初回のみ — 既に購読中なら重複しない）
     if (!syncEnabled) {
@@ -210,6 +240,7 @@ export function teardownSupabaseSync() {
   useDealStore.getState().reset();
   useStakeholderStore.getState().reset();
   useOrgGroupStore.getState().reset();
+  useDealShareStore.getState().reset();
 }
 
 // ============================================
@@ -282,6 +313,29 @@ function setupSubscriptions(userId: string) {
       }
     )
   );
+
+  // DealShares の監視
+  unsubscribers.push(
+    useDealShareStore.subscribe(
+      (state) => state.sharesByDeal,
+      (byDeal) => {
+        if (!syncEnabled) return;
+        debounce("dealShares", () => syncDealShares(byDeal, userId));
+      }
+    )
+  );
+}
+
+// ============================================
+// ヘルパー: 自分がオーナーの案件IDセットを取得
+// ============================================
+
+function getOwnedDealIds(): Set<string> {
+  return new Set(
+    useDealStore.getState().deals
+      .filter((d) => !d.shareRole)
+      .map((d) => d.id)
+  );
 }
 
 // ============================================
@@ -291,9 +345,12 @@ function setupSubscriptions(userId: string) {
 async function syncDeals(deals: Deal[], userId: string) {
   const supabase = createClient();
   try {
+    // 自分がオーナーの案件のみ同期（共有案件は除外）
+    const ownedDeals = deals.filter((d) => !d.shareRole);
+
     // Upsert
-    if (deals.length > 0) {
-      const rows = deals.map((d) => dealToDb(d, userId));
+    if (ownedDeals.length > 0) {
+      const rows = ownedDeals.map((d) => dealToDb(d, userId));
       const { error } = await supabase
         .from("deals")
         .upsert(rows, { onConflict: "id" });
@@ -312,13 +369,15 @@ async function syncDeals(deals: Deal[], userId: string) {
       }
     }
 
-    // 削除: ローカルにないIDをDBから削除
-    const localIds = deals.map((d) => d.id);
+    // 削除: 自分がオーナーの案件のみ対象（共有案件を誤削除しない）
+    const localOwnedIds = ownedDeals.map((d) => d.id);
     const { data: remoteDeals } = await supabase
       .from("deals")
-      .select("id");
-    const remoteIds = (remoteDeals ?? []).map((d: { id: string }) => d.id);
-    const toDelete = remoteIds.filter((id: string) => !localIds.includes(id));
+      .select("id, user_id");
+    const remoteOwnedIds = (remoteDeals ?? [])
+      .filter((d: { id: string; user_id: string }) => d.user_id === userId)
+      .map((d: { id: string; user_id: string }) => d.id);
+    const toDelete = remoteOwnedIds.filter((id: string) => !localOwnedIds.includes(id));
     if (toDelete.length > 0) {
       await supabase.from("deals").delete().in("id", toDelete);
     }
@@ -331,7 +390,11 @@ async function syncDeals(deals: Deal[], userId: string) {
 async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
   const supabase = createClient();
   try {
-    const all = Object.values(byDeal).flat();
+    // 自分がオーナーの案件のデータのみ同期
+    const ownedDealIds = getOwnedDealIds();
+    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
+    const all = ownedEntries.flatMap(([, list]) => list);
+
     if (all.length > 0) {
       const { error } = await supabase
         .from("stakeholders")
@@ -339,11 +402,12 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
       if (error) throw error;
     }
 
-    // 削除検出
+    // 削除検出: 自分がオーナーの案件に属するレコードのみ対象
     const localIds = new Set(all.map((s) => s.id));
-    const { data: remote } = await supabase.from("stakeholders").select("id");
+    const { data: remote } = await supabase.from("stakeholders").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .map((r: { id: string }) => r.id)
+      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
       await supabase.from("stakeholders").delete().in("id", toDelete);
@@ -357,7 +421,10 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
 async function syncRelationships(byDeal: Record<string, Relationship[]>) {
   const supabase = createClient();
   try {
-    const all = Object.values(byDeal).flat();
+    const ownedDealIds = getOwnedDealIds();
+    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
+    const all = ownedEntries.flatMap(([, list]) => list);
+
     if (all.length > 0) {
       const rows = all.map(relationshipToDb);
       const { error } = await supabase
@@ -377,9 +444,10 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
     }
 
     const localIds = new Set(all.map((r) => r.id));
-    const { data: remote } = await supabase.from("relationships").select("id");
+    const { data: remote } = await supabase.from("relationships").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .map((r: { id: string }) => r.id)
+      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
       await supabase.from("relationships").delete().in("id", toDelete);
@@ -393,7 +461,10 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
 async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
   const supabase = createClient();
   try {
-    const all = Object.values(byDeal).flat();
+    const ownedDealIds = getOwnedDealIds();
+    const ownedEntries = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId));
+    const all = ownedEntries.flatMap(([, list]) => list);
+
     if (all.length > 0) {
       const rows = all.map(orgGroupToDb);
       const { error } = await supabase
@@ -411,9 +482,10 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
     }
 
     const localIds = new Set(all.map((g) => g.id));
-    const { data: remote } = await supabase.from("org_groups").select("id");
+    const { data: remote } = await supabase.from("org_groups").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .map((r: { id: string }) => r.id)
+      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
       await supabase.from("org_groups").delete().in("id", toDelete);
@@ -427,9 +499,11 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
 async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
   const supabase = createClient();
   try {
+    const ownedDealIds = getOwnedDealIds();
     // OrgLevelConfig は deal_id + level がユニーク制約
-    // 全件削除して再挿入が最もシンプル
+    // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
     for (const [dealId, entries] of Object.entries(byDeal)) {
+      if (!ownedDealIds.has(dealId)) continue;
       await supabase.from("org_level_configs").delete().eq("deal_id", dealId);
       if (entries.length > 0) {
         const { error } = await supabase
@@ -454,9 +528,11 @@ async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
       return;
     }
 
+    const ownedDealIds = getOwnedDealIds();
     // tier_configs は deal_id + tier がユニーク制約
-    // 全件削除して再挿入が最もシンプル（org_level_configs と同パターン）
+    // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
     for (const [dealId, entries] of Object.entries(byDeal)) {
+      if (!ownedDealIds.has(dealId)) continue;
       await supabase.from("tier_configs").delete().eq("deal_id", dealId);
       if (entries.length > 0) {
         const { error } = await supabase
@@ -468,6 +544,39 @@ async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
   } catch (err) {
     console.error("tier_configs sync failed:", err);
     toast.error("部署種別設定の保存に失敗しました");
+  }
+}
+
+async function syncDealShares(byDeal: Record<string, DealShare[]>, userId: string) {
+  const supabase = createClient();
+  try {
+    // 自分がオーナーの共有レコードのみ同期
+    const ownedShares = Object.values(byDeal)
+      .flat()
+      .filter((s) => s.ownerId === userId);
+
+    if (ownedShares.length > 0) {
+      const { error } = await supabase
+        .from("deal_shares")
+        .upsert(ownedShares.map(dealShareToDb), { onConflict: "id" });
+      if (error) throw error;
+    }
+
+    // 削除検出: 自分がオーナーの共有レコードのみ
+    const localIds = new Set(ownedShares.map((s) => s.id));
+    const { data: remote } = await supabase
+      .from("deal_shares")
+      .select("id")
+      .eq("owner_id", userId);
+    const toDelete = (remote ?? [])
+      .map((r: { id: string }) => r.id)
+      .filter((id: string) => !localIds.has(id));
+    if (toDelete.length > 0) {
+      await supabase.from("deal_shares").delete().in("id", toDelete);
+    }
+  } catch (err) {
+    console.error("deal_shares sync failed:", err);
+    toast.error("共有設定の保存に失敗しました");
   }
 }
 

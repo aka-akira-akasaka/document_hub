@@ -37,6 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser);
     if (newUser) {
+      // 未解決の共有招待をuser_idで解決（DBトリガーのフォールバック）
+      try {
+        const supabase = createClient();
+        await supabase
+          .from("deal_shares")
+          .update({
+            shared_with_user_id: newUser.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("shared_with_email", newUser.email ?? "")
+          .is("shared_with_user_id", null);
+      } catch {
+        // テーブル未作成時など、エラーは静かに無視
+      }
+
       await initSupabaseSync(newUser.id);
     } else {
       // 即座に teardown せず、少し待つ（トークンリフレッシュ時の一時的 null 対策）

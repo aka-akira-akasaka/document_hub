@@ -11,24 +11,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import type { Deal } from "@/types/deal";
-import { ArrowLeft, Download, Upload, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Upload, FileText, Loader2, Share2 } from "lucide-react";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface DealHeaderProps {
   deal: Deal;
+  isOwner: boolean;
   onImportClick: () => void;
   onCsvExportClick: () => void;
   onYamlExportClick: () => void;
   onPdfExportClick: () => void;
+  onShareClick: () => void;
   isPdfExporting: boolean;
 }
 
 export function DealHeader({
   deal,
+  isOwner,
   onImportClick,
   onCsvExportClick,
   onYamlExportClick,
   onPdfExportClick,
+  onShareClick,
   isPdfExporting,
 }: DealHeaderProps) {
   return (
@@ -53,10 +57,23 @@ export function DealHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onImportClick}>
-          <Upload className="h-4 w-4 mr-1" />
-          インポート
-        </Button>
+        {deal.shareRole && (
+          <Badge variant="outline" className="text-xs">
+            {deal.shareRole === "editor" ? "編集可" : "閲覧のみ"}
+          </Badge>
+        )}
+        {isOwner && (
+          <Button variant="outline" size="sm" onClick={onShareClick}>
+            <Share2 className="h-4 w-4 mr-1" />
+            共有
+          </Button>
+        )}
+        {isOwner && (
+          <Button variant="outline" size="sm" onClick={onImportClick}>
+            <Upload className="h-4 w-4 mr-1" />
+            インポート
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
