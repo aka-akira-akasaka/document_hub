@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 const EMPTY_SHARE_ARR: import("@/types/deal-share").DealShare[] = [];
+const EMPTY_SHARED_EMAILS: { email: string; role: string }[] = [];
 
 /**
  * Hydrationガードラッパー
@@ -69,7 +70,7 @@ function DealLayoutContent({
 
   // 共有ユーザーのプロフィール情報を取得（ヘッダーのアバター + 共有ダイアログ表示用）
   // deal.sharedEmails（非正規化）をベースに全共有者を取得（RLS制約回避）
-  const sharedEmailsList = deal?.sharedEmails ?? [];
+  const sharedEmailsList = deal?.sharedEmails ?? EMPTY_SHARED_EMAILS;
   const [sharedUsers, setSharedUsers] = useState<SharedUserInfo[]>([]);
   const fetchSharedUsers = useCallback(async () => {
     if (sharedEmailsList.length === 0) { setSharedUsers([]); return; }
