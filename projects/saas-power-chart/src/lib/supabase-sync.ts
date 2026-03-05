@@ -153,10 +153,27 @@ export async function refetchDealData() {
     }
 
     const rawDbDeals = dealsRes.data as DbDeal[];
+
+    // 共有案件のオーナー email を profiles から取得
+    const refetchOwnerIds = rawDbDeals
+      .filter((row) => row.user_id !== userId)
+      .map((row) => row.user_id);
+    const refetchOwnerMap = new Map<string, string>();
+    if (refetchOwnerIds.length > 0) {
+      const { data: op } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", refetchOwnerIds);
+      for (const p of op ?? []) {
+        refetchOwnerMap.set((p as { id: string; email: string }).id, (p as { id: string; email: string }).email);
+      }
+    }
+
     const deals = rawDbDeals.map((row) => {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
+        deal.ownerEmail = refetchOwnerMap.get(row.user_id) ?? undefined;
       }
       return deal;
     });
@@ -236,10 +253,27 @@ async function performInit(userId: string) {
 
     // deals に共有情報を付与（Map で O(1) ルックアップ）
     const rawDbDeals = dealsRes.data as DbDeal[];
+
+    // 共有案件のオーナー email を profiles から取得
+    const ownerUserIds = rawDbDeals
+      .filter((row) => row.user_id !== userId)
+      .map((row) => row.user_id);
+    const ownerEmailMap = new Map<string, string>();
+    if (ownerUserIds.length > 0) {
+      const { data: ownerProfiles } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", ownerUserIds);
+      for (const p of ownerProfiles ?? []) {
+        ownerEmailMap.set((p as { id: string; email: string }).id, (p as { id: string; email: string }).email);
+      }
+    }
+
     const deals = rawDbDeals.map((row) => {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
+        deal.ownerEmail = ownerEmailMap.get(row.user_id) ?? undefined;
       }
       return deal;
     });
