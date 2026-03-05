@@ -159,7 +159,7 @@ export async function refetchDealData() {
       const deal = dbToDeal(row);
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
-        deal.ownerEmail = (row as unknown as Record<string, unknown>).owner_email as string | undefined;
+        deal.ownerEmail = row.owner_email ?? undefined;
       }
       return deal;
     });
@@ -245,7 +245,7 @@ async function performInit(userId: string) {
       if (row.user_id !== userId) {
         deal.shareRole = myShareRoleByDeal.get(row.id) ?? "viewer";
         // owner_email は deals テーブルに非正規化で保存されている
-        deal.ownerEmail = (row as unknown as Record<string, unknown>).owner_email as string | undefined;
+        deal.ownerEmail = row.owner_email ?? undefined;
       }
       return deal;
     });
@@ -468,17 +468,13 @@ async function syncDeals(deals: Deal[], userId: string) {
         .from("deals")
         .upsert(rows, { onConflict: "id" });
       if (error) {
-        // trashed_at カラム未追加の場合、trashed_at を除外してリトライ
-        if (error.message?.includes("trashed_at")) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const rowsCompat = rows.map(({ trashed_at: _, ...rest }) => rest);
-          const { error: retryErr } = await supabase
-            .from("deals")
-            .upsert(rowsCompat, { onConflict: "id" });
-          if (retryErr) throw retryErr;
-        } else {
-          throw error;
-        }
+        // カラム未追加の場合: trashed_at を除外してリトライ
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const rowsCompat = rows.map(({ trashed_at: _t, shared_emails: _se, owner_email: _oe, ...rest }) => rest);
+        const { error: retryErr } = await supabase
+          .from("deals")
+          .upsert(rowsCompat, { onConflict: "id" });
+        if (retryErr) throw retryErr;
       }
     }
 

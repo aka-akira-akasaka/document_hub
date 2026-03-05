@@ -24,6 +24,10 @@ export interface DbDeal {
   target_amount: number | null;
   expected_close_date: string | null;
   trashed_at: string | null;
+  /** 非正規化: 共有メンバー情報（syncDealShares で管理） */
+  shared_emails?: unknown;
+  /** 非正規化: オーナーメール（syncDealShares で管理） */
+  owner_email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -119,7 +123,8 @@ export function dbToDeal(row: DbDeal): Deal {
     targetAmount: row.target_amount ?? undefined,
     expectedCloseDate: row.expected_close_date ?? undefined,
     trashedAt: row.trashed_at ?? null,
-    sharedEmails: (row as unknown as Record<string, unknown>).shared_emails as { email: string; role: string }[] | undefined,
+    sharedEmails: row.shared_emails as { email: string; role: string }[] | undefined,
+    ownerEmail: row.owner_email ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -196,6 +201,7 @@ export function dbToOrgLevel(row: DbOrgLevelConfig): OrgLevelEntry {
 // ============================================
 
 export function dealToDb(deal: Deal, userId: string): DbDeal {
+  // shared_emails, owner_email は syncDealShares で管理するため、ここでは含めない
   return {
     id: deal.id,
     user_id: userId,
@@ -206,10 +212,9 @@ export function dealToDb(deal: Deal, userId: string): DbDeal {
     target_amount: deal.targetAmount ?? null,
     expected_close_date: deal.expectedCloseDate ?? null,
     trashed_at: deal.trashedAt ?? null,
-    shared_emails: deal.sharedEmails ?? [],
     created_at: deal.createdAt,
     updated_at: deal.updatedAt,
-  } as DbDeal;
+  };
 }
 
 export function stakeholderToDb(s: Stakeholder): Omit<DbStakeholder, "created_at" | "updated_at"> & { created_at: string; updated_at: string } {
