@@ -118,30 +118,31 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
   const userDomain = user?.email?.split("@")[1]?.toLowerCase() ?? "";
   const isFreeDomain = FREE_DOMAINS.has(userDomain);
 
-  // サジェスト検索（300ms デバウンス、同一ドメイン限定）
+  // サジェスト検索（同一ドメイン限定）
+  // query が空 → 全同一ドメインユーザー表示、入力ありで絞り込み
   const fetchSuggestions = useCallback(
     async (query: string) => {
-      // フリードメインの場合はサジェスト無効
       if (!user || isFreeDomain || !userDomain) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-      // 最低1文字から検索（同一ドメインなので範囲が限定的）
-      if (query.length < 1) {
         setSuggestions([]);
         setShowSuggestions(false);
         return;
       }
       try {
         const supabase = createClient();
-        const { data } = await supabase
+        let builder = supabase
           .from("profiles")
           .select("id, email, full_name, avatar_url")
-          .ilike("email", `%${query}%`)
           .ilike("email", `%@${userDomain}`)
           .neq("id", user.id)
-          .limit(6);
+          .order("updated_at", { ascending: false })
+          .limit(10);
+
+        // 入力があれば絞り込み
+        if (query.length > 0) {
+          builder = builder.or(`email.ilike.%${query}%,full_name.ilike.%${query}%`);
+        }
+
+        const { data } = await builder;
 
         if (!data || data.length === 0) {
           setSuggestions([]);
@@ -163,7 +164,6 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
         setSuggestions(filtered);
         setShowSuggestions(filtered.length > 0);
       } catch {
-        // profiles テーブル未作成時など
         setSuggestions([]);
         setShowSuggestions(false);
       }
@@ -171,16 +171,12 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
     [user, shares, userDomain, isFreeDomain]
   );
 
+  // 入力変更時のデバウンスフェッチ
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (email.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(email);
-    }, 300);
+    }, 200);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -263,7 +259,11 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={() => {
-                if (suggestions.length > 0) setShowSuggestions(true);
+                if (suggestions.length > 0) {
+                  setShowSuggestions(true);
+                } else {
+                  fetchSuggestions(email);
+                }
               }}
               onBlur={() => {
                 setTimeout(() => setShowSuggestions(false), 200);
