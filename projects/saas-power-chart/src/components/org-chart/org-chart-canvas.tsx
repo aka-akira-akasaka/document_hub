@@ -100,6 +100,36 @@ function PdfExportEffect({ dealId }: { dealId: string }) {
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
+/**
+ * カスタム接続線: 確定エッジと同じ二次ベジェ曲線でドラッグプレビューを描画。
+ * これにより予告ガイド線と確定線が一致する。
+ */
+function CustomConnectionLine({ fromX, fromY, toX, toY }: {
+  fromX: number; fromY: number; toX: number; toY: number;
+  fromPosition: unknown; toPosition: unknown;
+  connectionLineStyle?: React.CSSProperties;
+}) {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const curvature = Math.min(dist * 0.25, 80);
+  const nx = -dy / (dist || 1) * curvature;
+  const ny = dx / (dist || 1) * curvature;
+  const cx = (fromX + toX) / 2 + nx;
+  const cy = (fromY + toY) / 2 + ny;
+
+  return (
+    <g>
+      <path
+        d={`M ${fromX} ${fromY} Q ${cx} ${cy} ${toX} ${toY}`}
+        fill="none"
+        stroke="#b1b1b7"
+        strokeWidth={1.5}
+      />
+    </g>
+  );
+}
+
 // ReactFlowに渡すオプションをモジュールレベルで定義（毎レンダー新オブジェクト生成による無限ループ防止）
 const FIT_VIEW_OPTIONS = { padding: 0.2 };
 const PRO_OPTIONS = { hideAttribution: true };
@@ -376,6 +406,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
+        connectionLineComponent={CustomConnectionLine}
         connectionRadius={40}
         minZoom={0.1}
         maxZoom={2}
