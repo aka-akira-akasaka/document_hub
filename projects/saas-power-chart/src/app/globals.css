@@ -130,7 +130,7 @@
 .pdf-exporting .react-flow__minimap,
 .pdf-exporting .react-flow__background,
 .pdf-exporting .react-flow__handle,
-.pdf-exporting [data-nodetype="addPersonPlaceholder"],
+.pdf-exporting .add-person-placeholder,
 .pdf-exporting [data-pdf-hide] {
   display: none !important;
 }
