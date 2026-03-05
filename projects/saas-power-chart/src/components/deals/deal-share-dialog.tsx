@@ -22,7 +22,6 @@ import { useDealShareStore } from "@/stores/deal-share-store";
 import { useAuth } from "@/components/auth/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link2, X } from "lucide-react";
 import type { DealShare, ShareRole } from "@/types/deal-share";
 import type { Profile } from "@/types/profile";
@@ -284,16 +283,6 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
                 <SelectItem value="editor">編集者</SelectItem>
               </SelectContent>
             </Select>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" className="h-9 px-3" onClick={() => handleAdd()}>
-                  追加
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>権限を追加します（※通知は行われません）</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
 
           {/* サジェストドロップダウン */}
