@@ -23,6 +23,8 @@ export interface Deal {
   shareRole?: ShareRole;
   /** 共有案件のオーナーメール（オーナーの場合はundefined） */
   ownerEmail?: string;
+  /** 共有メンバー情報（非正規化、全ユーザーが参照可能） */
+  sharedEmails?: { email: string; role: string }[];
   createdAt: string;
   updatedAt: string;
 }

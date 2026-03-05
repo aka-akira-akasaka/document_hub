@@ -106,22 +106,19 @@ export function DealHeader({
               return (
                 <Tooltip key={u.email}>
                   <TooltipTrigger asChild>
-                    <div className="relative">
+                    <div className={`relative transition-opacity ${isOnline ? "" : "opacity-40 grayscale"}`}>
                       {u.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={u.avatarUrl}
                           alt={u.fullName || u.email}
-                          className={`h-7 w-7 rounded-full border-2 ${isOnline ? "border-green-400" : "border-white"}`}
+                          className="h-7 w-7 rounded-full border-2 border-white"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className={`h-7 w-7 rounded-full border-2 ${isOnline ? "border-green-400" : "border-white"} flex items-center justify-center text-[10px] font-medium text-white ${isOnline ? getColor(u.email) : "bg-gray-300"}`}>
+                        <div className={`h-7 w-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-medium text-white ${getColor(u.email)}`}>
                           {(u.fullName || u.email).charAt(0).toUpperCase()}
                         </div>
-                      )}
-                      {isOnline && (
-                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border border-white" />
                       )}
                     </div>
                   </TooltipTrigger>

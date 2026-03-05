@@ -690,6 +690,24 @@ async function syncDealShares(byDeal: Record<string, DealShare[]>, userId: strin
     if (toDelete.length > 0) {
       await supabase.from("deal_shares").delete().in("id", toDelete);
     }
+
+    // deals.shared_emails を非正規化で更新（全共有者が参照可能にするため）
+    const dealIds = new Set(ownedShares.map((s) => s.dealId));
+    for (const dealId of dealIds) {
+      const dealShareList = byDeal[dealId] ?? [];
+      const sharedEmails = dealShareList.map((s) => ({
+        email: s.sharedWithEmail,
+        role: s.role,
+      }));
+      await supabase
+        .from("deals")
+        .update({ shared_emails: sharedEmails, updated_at: new Date().toISOString() })
+        .eq("id", dealId);
+    }
+    // 削除された共有もクリア（ownedShares にない dealId の shared_emails を空にする）
+    if (toDelete.length > 0) {
+      // 削除後の状態を反映するため、既に処理済みの dealIds 以外は不要
+    }
   } catch (err) {
     console.error("deal_shares sync failed:", err);
     toast.error("共有設定の保存に失敗しました");

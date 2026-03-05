@@ -67,35 +67,37 @@ function DealLayoutContent({
   );
   const dealOwnerId = dealShares[0]?.ownerId;
 
-  // 共有ユーザーのプロフィール情報を取得（ヘッダーのアバター表示用）
+  // 共有ユーザーのプロフィール情報を取得（ヘッダーのアバター + 共有ダイアログ表示用）
+  // deal.sharedEmails（非正規化）をベースに全共有者を取得（RLS制約回避）
+  const sharedEmailsList = deal?.sharedEmails ?? [];
   const [sharedUsers, setSharedUsers] = useState<SharedUserInfo[]>([]);
   const fetchSharedUsers = useCallback(async () => {
-    if (dealShares.length === 0) { setSharedUsers([]); return; }
+    if (sharedEmailsList.length === 0) { setSharedUsers([]); return; }
     try {
       const supabase = createClient();
-      const emails = dealShares.map((s) => s.sharedWithEmail);
+      const emails = sharedEmailsList.map((e) => e.email);
       const { data } = await supabase
         .from("profiles")
         .select("email, full_name, avatar_url")
         .in("email", emails);
-      if (data) {
-        const profileMap = new Map(data.map((p: { email: string; full_name: string; avatar_url: string | null }) => [p.email.toLowerCase(), p]));
-        setSharedUsers(
-          dealShares.map((s) => {
-            const p = profileMap.get(s.sharedWithEmail.toLowerCase());
-            return {
-              email: s.sharedWithEmail,
-              fullName: p?.full_name ?? "",
-              avatarUrl: p?.avatar_url ?? null,
-              role: s.role,
-            };
-          })
-        );
-      }
+      const profileMap = new Map(
+        (data ?? []).map((p: { email: string; full_name: string; avatar_url: string | null }) => [p.email.toLowerCase(), p])
+      );
+      setSharedUsers(
+        sharedEmailsList.map((e) => {
+          const p = profileMap.get(e.email.toLowerCase());
+          return {
+            email: e.email,
+            fullName: p?.full_name ?? "",
+            avatarUrl: p?.avatar_url ?? null,
+            role: e.role,
+          };
+        })
+      );
     } catch {
       // profiles 未作成時など
     }
-  }, [dealShares]);
+  }, [sharedEmailsList]);
 
   useEffect(() => { fetchSharedUsers(); }, [fetchSharedUsers]);
 

@@ -119,6 +119,7 @@ export function dbToDeal(row: DbDeal): Deal {
     targetAmount: row.target_amount ?? undefined,
     expectedCloseDate: row.expected_close_date ?? undefined,
     trashedAt: row.trashed_at ?? null,
+    sharedEmails: (row as unknown as Record<string, unknown>).shared_emails as { email: string; role: string }[] | undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
