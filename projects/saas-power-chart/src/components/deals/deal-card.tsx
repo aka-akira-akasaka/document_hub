@@ -61,13 +61,18 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
             <Users className="h-3 w-3" />
             <span>{count}</span>
           </div>
+          {!deal.shareRole && (
+            <Badge className="shrink-0 text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-100">
+              自分が作成
+            </Badge>
+          )}
           {deal.shareRole === "editor" && (
-            <Badge className="shrink-0 text-[10px] gap-1 bg-blue-100 text-blue-700 hover:bg-blue-100">
+            <Badge className="shrink-0 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100">
               編集可
             </Badge>
           )}
           {deal.shareRole === "viewer" && (
-            <Badge className="shrink-0 text-[10px] gap-1 bg-amber-100 text-amber-700 hover:bg-amber-100">
+            <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 hover:bg-amber-100">
               閲覧のみ
             </Badge>
           )}

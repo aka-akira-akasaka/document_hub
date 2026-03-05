@@ -1,8 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DealHeader } from "@/components/deals/deal-header";
+import type { SharedUserInfo } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
 import { CsvImportDialog } from "@/components/csv/csv-import-dialog";
@@ -14,6 +15,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
 import { useDealShareStore } from "@/stores/deal-share-store";
 import { duplicateDeal } from "@/lib/deal-duplicator";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 const EMPTY_SHARE_ARR: import("@/types/deal-share").DealShare[] = [];
@@ -56,9 +58,42 @@ function DealLayoutContent({
   });
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   // 共有案件の場合、既存 share レコードからオーナーIDを取得
-  const dealOwnerId = useDealShareStore(
-    (s) => (s.sharesByDeal[dealId] ?? EMPTY_SHARE_ARR)[0]?.ownerId
+  const dealShares = useDealShareStore(
+    (s) => s.sharesByDeal[dealId] ?? EMPTY_SHARE_ARR
   );
+  const dealOwnerId = dealShares[0]?.ownerId;
+
+  // 共有ユーザーのプロフィール情報を取得（ヘッダーのアバター表示用）
+  const [sharedUsers, setSharedUsers] = useState<SharedUserInfo[]>([]);
+  const fetchSharedUsers = useCallback(async () => {
+    if (dealShares.length === 0) { setSharedUsers([]); return; }
+    try {
+      const supabase = createClient();
+      const emails = dealShares.map((s) => s.sharedWithEmail);
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, full_name, avatar_url")
+        .in("email", emails);
+      if (data) {
+        const profileMap = new Map(data.map((p: { email: string; full_name: string; avatar_url: string | null }) => [p.email.toLowerCase(), p]));
+        setSharedUsers(
+          dealShares.map((s) => {
+            const p = profileMap.get(s.sharedWithEmail.toLowerCase());
+            return {
+              email: s.sharedWithEmail,
+              fullName: p?.full_name ?? "",
+              avatarUrl: p?.avatar_url ?? null,
+              role: s.role,
+            };
+          })
+        );
+      }
+    } catch {
+      // profiles 未作成時など
+    }
+  }, [dealShares]);
+
+  useEffect(() => { fetchSharedUsers(); }, [fetchSharedUsers]);
 
   const handleDuplicate = async () => {
     try {
@@ -90,6 +125,7 @@ function DealLayoutContent({
         onShareClick={() => setShareDialogOpen(true)}
         onDuplicateClick={handleDuplicate}
         isPdfExporting={isPdfExporting}
+        sharedUsers={sharedUsers}
       />
       {isReadOnly && (
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-700">
