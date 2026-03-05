@@ -39,9 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser);
     if (newUser) {
-      // 同一ユーザーの重複初期化をスキップ
+      // 同一ユーザーの重複初期化をスキップ（loading は初回の initSupabaseSync 完了時に解除）
       if (initUserIdRef.current === newUser.id) {
-        setLoading(false);
         return;
       }
       initUserIdRef.current = newUser.id;
