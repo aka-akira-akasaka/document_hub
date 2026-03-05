@@ -25,9 +25,7 @@ alter table public.profiles enable row level security;
 create policy "profiles_select_same_domain" on public.profiles
   for select using (
     auth.uid() = id
-    or split_part(email, '@', 2) = split_part(
-      (select email from auth.users where id = auth.uid()), '@', 2
-    )
+    or split_part(email, '@', 2) = split_part(auth.jwt() ->> 'email', '@', 2)
   );
 
 -- 自分のプロフィールのみ更新可能
