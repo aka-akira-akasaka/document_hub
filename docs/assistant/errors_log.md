@@ -18,8 +18,15 @@
 
 ## ミスログ
 
-*(まだ記録なし — セッションを重ねるごとに追記していく)*
+### 2026-03-05: Zustandセレクタで `?? []` を使い無限レンダリング発生
+
+- **状況:** 案件共有機能（DealShareDialog）を新規実装し、Zustandストアからデータを取得するセレクタを書いた
+- **ミス内容:** `useDealShareStore((s) => s.sharesByDeal[dealId] ?? [])` と書いた。`sharesByDeal[dealId]` が `undefined` の場合、`?? []` が毎レンダリングで新しい空配列を生成し、Zustandの `Object.is` 比較で常に `false` → 無限再レンダリング（React error #185）が発生。本番デプロイ後にクラッシュし、原因切り分けに3回のVercelデプロイが必要になった
+- **再発防止策:**
+  1. **Zustandセレクタで配列/オブジェクトのフォールバックには必ずモジュールレベル定数を使う**。`const EMPTY_X: T[] = []` をファイル冒頭に定義し、`?? EMPTY_X` とする。既存コードベースでも `EMPTY_S`, `EMPTY_G`, `EMPTY_R` のパターンが確立済み
+  2. 新規ストア連携コンポーネントを書く際は、既存コンポーネント（csv-export-button.tsx, use-auto-group-seed.ts 等）のセレクタパターンを確認してから実装する
+  3. **インラインで `?? []`, `?? {}`, `|| []` をZustandセレクタ内に書かない**（プリミティブ値の `?? 0`, `?? ""`, `?? false` はOK）
 
 ---
 
-*Last updated: 2026-02-25*
+*Last updated: 2026-03-05*
