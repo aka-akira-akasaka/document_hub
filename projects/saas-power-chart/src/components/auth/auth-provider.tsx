@@ -45,9 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       initUserIdRef.current = newUser.id;
 
-      // 未解決の共有招待をuser_idで解決（非ブロッキング: initSupabaseSync を遅延させない）
+      // 未解決の共有招待をuser_idで解決（initSupabaseSyncより先に完了させる）
       const supabase = createClient();
-      void supabase
+      await supabase
         .from("deal_shares")
         .update({
           shared_with_user_id: newUser.id,
