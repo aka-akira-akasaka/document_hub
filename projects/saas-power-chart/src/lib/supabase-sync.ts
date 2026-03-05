@@ -633,6 +633,10 @@ async function syncOrgLevels(byDeal: Record<string, OrgLevelEntry[]>) {
 async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
   const supabase = createClient();
   try {
+    // テーブル存在チェック（未作成なら静かにスキップ）
+    const probe = await supabase.from("tier_configs").select("id").limit(0);
+    if (probe.error) return;
+
     const ownedDealIds = getOwnedDealIds();
     // tier_configs は deal_id + tier がユニーク制約
     // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
