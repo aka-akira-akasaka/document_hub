@@ -81,21 +81,9 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    // 人物間: ハンドル方向に依存しないカスタムベジェ曲線
-    // ソース→ターゲットの直線に対して垂直にオフセットした制御点を使い、
-    // 矢印がカーブの接線方向に自然に向くようにする
-    const dx = targetX - sourceX;
-    const dy = targetY - sourceY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const curvature = Math.min(dist * 0.25, 80);
-    // 垂直方向にオフセット（左側にカーブ）
-    const nx = -dy / (dist || 1) * curvature;
-    const ny = dx / (dist || 1) * curvature;
-    const cx = (sourceX + targetX) / 2 + nx;
-    const cy = (sourceY + targetY) / 2 + ny;
-    edgePath = `M ${sourceX} ${sourceY} Q ${cx} ${cy} ${targetX} ${targetY}`;
-    labelX = (sourceX + 2 * cx + targetX) / 4;
-    labelY = (sourceY + 2 * cy + targetY) / 4;
+    // 人物間: ドラッグ時のプレビュー線と同じ getBezierPath を使用
+    // ハンドル方向（sourcePosition/targetPosition）を尊重した三次ベジェ曲線
+    [edgePath, labelX, labelY] = getBezierPath(pathParams);
   }
 
   // 編集状態
