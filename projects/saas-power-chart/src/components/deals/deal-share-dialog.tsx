@@ -244,7 +244,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0">
+      <DialogContent className="sm:max-w-md p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-base">案件を共有</DialogTitle>
         </DialogHeader>
