@@ -6,12 +6,12 @@ import { DealHeader } from "@/components/deals/deal-header";
 import { DealTabs } from "@/components/layout/deal-tabs";
 import { StakeholderSheet } from "@/components/stakeholders/stakeholder-sheet";
 import { CsvImportDialog } from "@/components/csv/csv-import-dialog";
-import { DealShareDialog } from "@/components/deals/deal-share-dialog";
+// import { DealShareDialog } from "@/components/deals/deal-share-dialog";
 import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
+// import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
 
 /**
  * Hydrationガードラッパー
@@ -40,8 +40,8 @@ function DealLayoutContent({
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const isActive = !!deal && !deal.trashedAt;
-  const isOwner = useIsOwner(dealId);
-  const isReadOnly = useIsReadOnly(dealId);
+  const isOwner = true; // DEBUG: 共有UI一時無効化
+  const isReadOnly = false; // DEBUG: 共有UI一時無効化
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const requestPdfExport = useUiStore((s) => s.requestPdfExport);
   const isPdfExporting = useUiStore((s) => s.isPdfExporting);
@@ -80,6 +80,7 @@ function DealLayoutContent({
       <div className="flex-1 flex flex-col">{children}</div>
       <StakeholderSheet dealId={dealId} />
       <CsvImportDialog dealId={dealId} />
+      {/* DEBUG: DealShareDialog一時無効化
       {isOwner && (
         <DealShareDialog
           dealId={dealId}
@@ -87,6 +88,7 @@ function DealLayoutContent({
           onOpenChange={setShareDialogOpen}
         />
       )}
+      */}
     </div>
   );
 }
