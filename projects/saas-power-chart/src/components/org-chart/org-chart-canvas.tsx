@@ -6,6 +6,7 @@ import {
   MiniMap,
   Background,
   BackgroundVariant,
+  Position,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -14,6 +15,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+import { handleAwareBezier } from "@/lib/edge-path";
 import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgGroupNode } from "./org-group-node";
@@ -101,31 +103,18 @@ const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPer
 const edgeTypes = { relationship: RelationshipEdge };
 
 /**
- * カスタム接続線: 確定エッジと同じ二次ベジェ曲線でドラッグプレビューを描画。
- * これにより予告ガイド線と確定線が一致する。
+ * カスタム接続線: 確定エッジと同じベジェ曲線でドラッグプレビューを描画。
+ * handleAwareBezier を使い、予告ガイド線と確定線を統一。
  */
-function CustomConnectionLine({ fromX, fromY, toX, toY }: {
+function CustomConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPosition }: {
   fromX: number; fromY: number; toX: number; toY: number;
-  fromPosition: unknown; toPosition: unknown;
+  fromPosition: Position; toPosition: Position;
   connectionLineStyle?: React.CSSProperties;
 }) {
-  const dx = toX - fromX;
-  const dy = toY - fromY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const curvature = Math.min(dist * 0.25, 80);
-  const nx = -dy / (dist || 1) * curvature;
-  const ny = dx / (dist || 1) * curvature;
-  const cx = (fromX + toX) / 2 + nx;
-  const cy = (fromY + toY) / 2 + ny;
-
+  const { path } = handleAwareBezier(fromX, fromY, fromPosition, toX, toY, toPosition);
   return (
     <g>
-      <path
-        d={`M ${fromX} ${fromY} Q ${cx} ${cy} ${toX} ${toY}`}
-        fill="none"
-        stroke="#b1b1b7"
-        strokeWidth={1.5}
-      />
+      <path d={path} fill="none" stroke="#b1b1b7" strokeWidth={1.5} />
     </g>
   );
 }

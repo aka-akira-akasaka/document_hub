@@ -4,6 +4,7 @@ import { memo, useCallback, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   getSmoothStepPath,
+  Position,
   type EdgeProps,
   EdgeLabelRenderer,
 } from "@xyflow/react";
@@ -11,6 +12,7 @@ import type { RelationshipType, RelationshipDirection } from "@/types/relationsh
 import { isPositiveRelationship } from "@/lib/constants";
 import { Pencil, Check, Trash2, ArrowRight, ArrowLeft, MoveHorizontal, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { handleAwareBezier } from "@/lib/edge-path";
 
 /** エッジのカスタム色プリセット */
 const COLOR_PRESETS = [
@@ -71,7 +73,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
 
   // グループ: getSmoothStepPath（直角パス）
-  // 人物間: カスタム二次ベジェ（制御点が軸揃えにならないため orient="auto" で自然な矢印方向）
+  // 人物間: ハンドル方向を尊重した三次ベジェ（ノード重なり回避 + 自然な矢印）
   let edgePath: string;
   let labelX: number;
   let labelY: number;
@@ -79,19 +81,10 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    // 人物間: ソース→ターゲット直線に垂直にオフセットした制御点の二次ベジェ
-    const dx = targetX - sourceX;
-    const dy = targetY - sourceY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const curvature = Math.min(dist * 0.25, 80);
-    // 垂直方向にオフセット（左側にカーブ）
-    const nx = -dy / (dist || 1) * curvature;
-    const ny = dx / (dist || 1) * curvature;
-    const cx = (sourceX + targetX) / 2 + nx;
-    const cy = (sourceY + targetY) / 2 + ny;
-    edgePath = `M ${sourceX} ${sourceY} Q ${cx} ${cy} ${targetX} ${targetY}`;
-    labelX = (sourceX + 2 * cx + targetX) / 4;
-    labelY = (sourceY + 2 * cy + targetY) / 4;
+    const result = handleAwareBezier(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition);
+    edgePath = result.path;
+    labelX = result.labelX;
+    labelY = result.labelY;
   }
 
   // 編集状態
