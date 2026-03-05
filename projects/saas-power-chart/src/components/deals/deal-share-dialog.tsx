@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useDealShareStore } from "@/stores/deal-share-store";
+import { useDealStore } from "@/stores/deal-store";
 import { useAuth } from "@/components/auth/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -256,10 +257,21 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
   };
 
   // オーナー情報
-  const ownerName =
-    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
-  const ownerAvatarUrl = user?.user_metadata?.avatar_url as string | undefined;
-  const ownerEmail = user?.email ?? "";
+  const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
+  const isCurrentUserOwner = !dealOwnerId || dealOwnerId === user?.id;
+
+  // 共有案件の場合、deal.ownerEmail からオーナーのメールを取得
+  const resolvedOwnerEmail = isCurrentUserOwner
+    ? (user?.email ?? "")
+    : (deal?.ownerEmail ?? "");
+  const ownerName = isCurrentUserOwner
+    ? ((user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "")
+    : (resolvedOwnerEmail || "オーナー");
+  const ownerAvatarUrl = isCurrentUserOwner
+    ? (user?.user_metadata?.avatar_url as string | undefined)
+    : undefined;
+  const ownerEmail = resolvedOwnerEmail;
+  const ownerLabel = isCurrentUserOwner ? "（あなた）" : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -360,7 +372,7 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
                   {ownerName}
-                  <span className="text-gray-400 font-normal ml-1">（あなた）</span>
+                  {ownerLabel && <span className="text-gray-400 font-normal ml-1">{ownerLabel}</span>}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{ownerEmail}</p>
               </div>
