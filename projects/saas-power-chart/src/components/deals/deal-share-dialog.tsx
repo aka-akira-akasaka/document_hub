@@ -236,7 +236,8 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
   };
 
   const handleSuggestionClick = (profile: Profile) => {
-    handleAdd(profile.email);
+    setEmail(profile.email);
+    setShowSuggestions(false);
   };
 
   const handleRoleChange = (shareId: string, newRole: ShareRole) => {
@@ -299,6 +300,9 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
                 <SelectItem value="editor">編集者</SelectItem>
               </SelectContent>
             </Select>
+            <Button size="sm" className="h-9 px-3" onClick={() => handleAdd()}>
+              追加
+            </Button>
           </div>
 
           {/* サジェストドロップダウン */}
