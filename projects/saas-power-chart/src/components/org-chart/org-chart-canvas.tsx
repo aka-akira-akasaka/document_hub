@@ -6,7 +6,6 @@ import {
   MiniMap,
   Background,
   BackgroundVariant,
-  Position,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -15,7 +14,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { handleAwareBezier } from "@/lib/edge-path";
 import { StakeholderNode } from "./stakeholder-node";
 import { RelationshipEdge } from "./relationship-edge";
 import { OrgGroupNode } from "./org-group-node";
@@ -101,23 +99,6 @@ function PdfExportEffect({ dealId }: { dealId: string }) {
 
 const nodeTypes = { stakeholder: StakeholderNode, orgGroup: OrgGroupNode, addPersonPlaceholder: AddPersonPlaceholderNode, reorderDropIndicator: ReorderDropIndicatorNode };
 const edgeTypes = { relationship: RelationshipEdge };
-
-/**
- * カスタム接続線: 確定エッジと同じベジェ曲線でドラッグプレビューを描画。
- * handleAwareBezier を使い、予告ガイド線と確定線を統一。
- */
-function CustomConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPosition }: {
-  fromX: number; fromY: number; toX: number; toY: number;
-  fromPosition: Position; toPosition: Position;
-  connectionLineStyle?: React.CSSProperties;
-}) {
-  const { path } = handleAwareBezier(fromX, fromY, fromPosition, toX, toY, toPosition);
-  return (
-    <g>
-      <path d={path} fill="none" stroke="#b1b1b7" strokeWidth={1.5} />
-    </g>
-  );
-}
 
 // ReactFlowに渡すオプションをモジュールレベルで定義（毎レンダー新オブジェクト生成による無限ループ防止）
 const FIT_VIEW_OPTIONS = { padding: 0.2 };
@@ -395,7 +376,6 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
-        connectionLineComponent={CustomConnectionLine}
         connectionRadius={40}
         minZoom={0.1}
         maxZoom={2}
