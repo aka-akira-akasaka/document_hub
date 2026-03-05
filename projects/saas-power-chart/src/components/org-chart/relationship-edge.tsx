@@ -201,47 +201,64 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   return (
     <>
-      {/* カスタム矢印マーカー定義 */}
-      <defs>
-        {hasEndMarker && (
-          <marker
-            id={`arrow-end-${id}`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient={endAngleDeg != null ? endAngleDeg : "auto"}
-            markerUnits="userSpaceOnUse"
-          >
-            <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
-          </marker>
-        )}
-        {hasStartMarker && (
-          <marker
-            id={`arrow-start-${id}`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="2"
-            refY="6"
-            orient={startAngleDeg != null ? startAngleDeg : "auto"}
-            markerUnits="userSpaceOnUse"
-          >
-            <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
-          </marker>
-        )}
-      </defs>
-      {/* エッジパス（カスタムマーカー付き） */}
+      {/* グループエッジ用 SVG マーカー（orient="auto" で軸揃えOK） */}
+      {isGroupEdge && (
+        <defs>
+          {hasEndMarker && (
+            <marker
+              id={`arrow-end-${id}`}
+              markerWidth="12"
+              markerHeight="12"
+              refX="10"
+              refY="6"
+              orient="auto"
+              markerUnits="userSpaceOnUse"
+            >
+              <path d="M 0 0 L 12 6 L 0 12 Z" fill={strokeColor} />
+            </marker>
+          )}
+          {hasStartMarker && (
+            <marker
+              id={`arrow-start-${id}`}
+              markerWidth="12"
+              markerHeight="12"
+              refX="2"
+              refY="6"
+              orient="auto"
+              markerUnits="userSpaceOnUse"
+            >
+              <path d="M 12 0 L 0 6 L 12 12 Z" fill={strokeColor} />
+            </marker>
+          )}
+        </defs>
+      )}
+      {/* エッジパス */}
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={hasEndMarker ? `url(#arrow-end-${id})` : undefined}
-        markerStart={hasStartMarker ? `url(#arrow-start-${id})` : undefined}
+        markerEnd={hasEndMarker && isGroupEdge ? `url(#arrow-end-${id})` : undefined}
+        markerStart={hasStartMarker && isGroupEdge ? `url(#arrow-start-${id})` : undefined}
         style={{
           stroke: strokeColor,
           strokeWidth: 2,
           strokeDasharray: strokeDash,
         }}
       />
+      {/* 人物間エッジ: ポリゴン矢印（曲線の自然な方向に向く） */}
+      {hasEndMarker && endAngleDeg != null && (
+        <polygon
+          points="-12,-6 0,0 -12,6"
+          fill={strokeColor}
+          transform={`translate(${targetX},${targetY}) rotate(${endAngleDeg})`}
+        />
+      )}
+      {hasStartMarker && startAngleDeg != null && (
+        <polygon
+          points="-12,-6 0,0 -12,6"
+          fill={strokeColor}
+          transform={`translate(${sourceX},${sourceY}) rotate(${startAngleDeg + 180})`}
+        />
+      )}
 
       <EdgeLabelRenderer>
         <div
