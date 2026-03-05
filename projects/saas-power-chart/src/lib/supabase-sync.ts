@@ -692,6 +692,7 @@ async function syncDealShares(byDeal: Record<string, DealShare[]>, userId: strin
     }
 
     // deals.shared_emails を非正規化で更新（全共有者が参照可能にするため）
+    // 注意: updated_at は更新しない（syncDeals の差分検知ループを防止）
     const dealIds = new Set(ownedShares.map((s) => s.dealId));
     for (const dealId of dealIds) {
       const dealShareList = byDeal[dealId] ?? [];
@@ -701,12 +702,8 @@ async function syncDealShares(byDeal: Record<string, DealShare[]>, userId: strin
       }));
       await supabase
         .from("deals")
-        .update({ shared_emails: sharedEmails, updated_at: new Date().toISOString() })
+        .update({ shared_emails: sharedEmails })
         .eq("id", dealId);
-    }
-    // 削除された共有もクリア（ownedShares にない dealId の shared_emails を空にする）
-    if (toDelete.length > 0) {
-      // 削除後の状態を反映するため、既に処理済みの dealIds 以外は不要
     }
   } catch (err) {
     console.error("deal_shares sync failed:", err);

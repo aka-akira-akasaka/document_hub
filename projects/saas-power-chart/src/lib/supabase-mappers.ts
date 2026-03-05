@@ -206,9 +206,10 @@ export function dealToDb(deal: Deal, userId: string): DbDeal {
     target_amount: deal.targetAmount ?? null,
     expected_close_date: deal.expectedCloseDate ?? null,
     trashed_at: deal.trashedAt ?? null,
+    shared_emails: deal.sharedEmails ?? [],
     created_at: deal.createdAt,
     updated_at: deal.updatedAt,
-  };
+  } as DbDeal;
 }
 
 export function stakeholderToDb(s: Stakeholder): Omit<DbStakeholder, "created_at" | "updated_at"> & { created_at: string; updated_at: string } {
