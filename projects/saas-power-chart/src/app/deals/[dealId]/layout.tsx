@@ -15,6 +15,8 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
 import { useDealShareStore } from "@/stores/deal-share-store";
 import { duplicateDeal } from "@/lib/deal-duplicator";
+import { useRealtimePresence } from "@/hooks/use-realtime-presence";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -49,6 +51,8 @@ function DealLayoutContent({
   const isActive = !!deal && !deal.trashedAt;
   const isOwner = useIsOwner(dealId);
   const isReadOnly = useIsReadOnly(dealId);
+  const { onlineUsers } = useRealtimePresence(dealId);
+  useRealtimeSync(dealId);
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const requestPdfExport = useUiStore((s) => s.requestPdfExport);
   const isPdfExporting = useUiStore((s) => s.isPdfExporting);
@@ -126,6 +130,7 @@ function DealLayoutContent({
         onDuplicateClick={handleDuplicate}
         isPdfExporting={isPdfExporting}
         sharedUsers={sharedUsers}
+        onlineUserIds={new Set(onlineUsers.map((u) => u.email))}
       />
       {isReadOnly && (
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-700">

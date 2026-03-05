@@ -45,6 +45,8 @@ interface DealHeaderProps {
   onDuplicateClick?: () => void;
   isPdfExporting: boolean;
   sharedUsers?: SharedUserInfo[];
+  /** 現在オンラインのユーザーのメールアドレスSet */
+  onlineUserIds?: Set<string>;
 }
 
 export function DealHeader({
@@ -58,6 +60,7 @@ export function DealHeader({
   onDuplicateClick,
   isPdfExporting,
   sharedUsers = [],
+  onlineUserIds,
 }: DealHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b bg-white">
@@ -89,29 +92,40 @@ export function DealHeader({
         {/* 共有ユーザーアバター重ね（Google Docs風） */}
         {sharedUsers.length > 0 && (
           <div className="flex items-center -space-x-2 mr-1">
-            {sharedUsers.slice(0, 4).map((u) => (
-              <Tooltip key={u.email}>
-                <TooltipTrigger asChild>
-                  {u.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={u.avatarUrl}
-                      alt={u.fullName || u.email}
-                      className="h-7 w-7 rounded-full border-2 border-white"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className={`h-7 w-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-medium text-white ${getColor(u.email)}`}>
-                      {(u.fullName || u.email).charAt(0).toUpperCase()}
+            {sharedUsers.slice(0, 4).map((u) => {
+              const isOnline = onlineUserIds?.has(u.email);
+              return (
+                <Tooltip key={u.email}>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      {u.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={u.avatarUrl}
+                          alt={u.fullName || u.email}
+                          className={`h-7 w-7 rounded-full border-2 ${isOnline ? "border-green-400" : "border-white"}`}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className={`h-7 w-7 rounded-full border-2 ${isOnline ? "border-green-400" : "border-white"} flex items-center justify-center text-[10px] font-medium text-white ${isOnline ? getColor(u.email) : "bg-gray-300"}`}>
+                          {(u.fullName || u.email).charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {isOnline && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border border-white" />
+                      )}
                     </div>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  <p className="font-medium">{u.fullName || u.email}</p>
-                  <p className="text-muted-foreground">{u.role === "editor" ? "編集可" : "閲覧のみ"}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p className="font-medium">{u.fullName || u.email}</p>
+                    <p className="text-muted-foreground">
+                      {u.role === "editor" ? "編集可" : "閲覧のみ"}
+                      {isOnline ? " · オンライン" : ""}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
             {sharedUsers.length > 4 && (
               <div className="h-7 w-7 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-medium text-gray-600">
                 +{sharedUsers.length - 4}

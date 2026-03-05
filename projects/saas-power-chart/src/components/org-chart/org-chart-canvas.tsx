@@ -38,6 +38,8 @@ import { toast } from "sonner";
 import { useDealStore } from "@/stores/deal-store";
 import { exportOrgChartToPdf } from "@/lib/pdf-export";
 import { useIsReadOnly } from "@/hooks/use-is-read-only";
+import { useRealtimeCursors } from "@/hooks/use-realtime-cursors";
+import { CursorOverlay } from "./cursor-overlay";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
@@ -109,6 +111,8 @@ interface OrgChartCanvasProps {
 
 export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
   const readOnly = useIsReadOnly(dealId);
+  const { cursors, trackCursor } = useRealtimeCursors(dealId);
+  const { screenToFlowPosition } = useReactFlow();
 
   // グループ未設定の案件で、部署情報があるステークホルダーがいれば自動グループ生成
   useAutoGroupSeed(dealId);
@@ -360,7 +364,12 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         maxZoom={2}
         proOptions={PRO_OPTIONS}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+        onMouseMove={(e) => {
+          const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+          trackCursor(pos.x, pos.y);
+        }}
       >
+        <CursorOverlay cursors={cursors} />
         <ScrollToNewGroup />
         <PdfExportEffect dealId={dealId} />
         <OrgChartToolbar

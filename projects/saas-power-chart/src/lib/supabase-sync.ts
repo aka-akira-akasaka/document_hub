@@ -43,6 +43,7 @@ import type { Relationship } from "@/types/relationship";
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 import type { TierEntry } from "@/stores/org-group-store";
+import { broadcastDataChange } from "@/hooks/use-realtime-sync";
 import { toast } from "sonner";
 
 // --- 内部状態 ---
@@ -442,6 +443,10 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
     if (toDelete.length > 0) {
       await supabase.from("stakeholders").delete().in("id", toDelete);
     }
+    // 変更を他ユーザーに通知
+    for (const dealId of writableDealIds) {
+      broadcastDataChange(dealId, "stakeholders", currentUserId ?? "");
+    }
   } catch (err) {
     console.error("stakeholders sync failed:", err);
     toast.error("人物データの保存に失敗しました");
@@ -483,6 +488,9 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
     if (toDelete.length > 0) {
       await supabase.from("relationships").delete().in("id", toDelete);
     }
+    for (const dealId of writableDealIds) {
+      broadcastDataChange(dealId, "relationships", currentUserId ?? "");
+    }
   } catch (err) {
     console.error("relationships sync failed:", err);
     toast.error("関係線データの保存に失敗しました");
@@ -521,6 +529,9 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
       await supabase.from("org_groups").delete().in("id", toDelete);
+    }
+    for (const dealId of writableDealIds) {
+      broadcastDataChange(dealId, "org_groups", currentUserId ?? "");
     }
   } catch (err) {
     console.error("org_groups sync failed:", err);
