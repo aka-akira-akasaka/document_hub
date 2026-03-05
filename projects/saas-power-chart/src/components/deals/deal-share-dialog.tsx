@@ -114,6 +114,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
   const [suggestions, setSuggestions] = useState<Profile[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFocusedRef = useRef(false);
 
   // ログインユーザーのドメイン
   const userDomain = user?.email?.split("@")[1]?.toLowerCase() ?? "";
@@ -172,8 +173,9 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
     [user, shares, userDomain, isFreeDomain]
   );
 
-  // 入力変更時のデバウンスフェッチ
+  // 入力変更時のデバウンスフェッチ（フォーカス中のみ）
   useEffect(() => {
+    if (!isFocusedRef.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(email);
@@ -260,6 +262,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={() => {
+                isFocusedRef.current = true;
                 if (suggestions.length > 0) {
                   setShowSuggestions(true);
                 } else {
@@ -267,6 +270,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
                 }
               }}
               onBlur={() => {
+                isFocusedRef.current = false;
                 setTimeout(() => setShowSuggestions(false), 200);
               }}
               className="flex-1 h-9"
