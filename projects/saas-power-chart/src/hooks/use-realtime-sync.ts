@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth/auth-provider";
-import { initSupabaseSync } from "@/lib/supabase-sync";
+import { refetchDealData } from "@/lib/supabase-sync";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 let broadcastChannel: RealtimeChannel | null = null;
@@ -30,8 +30,7 @@ export function useRealtimeSync(dealId: string) {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           debounceRef.current = null;
-          // 全データを再取得してストアを更新
-          initSupabaseSync(user.id);
+          refetchDealData();
         }, 1000);
       })
       .subscribe();

@@ -115,6 +115,21 @@ export async function initSupabaseSync(userId: string) {
   }
 }
 
+/**
+ * リアルタイム同期用: 強制的にデータを再取得してストアを更新する。
+ * initSupabaseSync とは異なり、同期済みチェックをスキップする。
+ */
+export async function refetchDealData() {
+  if (!currentUserId || !syncEnabled) return;
+  try {
+    // syncEnabled を一時的に無効化（re-fetch 中の subscribe 発火を防止）
+    syncEnabled = false;
+    await performInit(currentUserId);
+  } catch (err) {
+    console.error("refetchDealData failed:", err);
+  }
+}
+
 async function performInit(userId: string) {
   // ユーザーが変わった場合のみ teardown（同期解除 + ストアリセット）
   if (currentUserId && currentUserId !== userId) {
