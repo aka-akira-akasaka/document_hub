@@ -28,6 +28,15 @@ import type { Profile } from "@/types/profile";
 
 const EMPTY_SHARES: DealShare[] = [];
 
+// フリードメイン一覧（サジェスト無効化対象）
+const FREE_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.jp",
+  "outlook.com", "hotmail.com", "live.com", "msn.com",
+  "icloud.com", "me.com", "mac.com",
+  "aol.com", "protonmail.com", "proton.me",
+  "zoho.com", "mail.com", "gmx.com",
+]);
+
 // アバター背景色（メールハッシュから決定）
 const AVATAR_COLORS = [
   "bg-blue-100 text-blue-700",
@@ -105,10 +114,21 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // サジェスト検索（300ms デバウンス）
+  // ログインユーザーのドメイン
+  const userDomain = user?.email?.split("@")[1]?.toLowerCase() ?? "";
+  const isFreeDomain = FREE_DOMAINS.has(userDomain);
+
+  // サジェスト検索（300ms デバウンス、同一ドメイン限定）
   const fetchSuggestions = useCallback(
     async (query: string) => {
-      if (!user || query.length < 2) {
+      // フリードメインの場合はサジェスト無効
+      if (!user || isFreeDomain || !userDomain) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+      // 最低1文字から検索（同一ドメインなので範囲が限定的）
+      if (query.length < 1) {
         setSuggestions([]);
         setShowSuggestions(false);
         return;
@@ -119,6 +139,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
           .from("profiles")
           .select("id, email, full_name, avatar_url")
           .ilike("email", `%${query}%`)
+          .ilike("email", `%@${userDomain}`)
           .neq("id", user.id)
           .limit(6);
 
@@ -147,7 +168,7 @@ export function DealShareDialog({ dealId, open, onOpenChange }: DealShareDialogP
         setShowSuggestions(false);
       }
     },
-    [user, shares]
+    [user, shares, userDomain, isFreeDomain]
   );
 
   useEffect(() => {

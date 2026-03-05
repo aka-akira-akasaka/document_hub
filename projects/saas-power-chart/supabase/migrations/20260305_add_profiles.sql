@@ -20,9 +20,15 @@ create index idx_profiles_email on public.profiles(email);
 alter table public.profiles enable row level security;
 
 -- 2. RLS ポリシー
--- 全認証ユーザーがプロフィールを閲覧可能（サジェスト用）
-create policy "profiles_select_authenticated" on public.profiles
-  for select using (auth.uid() is not null);
+-- 自分自身 OR 同一メールドメインのプロフィールのみ閲覧可能
+-- （フリードメインのブロックはアプリ層で実施）
+create policy "profiles_select_same_domain" on public.profiles
+  for select using (
+    auth.uid() = id
+    or split_part(email, '@', 2) = split_part(
+      (select email from auth.users where id = auth.uid()), '@', 2
+    )
+  );
 
 -- 自分のプロフィールのみ更新可能
 create policy "profiles_update_own" on public.profiles
