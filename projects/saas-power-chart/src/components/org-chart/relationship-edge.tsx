@@ -99,13 +99,13 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
 
   // グループ: getSmoothStepPath（直角パス）— orient="auto" で十分
-  // 人物間: getBezierPath 互換の三次ベジェ — 矢印角度を自前計算
+  // 人物間: getBezierPath 互換の三次ベジェ — 矢印座標を直接計算
   let edgePath: string;
   let labelX: number;
   let labelY: number;
-  // 人物間エッジの矢印角度（グループエッジは undefined → orient="auto"）
-  let endAngleDeg: number | undefined;
-  let startAngleDeg: number | undefined;
+  // 人物間エッジ: シェブロン矢印の翼座標（transform 不要）
+  let endArrow: { w1x: number; w1y: number; w2x: number; w2y: number } | null = null;
+  let startArrow: { w1x: number; w1y: number; w2x: number; w2y: number } | null = null;
 
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
@@ -121,16 +121,33 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     labelX = sourceX * 0.125 + c1x * 0.375 + c2x * 0.375 + targetX * 0.125;
     labelY = sourceY * 0.125 + c1y * 0.375 + c2y * 0.375 + targetY * 0.125;
 
-    // 矢印角度: 曲線上の t≈0.85 地点から端点への方向
-    // orient="auto" だと制御点が軸揃えのため常に垂直/水平になる問題を回避
+    // シェブロン矢印の翼座標を直接計算（transform 不使用、座標のみ）
+    const ARROW_LEN = 8;
+    const ARROW_OPEN = 25 * Math.PI / 180; // 25° 開き角
     const T = 0.85;
-    const nearEndX = cubicAt(T, sourceX, c1x, c2x, targetX);
-    const nearEndY = cubicAt(T, sourceY, c1y, c2y, targetY);
-    endAngleDeg = Math.atan2(targetY - nearEndY, targetX - nearEndX) * (180 / Math.PI);
 
-    const nearStartX = cubicAt(1 - T, sourceX, c1x, c2x, targetX);
-    const nearStartY = cubicAt(1 - T, sourceY, c1y, c2y, targetY);
-    startAngleDeg = Math.atan2(nearStartY - sourceY, nearStartX - sourceX) * (180 / Math.PI);
+    if (hasEndMarker) {
+      const nex = cubicAt(T, sourceX, c1x, c2x, targetX);
+      const ney = cubicAt(T, sourceY, c1y, c2y, targetY);
+      const a = Math.atan2(targetY - ney, targetX - nex);
+      endArrow = {
+        w1x: targetX - ARROW_LEN * Math.cos(a - ARROW_OPEN),
+        w1y: targetY - ARROW_LEN * Math.sin(a - ARROW_OPEN),
+        w2x: targetX - ARROW_LEN * Math.cos(a + ARROW_OPEN),
+        w2y: targetY - ARROW_LEN * Math.sin(a + ARROW_OPEN),
+      };
+    }
+    if (hasStartMarker) {
+      const nsx = cubicAt(1 - T, sourceX, c1x, c2x, targetX);
+      const nsy = cubicAt(1 - T, sourceY, c1y, c2y, targetY);
+      const a = Math.atan2(nsy - sourceY, nsx - sourceX) + Math.PI; // 逆向き
+      startArrow = {
+        w1x: sourceX - ARROW_LEN * Math.cos(a - ARROW_OPEN),
+        w1y: sourceY - ARROW_LEN * Math.sin(a - ARROW_OPEN),
+        w2x: sourceX - ARROW_LEN * Math.cos(a + ARROW_OPEN),
+        w2y: sourceY - ARROW_LEN * Math.sin(a + ARROW_OPEN),
+      };
+    }
   }
 
   // 編集状態
@@ -244,19 +261,25 @@ function RelationshipEdgeComponent(props: EdgeProps) {
           strokeDasharray: strokeDash,
         }}
       />
-      {/* 人物間エッジ: ポリゴン矢印（曲線の自然な方向に向く） */}
-      {hasEndMarker && endAngleDeg != null && (
-        <polygon
-          points="-12,-6 0,0 -12,6"
-          fill={strokeColor}
-          transform={`translate(${targetX},${targetY}) rotate(${endAngleDeg})`}
+      {/* 人物間エッジ: シェブロン矢印（座標直接計算、transform不使用） */}
+      {endArrow && (
+        <path
+          d={`M${endArrow.w1x},${endArrow.w1y} L${targetX},${targetY} L${endArrow.w2x},${endArrow.w2y}`}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       )}
-      {hasStartMarker && startAngleDeg != null && (
-        <polygon
-          points="-12,-6 0,0 -12,6"
-          fill={strokeColor}
-          transform={`translate(${sourceX},${sourceY}) rotate(${startAngleDeg + 180})`}
+      {startArrow && (
+        <path
+          d={`M${startArrow.w1x},${startArrow.w1y} L${sourceX},${sourceY} L${startArrow.w2x},${startArrow.w2y}`}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       )}
 
