@@ -37,6 +37,9 @@ import type { Stakeholder } from "@/types/stakeholder";
 import { toast } from "sonner";
 import { useDealStore } from "@/stores/deal-store";
 import { exportOrgChartToPdf } from "@/lib/pdf-export";
+import { useIsReadOnly } from "@/hooks/use-is-read-only";
+import { useRealtimeCursors } from "@/hooks/use-realtime-cursors";
+import { CursorOverlay } from "./cursor-overlay";
 
 const EMPTY: Stakeholder[] = [];
 const EMPTY_GROUPS: import("@/types/org-group").OrgGroup[] = [];
@@ -106,7 +109,28 @@ interface OrgChartCanvasProps {
   dealId: string;
 }
 
+/** ReactFlow 内部でカーソル送受信を管理する子コンポーネント */
+function RealtimeCursorManager({ dealId }: { dealId: string }) {
+  const { cursors, trackCursor } = useRealtimeCursors(dealId);
+  const { screenToFlowPosition } = useReactFlow();
+
+  useEffect(() => {
+    const handleMouseMove = (e: Event) => {
+      const me = e as unknown as MouseEvent;
+      const pos = screenToFlowPosition({ x: me.clientX, y: me.clientY });
+      trackCursor(pos.x, pos.y);
+    };
+    const el = document.querySelector(".react-flow");
+    el?.addEventListener("mousemove", handleMouseMove);
+    return () => el?.removeEventListener("mousemove", handleMouseMove);
+  }, [screenToFlowPosition, trackCursor]);
+
+  return <CursorOverlay cursors={cursors} />;
+}
+
 export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
+  const readOnly = useIsReadOnly(dealId);
+
   // グループ未設定の案件で、部署情報があるステークホルダーがいれば自動グループ生成
   useAutoGroupSeed(dealId);
 
@@ -340,11 +364,13 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        onNodeDragStart={onNodeDragStart}
-        onNodeDragStop={onNodeDragStop}
-        onNodeDrag={onNodeDrag}
+        onConnect={readOnly ? undefined : onConnect}
+        onNodeClick={readOnly ? undefined : onNodeClick}
+        onNodeDragStart={readOnly ? undefined : onNodeDragStart}
+        onNodeDragStop={readOnly ? undefined : onNodeDragStop}
+        onNodeDrag={readOnly ? undefined : onNodeDrag}
+        nodesDraggable={!readOnly}
+        nodesConnectable={!readOnly}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -356,6 +382,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
         proOptions={PRO_OPTIONS}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
       >
+        <RealtimeCursorManager dealId={dealId} />
         <ScrollToNewGroup />
         <PdfExportEffect dealId={dealId} />
         <OrgChartToolbar
@@ -367,6 +394,7 @@ export function OrgChartCanvas({ dealId }: OrgChartCanvasProps) {
           onRedo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          readOnly={readOnly}
         />
         <MiniMap
           nodeStrokeWidth={3}

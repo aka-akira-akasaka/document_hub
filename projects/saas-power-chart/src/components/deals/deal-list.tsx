@@ -6,16 +6,26 @@ import { DealCard } from "./deal-card";
 import { DealCreateDialog } from "./deal-create-dialog";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { DealFilter } from "@/app/page";
 
 type ViewMode = "grid" | "list";
 
-export function DealList() {
+interface DealListProps {
+  filter?: DealFilter;
+}
+
+export function DealList({ filter = "all" }: DealListProps) {
   const allDeals = useDealStore((s) => s.deals);
   const deals = useMemo(
     () => allDeals
       .filter((d) => !d.trashedAt)
+      .filter((d) => {
+        if (filter === "owned") return !d.shareRole;
+        if (filter === "shared") return !!d.shareRole;
+        return true;
+      })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-    [allDeals]
+    [allDeals, filter]
   );
   const [view, setView] = useState<ViewMode>("grid");
 
@@ -55,16 +65,15 @@ export function DealList() {
 
       {view === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {/* 新規作成カード（常に先頭） */}
-          <DealCreateCard />
+          {/* 新規作成カード（共有タブ以外で表示） */}
+          {filter !== "shared" && <DealCreateCard />}
           {deals.map((deal) => (
             <DealCard key={deal.id} deal={deal} view="grid" />
           ))}
         </div>
       ) : (
         <div className="space-y-2">
-          {/* リスト表示: 新規作成は別途ボタンで */}
-          <DealCreateCard view="list" />
+          {filter !== "shared" && <DealCreateCard view="list" />}
           {deals.map((deal) => (
             <DealCard key={deal.id} deal={deal} view="list" />
           ))}

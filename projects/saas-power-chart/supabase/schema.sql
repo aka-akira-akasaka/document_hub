@@ -181,3 +181,30 @@ create policy "tier_configs_all" on public.tier_configs
         and deals.user_id = auth.uid()
     )
   );
+
+-- ============================================
+-- deal_shares: 案件共有テーブル
+-- ============================================
+create table public.deal_shares (
+  id uuid primary key default uuid_generate_v4(),
+  deal_id uuid not null references public.deals(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  shared_with_email text not null,
+  shared_with_user_id uuid references auth.users(id) on delete cascade,
+  role text not null default 'viewer' check (role in ('viewer', 'editor')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint unique_deal_share unique (deal_id, shared_with_email)
+);
+
+create index idx_deal_shares_deal_id on public.deal_shares(deal_id);
+create index idx_deal_shares_user_id on public.deal_shares(shared_with_user_id);
+create index idx_deal_shares_email on public.deal_shares(shared_with_email);
+
+alter table public.deal_shares enable row level security;
+
+create policy "deal_shares_owner_all" on public.deal_shares
+  for all using (auth.uid() = owner_id);
+
+create policy "deal_shares_shared_select" on public.deal_shares
+  for select using (auth.uid() = shared_with_user_id);

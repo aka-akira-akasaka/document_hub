@@ -27,6 +27,7 @@ const COLOR_PRESETS = [
 interface RelationshipEdgeData {
   type?: RelationshipType;
   label?: string;
+  sourceType?: "stakeholder" | "group";
   targetType?: "stakeholder" | "group";
   direction?: RelationshipDirection;
   color?: string;
@@ -49,13 +50,15 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const edgeData = data as RelationshipEdgeData | undefined;
   const relType = edgeData?.type ?? "informal";
   const customLabel = edgeData?.label;
+  const sourceType = edgeData?.sourceType ?? "stakeholder";
   const targetType = edgeData?.targetType ?? "stakeholder";
   const direction = edgeData?.direction ?? "forward";
   const customColor = edgeData?.color;
   const onDelete = edgeData?.onDelete;
   const onUpdate = edgeData?.onUpdate;
 
-  const isGroupEdge = targetType === "group";
+  // 片方でもグループなら直角パス、両方ステークホルダーなら曲線
+  const isGroupEdge = sourceType === "group" || targetType === "group";
   const isPositive = isPositiveRelationship(relType);
 
   // カスタム色が設定されていればそれを使用、なければタイプに応じた既定色
@@ -69,8 +72,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const pathParams = { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition };
 
   // グループ: getSmoothStepPath（直角パス）
-  // 人物間: ソース→ターゲット方向に沿ったカスタムベジェ
-  //   → orient="auto" で矢印がライン方向に自然に向く
+  // 人物間: getBezierPath（ハンドル方向を尊重した三次ベジェ、ノード重なり回避）
   let edgePath: string;
   let labelX: number;
   let labelY: number;
@@ -78,7 +80,6 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   if (isGroupEdge) {
     [edgePath, labelX, labelY] = getSmoothStepPath(pathParams);
   } else {
-    // ReactFlowのデフォルトBézierと同じパスを使用（ドラッグプレビュー線と一致させるため）
     [edgePath, labelX, labelY] = getBezierPath(pathParams);
   }
 

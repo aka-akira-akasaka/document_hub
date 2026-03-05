@@ -27,6 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   // auth null フリッカーガード: トークンリフレッシュ時の一時的な null を無視
   const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 同一ユーザーの重複初期化を防止
+  const initUserIdRef = useRef<string | null>(null);
 
   const handleUser = useCallback(async (newUser: User | null) => {
     // null → ユーザーあり: teardown タイマーをキャンセル（フリッカーだった）
@@ -37,8 +39,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser);
     if (newUser) {
-      await initSupabaseSync(newUser.id);
+      // 同一ユーザーの重複初期化をスキップ（loading は初回の initSupabaseSync 完了時に解除）
+      if (initUserIdRef.current === newUser.id) {
+        return;
+      }
+      initUserIdRef.current = newUser.id;
+
+      // 未解決の共有招待をuser_idで解決（非ブロッキング: initSupabaseSync を遅延させない）
+      const supabase = createClient();
+      void supabase
+        .from("deal_shares")
+        .update({
+          shared_with_user_id: newUser.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("shared_with_email", newUser.email ?? "")
+        .is("shared_with_user_id", null);
+
+      await initSupabaseSync(newUser.id, newUser.email ?? undefined);
     } else {
+      initUserIdRef.current = null;
       // 即座に teardown せず、少し待つ（トークンリフレッシュ時の一時的 null 対策）
       teardownTimerRef.current = setTimeout(() => {
         teardownTimerRef.current = null;

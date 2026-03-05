@@ -8,6 +8,7 @@ import type { Relationship, RelationshipType, RelationshipDirection, Relationshi
 import type { OrgGroup } from "@/types/org-group";
 import type { OrgLevelEntry } from "@/stores/stakeholder-store";
 import type { TierEntry } from "@/stores/org-group-store";
+import type { DealShare, ShareRole } from "@/types/deal-share";
 
 // ============================================
 // DB 行の型定義
@@ -23,6 +24,10 @@ export interface DbDeal {
   target_amount: number | null;
   expected_close_date: string | null;
   trashed_at: string | null;
+  /** 非正規化: 共有メンバー情報（syncDealShares で管理） */
+  shared_emails?: unknown;
+  /** 非正規化: オーナーメール（syncDealShares で管理） */
+  owner_email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -93,6 +98,17 @@ export interface DbTierConfig {
   label: string;
 }
 
+export interface DbDealShare {
+  id: string;
+  deal_id: string;
+  owner_id: string;
+  shared_with_email: string;
+  shared_with_user_id: string | null;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================
 // DB → TypeScript 変換
 // ============================================
@@ -107,6 +123,8 @@ export function dbToDeal(row: DbDeal): Deal {
     targetAmount: row.target_amount ?? undefined,
     expectedCloseDate: row.expected_close_date ?? undefined,
     trashedAt: row.trashed_at ?? null,
+    sharedEmails: row.shared_emails as { email: string; role: string }[] | undefined,
+    ownerEmail: row.owner_email ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -183,6 +201,7 @@ export function dbToOrgLevel(row: DbOrgLevelConfig): OrgLevelEntry {
 // ============================================
 
 export function dealToDb(deal: Deal, userId: string): DbDeal {
+  // shared_emails, owner_email は syncDealShares で管理するため、ここでは含めない
   return {
     id: deal.id,
     user_id: userId,
@@ -282,5 +301,35 @@ export function tierEntryToDb(
     deal_id: dealId,
     tier: entry.tier,
     label: entry.label,
+  };
+}
+
+// ============================================
+// DealShare 変換
+// ============================================
+
+export function dbToDealShare(row: DbDealShare): DealShare {
+  return {
+    id: row.id,
+    dealId: row.deal_id,
+    ownerId: row.owner_id,
+    sharedWithEmail: row.shared_with_email,
+    sharedWithUserId: row.shared_with_user_id,
+    role: row.role as ShareRole,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function dealShareToDb(share: DealShare): DbDealShare {
+  return {
+    id: share.id,
+    deal_id: share.dealId,
+    owner_id: share.ownerId,
+    shared_with_email: share.sharedWithEmail,
+    shared_with_user_id: share.sharedWithUserId,
+    role: share.role,
+    created_at: share.createdAt,
+    updated_at: share.updatedAt,
   };
 }
