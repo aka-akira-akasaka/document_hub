@@ -11,7 +11,7 @@ import { useCsvExport } from "@/components/csv/csv-export-button";
 import { useDealStore } from "@/stores/deal-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useHydrated } from "@/hooks/use-hydrated";
-// import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
+import { useIsOwner, useIsReadOnly } from "@/hooks/use-is-read-only";
 
 /**
  * Hydrationガードラッパー
@@ -40,8 +40,8 @@ function DealLayoutContent({
   const dealId = params.dealId as string;
   const deal = useDealStore((s) => s.deals.find((d) => d.id === dealId));
   const isActive = !!deal && !deal.trashedAt;
-  const isOwner = true; // DEBUG: 共有UI一時無効化
-  const isReadOnly = false; // DEBUG: 共有UI一時無効化
+  const isOwner = useIsOwner(dealId);
+  const isReadOnly = useIsReadOnly(dealId);
   const openCsvImport = useUiStore((s) => s.openCsvImport);
   const requestPdfExport = useUiStore((s) => s.requestPdfExport);
   const isPdfExporting = useUiStore((s) => s.isPdfExporting);
