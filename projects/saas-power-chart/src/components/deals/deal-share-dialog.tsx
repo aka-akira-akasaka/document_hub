@@ -368,40 +368,52 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
             </div>
 
             {/* 共有ユーザー */}
-            {shares.map((share) => (
-              <div
-                key={share.id}
-                className="flex items-center gap-3 rounded-md px-2 py-1.5 group"
-              >
-                <UserAvatar
-                  avatarUrl={null}
-                  name=""
-                  email={share.sharedWithEmail}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{share.sharedWithEmail}</p>
+            {shares.map((share) => {
+              // オーナーのみ権限変更・削除可能
+              const canManage = !dealOwnerId || dealOwnerId === user?.id;
+              return (
+                <div
+                  key={share.id}
+                  className="flex items-center gap-3 rounded-md px-2 py-1.5 group"
+                >
+                  <UserAvatar
+                    avatarUrl={null}
+                    name=""
+                    email={share.sharedWithEmail}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{share.sharedWithEmail}</p>
+                  </div>
+                  {canManage ? (
+                    <Select
+                      value={share.role}
+                      onValueChange={(v) => handleRoleChange(share.id, v as ShareRole)}
+                    >
+                      <SelectTrigger className="w-[88px] h-7 text-xs border-0 shadow-none hover:bg-gray-100">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewer">閲覧者</SelectItem>
+                        <SelectItem value="editor">編集者</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {share.role === "editor" ? "編集者" : "閲覧者"}
+                    </span>
+                  )}
+                  {canManage && (
+                    <button
+                      type="button"
+                      className="h-7 w-7 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                      onClick={() => handleRemove(share.id, share.sharedWithEmail)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
-                <Select
-                  value={share.role}
-                  onValueChange={(v) => handleRoleChange(share.id, v as ShareRole)}
-                >
-                  <SelectTrigger className="w-[88px] h-7 text-xs border-0 shadow-none hover:bg-gray-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="viewer">閲覧者</SelectItem>
-                    <SelectItem value="editor">編集者</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button
-                  type="button"
-                  className="h-7 w-7 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                  onClick={() => handleRemove(share.id, share.sharedWithEmail)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
