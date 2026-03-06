@@ -196,7 +196,7 @@ export function StakeholderForm({
       </div>
 
       <div className="space-y-2">
-        <Label>案件での役割</Label>
+        <Label>組織図での役割</Label>
         <Select
           value={roleInDeal}
           onValueChange={(v) => setRoleInDeal(v as RoleInDeal)}

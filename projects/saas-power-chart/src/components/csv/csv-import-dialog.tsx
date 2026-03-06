@@ -259,7 +259,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
             <div className="text-xs text-gray-400 mt-4 space-y-1">
               <p className="font-medium text-gray-500">CSV形式</p>
               <p>
-                カラム: ID, 氏名, 部署, 役職, 案件での役割, 影響力, 態度,
+                カラム: ID, 氏名, 部署, 役職, 組織図での役割, 影響力, 態度,
                 関係構築担当, 上位者ID, メール, 電話番号, 備考, 所属グループ名, グループ種別
               </p>
               <p className="font-medium text-gray-500 mt-2">YAML形式（推奨）</p>
@@ -276,7 +276,7 @@ export function CsvImportDialog({ dealId }: CsvImportDialogProps) {
                   promoter / supportive / neutral / cautious / opposed
                 </p>
                 <p>
-                  <span className="text-gray-500 font-medium">案件での役割:</span>{" "}
+                  <span className="text-gray-500 font-medium">組織図での役割:</span>{" "}
                   decision_maker / approver / initiator / evaluator / user / gatekeeper
                 </p>
               </div>

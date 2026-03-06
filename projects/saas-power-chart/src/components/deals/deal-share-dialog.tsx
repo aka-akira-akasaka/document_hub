@@ -98,7 +98,7 @@ function UserAvatar({
 
 interface DealShareDialogProps {
   dealId: string;
-  /** 案件オーナーのユーザーID（editorが共有追加する際に使用） */
+  /** 組織図オーナーのユーザーID（editorが共有追加する際に使用） */
   dealOwnerId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -277,7 +277,7 @@ export function DealShareDialog({ dealId, dealOwnerId, open, onOpenChange }: Dea
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-base">案件を共有</DialogTitle>
+          <DialogTitle className="text-base">組織図を共有</DialogTitle>
         </DialogHeader>
 
         {/* メール入力 + 権限 */}

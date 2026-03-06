@@ -492,7 +492,7 @@ async function syncDeals(deals: Deal[], userId: string) {
     }
   } catch (err) {
     console.error("deals sync failed:", err);
-    toast.error("案件データの保存に失敗しました");
+    toast.error("組織図データの保存に失敗しました");
   }
 }
 

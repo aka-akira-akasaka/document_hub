@@ -59,7 +59,7 @@ function TrashContent() {
           <EmptyState
             icon={Trash2}
             title="ゴミ箱は空です"
-            description="削除した案件はここに表示されます。"
+            description="削除した組織図はここに表示されます。"
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

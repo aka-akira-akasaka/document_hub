@@ -167,7 +167,7 @@ export function DealHeader({
         {deal.shareRole && onDuplicateClick && (
           <Button variant="outline" size="sm" onClick={onDuplicateClick}>
             <Copy className="h-4 w-4 mr-1" />
-            この案件をコピー
+            この組織図をコピー
           </Button>
         )}
         <DropdownMenu>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +8,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { useStakeholderStore } from "@/stores/stakeholder-store";
 import { useDealStore } from "@/stores/deal-store";
+import { useDealShareStore } from "@/stores/deal-share-store";
+import { useAuth } from "@/components/auth/auth-provider";
+import { DealShareDialog } from "./deal-share-dialog";
 import type { Deal } from "@/types/deal";
-import { MoreVertical, Trash2, Users, BarChart3 } from "lucide-react";
+import { MoreVertical, Trash2, Users, BarChart3, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,13 +33,23 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
   );
   const count = stakeholders?.length ?? 0;
   const trashDeal = useDealStore((s) => s.trashDeal);
+  const shares = useDealShareStore((s) => s.sharesByDeal[deal.id]);
+  const { user } = useAuth();
   const isShared = !!deal.shareRole;
+  const isBeingShared = !isShared && shares && shares.length > 0;
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const handleTrash = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     trashDeal(deal.id);
     toast.success(`「${deal.name}」をゴミ箱に移動しました`);
+  };
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareDialogOpen(true);
   };
 
   const formattedDate = new Date(deal.updatedAt).toLocaleDateString("ja-JP", {
@@ -66,6 +81,11 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
               自分が作成
             </Badge>
           )}
+          {isBeingShared && (
+            <Badge className="shrink-0 text-[10px] bg-green-100 text-green-700 hover:bg-green-100">
+              共有中
+            </Badge>
+          )}
           {deal.shareRole === "editor" && (
             <Badge className="shrink-0 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100">
               編集可
@@ -85,6 +105,11 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleShareClick}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  共有する
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   ゴミ箱に移動
@@ -93,6 +118,14 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
             </DropdownMenu>
           )}
         </div>
+        {!isShared && (
+          <DealShareDialog
+            dealId={deal.id}
+            dealOwnerId={user?.id}
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+          />
+        )}
       </Link>
     );
   }
@@ -115,6 +148,11 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
             </Badge>
           ) : (
             <div className="flex items-center gap-1 -mr-1 -mt-1">
+              {isBeingShared && (
+                <Badge className="text-[10px] bg-green-100 text-green-700 hover:bg-green-100">
+                  共有中
+                </Badge>
+              )}
               <Badge className="text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-100">
                 自分が作成
               </Badge>
@@ -125,6 +163,11 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleShareClick}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  共有する
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-600" onClick={handleTrash}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   ゴミ箱に移動
@@ -150,6 +193,14 @@ export function DealCard({ deal, view = "grid" }: DealCardProps) {
           </div>
         </div>
       </div>
+      {!isShared && (
+        <DealShareDialog
+          dealId={deal.id}
+          dealOwnerId={user?.id}
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+        />
+      )}
     </Link>
   );
 }

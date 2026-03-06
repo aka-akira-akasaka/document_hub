@@ -61,7 +61,7 @@ export function TemplateManagement({ open, onOpenChange }: TemplateManagementPro
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-1">
             <p className="text-sm text-muted-foreground">
-              案件作成時に使用するテンプレートを管理します
+              組織図作成時に使用するテンプレートを管理します
             </p>
 
             {/* プリセットテンプレート */}

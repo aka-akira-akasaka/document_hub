@@ -35,7 +35,7 @@ export function StakeholderDetail({
       <Separator />
 
       <div className="space-y-3">
-        <DetailRow label="案件での役割" value={ROLE_LABELS[s.roleInDeal]} />
+        <DetailRow label="組織図での役割" value={ROLE_LABELS[s.roleInDeal]} />
         <DetailRow
           label="影響力"
           value={`${INFLUENCE_LABELS[s.influenceLevel as InfluenceLevel]} (${s.influenceLevel}/5)`}

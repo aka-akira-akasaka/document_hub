@@ -18,7 +18,7 @@ export async function duplicateDeal(sourceDealId: string): Promise<string> {
 
   // --- 1. コピー元データ取得 ---
   const sourceDeal = dealStore.deals.find((d) => d.id === sourceDealId);
-  if (!sourceDeal) throw new Error("コピー元の案件が見つかりません");
+  if (!sourceDeal) throw new Error("コピー元の組織図が見つかりません");
 
   const sourceStakeholders = shStore.stakeholdersByDeal[sourceDealId] ?? [];
   const sourceRelationships = shStore.relationshipsByDeal[sourceDealId] ?? [];

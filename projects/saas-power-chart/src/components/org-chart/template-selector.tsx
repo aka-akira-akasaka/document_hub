@@ -67,7 +67,7 @@ export function TemplateSelector({ dealId }: TemplateSelectorProps) {
                 テンプレートから始める
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                案件の種類に合わせた組織図をすぐに構築できます
+                組織図の種類に合わせてすぐに構築できます
               </p>
             </div>
 

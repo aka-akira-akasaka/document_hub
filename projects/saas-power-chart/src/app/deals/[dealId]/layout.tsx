@@ -108,9 +108,9 @@ function DealLayoutContent({
     try {
       const newId = await duplicateDeal(dealId);
       router.push(`/deals/${newId}`);
-      toast.success("案件をコピーしました");
+      toast.success("組織図をコピーしました");
     } catch {
-      toast.error("案件のコピーに失敗しました");
+      toast.error("組織図のコピーに失敗しました");
     }
   };
 
@@ -139,7 +139,7 @@ function DealLayoutContent({
       />
       {isReadOnly && (
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-700">
-          この案件は閲覧のみの共有です
+          この組織図は閲覧のみの共有です
         </div>
       )}
       <DealTabs dealId={dealId} />

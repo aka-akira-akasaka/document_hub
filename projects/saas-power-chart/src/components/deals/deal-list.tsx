@@ -83,7 +83,7 @@ export function DealList({ filter = "all" }: DealListProps) {
   );
 }
 
-/** 新規案件作成カード（NotebookLMの「新規作成」カードを模倣） */
+/** 新規組織図作成カード（NotebookLMの「新規作成」カードを模倣） */
 function DealCreateCard({ view = "grid" }: { view?: ViewMode }) {
   if (view === "list") {
     return (
@@ -96,7 +96,7 @@ function DealCreateCard({ view = "grid" }: { view?: ViewMode }) {
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 shrink-0">
               <Plus className="h-4 w-4 text-blue-600" />
             </div>
-            <span className="text-sm font-medium text-gray-600">新規案件を作成</span>
+            <span className="text-sm font-medium text-gray-600">新規組織図を作成</span>
           </button>
         }
       />
@@ -113,7 +113,7 @@ function DealCreateCard({ view = "grid" }: { view?: ViewMode }) {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
             <Plus className="h-5 w-5 text-blue-600" />
           </div>
-          <span className="text-sm font-medium text-gray-600">新規案件を作成</span>
+          <span className="text-sm font-medium text-gray-600">新規組織図を作成</span>
         </button>
       }
     />

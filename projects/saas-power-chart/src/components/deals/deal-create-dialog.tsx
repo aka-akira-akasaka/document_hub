@@ -77,26 +77,26 @@ export function DealCreateDialog({ trigger }: DealCreateDialogProps) {
         {trigger ?? (
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            新規案件
+            新規組織図
           </Button>
         )}
       </DialogTrigger>
       <DialogContent aria-describedby="deal-create-desc" onPointerDownOutside={(e) => { if (isCreating) e.preventDefault(); }}>
         <DialogHeader>
-          <DialogTitle>新規案件を作成</DialogTitle>
+          <DialogTitle>新規組織図を作成</DialogTitle>
           <DialogDescription id="deal-create-desc" className="sr-only">
-            案件名と顧客名を入力して新しい案件を作成します
+            組織図名と顧客名を入力して新しい組織図を作成します
           </DialogDescription>
         </DialogHeader>
         {isCreating ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">案件を作成しています...</p>
+            <p className="text-sm text-muted-foreground">組織図を作成しています...</p>
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">案件名</Label>
+            <Label htmlFor="name">組織図名</Label>
             <Input
               id="name"
               value={name}
@@ -139,7 +139,7 @@ export function DealCreateDialog({ trigger }: DealCreateDialogProps) {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="案件の概要を入力"
+              placeholder="組織図の概要を入力"
             />
           </div>
           <div className="flex justify-end gap-2">

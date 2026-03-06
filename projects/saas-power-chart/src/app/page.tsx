@@ -14,7 +14,7 @@ export type DealFilter = "all" | "owned" | "shared";
 const FILTER_TABS: { value: DealFilter; label: string }[] = [
   { value: "all", label: "すべて" },
   { value: "owned", label: "自分が作成" },
-  { value: "shared", label: "共有案件" },
+  { value: "shared", label: "共有組織図" },
 ];
 
 /**
@@ -34,7 +34,7 @@ export default function DashboardPage() {
           {/* ローディング表示 */}
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-            <p className="text-sm text-gray-500">案件を読み込んでいます...</p>
+            <p className="text-sm text-gray-500">組織図を読み込んでいます...</p>
           </div>
         </main>
       </div>
@@ -89,7 +89,7 @@ function DashboardContent() {
           ))}
         </div>
 
-        {/* 案件一覧（新規作成カード含む） */}
+        {/* 組織図一覧（新規作成カード含む） */}
         <DealList filter={filter} />
       </main>
     </div>

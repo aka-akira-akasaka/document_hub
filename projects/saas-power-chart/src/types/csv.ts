@@ -46,7 +46,7 @@ export const CSV_COLUMN_LABELS: Record<keyof CsvRow, string> = {
   name: "氏名",
   department: "部署",
   title: "役職",
-  role_in_deal: "案件での役割",
+  role_in_deal: "組織図での役割",
   influence_level: "影響力",
   attitude: "態度",
   mission: "ミッション",
