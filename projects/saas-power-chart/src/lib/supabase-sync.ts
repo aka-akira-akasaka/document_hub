@@ -433,15 +433,6 @@ function setupSubscriptions(userId: string) {
 // ヘルパー: 書き込み可能な案件IDセットを取得
 // ============================================
 
-/** 自分がオーナーの案件ID */
-function getOwnedDealIds(): Set<string> {
-  return new Set(
-    useDealStore.getState().deals
-      .filter((d) => !d.shareRole)
-      .map((d) => d.id)
-  );
-}
-
 /** 自分がオーナー OR editor の案件ID（子テーブル同期用） */
 function getWritableDealIds(): Set<string> {
   return new Set(
@@ -511,13 +502,12 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
       if (error) throw error;
     }
 
-    // 削除検出: 自分がオーナーの案件に属するレコードのみ対象（共有案件のデータを誤削除しない）
-    const ownedDealIds = getOwnedDealIds();
-    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
-    const localIds = new Set(ownedAll.map((s) => s.id));
+    // 削除検出: 書き込み可能な案件（オーナー + editor）に属するレコードを対象
+    const writableAll = writableEntries.flatMap(([, list]) => list);
+    const localIds = new Set(writableAll.map((s) => s.id));
     const { data: remote } = await supabase.from("stakeholders").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .filter((r: { id: string; deal_id: string }) => writableDealIds.has(r.deal_id))
       .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
@@ -557,12 +547,11 @@ async function syncRelationships(byDeal: Record<string, Relationship[]>) {
       }
     }
 
-    const ownedDealIds = getOwnedDealIds();
-    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
-    const localIds = new Set(ownedAll.map((r) => r.id));
+    const writableAll = writableEntries.flatMap(([, list]) => list);
+    const localIds = new Set(writableAll.map((r) => r.id));
     const { data: remote } = await supabase.from("relationships").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .filter((r: { id: string; deal_id: string }) => writableDealIds.has(r.deal_id))
       .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
@@ -599,12 +588,11 @@ async function syncOrgGroups(byDeal: Record<string, OrgGroup[]>) {
       }
     }
 
-    const ownedDealIds = getOwnedDealIds();
-    const ownedAll = Object.entries(byDeal).filter(([dealId]) => ownedDealIds.has(dealId)).flatMap(([, list]) => list);
-    const localIds = new Set(ownedAll.map((g) => g.id));
+    const writableAll = writableEntries.flatMap(([, list]) => list);
+    const localIds = new Set(writableAll.map((g) => g.id));
     const { data: remote } = await supabase.from("org_groups").select("id, deal_id");
     const toDelete = (remote ?? [])
-      .filter((r: { id: string; deal_id: string }) => ownedDealIds.has(r.deal_id))
+      .filter((r: { id: string; deal_id: string }) => writableDealIds.has(r.deal_id))
       .map((r: { id: string; deal_id: string }) => r.id)
       .filter((id: string) => !localIds.has(id));
     if (toDelete.length > 0) {
@@ -646,11 +634,11 @@ async function syncTierConfigs(byDeal: Record<string, TierEntry[]>) {
     const probe = await supabase.from("tier_configs").select("id").limit(0);
     if (probe.error) return;
 
-    const ownedDealIds = getOwnedDealIds();
+    const writableDealIds = getWritableDealIds();
     // tier_configs は deal_id + tier がユニーク制約
-    // 全件削除して再挿入が最もシンプル（自分がオーナーの案件のみ）
+    // 全件削除して再挿入が最もシンプル（書き込み可能な案件のみ）
     for (const [dealId, entries] of Object.entries(byDeal)) {
-      if (!ownedDealIds.has(dealId)) continue;
+      if (!writableDealIds.has(dealId)) continue;
       await supabase.from("tier_configs").delete().eq("deal_id", dealId);
       if (entries.length > 0) {
         const { error } = await supabase
