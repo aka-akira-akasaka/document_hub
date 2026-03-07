@@ -32,10 +32,17 @@ export interface GroupBound {
 
 /** レイアウト計算のオプション */
 export interface GroupLayoutOptions {
-  /** ドラッグ中の並べ替えプレビュー */
+  /** ドラッグ中の並べ替えプレビュー（グループ） */
   reorderPreview?: {
     parentGroupId: string | null;
     draggedGroupId: string;
+    insertIndex: number;
+  } | null;
+  /** ドラッグ中のステークホルダー並べ替えプレビュー */
+  stakeholderReorderPreview?: {
+    groupId: string;
+    orgLevel: number;
+    draggedStakeholderId: string;
     insertIndex: number;
   } | null;
   /** 役職階層定義（表示順でソートするため） */
@@ -61,7 +68,7 @@ export function computeGroupLayout(
   const groupTree = buildGroupTree(orgGroups, options?.reorderPreview ?? undefined);
 
   // Step 2: ステークホルダーをグループに振り分け
-  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups, options?.orgLevelConfig);
+  const freeFloating = assignStakeholders(stakeholders, groupTree, orgGroups, options?.orgLevelConfig, options?.stakeholderReorderPreview);
 
   // Step 3: グループサイズをボトムアップで計算
   const maxColumns = options?.maxColumnsPerRow;
@@ -208,7 +215,8 @@ function assignStakeholders(
   stakeholders: Stakeholder[],
   groupTree: GroupTreeNode[],
   orgGroups: OrgGroup[],
-  orgLevelConfig?: { level: number }[]
+  orgLevelConfig?: { level: number }[],
+  stakeholderReorderPreview?: GroupLayoutOptions["stakeholderReorderPreview"]
 ): Stakeholder[] {
   const groupNodeMap = new Map<string, GroupTreeNode>();
   const collectNodes = (nodes: GroupTreeNode[]) => {
@@ -247,8 +255,28 @@ function assignStakeholders(
     node.members.sort((a, b) => {
       const orderA = levelOrderMap.get(a.orgLevel) ?? (1000 + a.orgLevel);
       const orderB = levelOrderMap.get(b.orgLevel) ?? (1000 + b.orgLevel);
-      return orderA - orderB;
+      if (orderA !== orderB) return orderA - orderB;
+      // 同一orgLevel内はsortOrder順
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
     });
+
+    // ステークホルダー並べ替えプレビューを適用
+    if (stakeholderReorderPreview && stakeholderReorderPreview.groupId === node.group.id) {
+      const { orgLevel, draggedStakeholderId, insertIndex } = stakeholderReorderPreview;
+      const levelMembers = node.members.filter((m) => m.orgLevel === orgLevel);
+      const otherMembers = node.members.filter((m) => m.orgLevel !== orgLevel);
+      const draggedIdx = levelMembers.findIndex((m) => m.id === draggedStakeholderId);
+      if (draggedIdx !== -1 && draggedIdx !== insertIndex) {
+        const [dragged] = levelMembers.splice(draggedIdx, 1);
+        levelMembers.splice(Math.min(insertIndex, levelMembers.length), 0, dragged);
+      }
+      // orgLevel順を保持しつつ、対象レベル内のみ並べ替え済みで再構成
+      node.members = [...otherMembers, ...levelMembers].sort((a, b) => {
+        const oA = levelOrderMap.get(a.orgLevel) ?? (1000 + a.orgLevel);
+        const oB = levelOrderMap.get(b.orgLevel) ?? (1000 + b.orgLevel);
+        return oA - oB;
+      });
+    }
   }
 
   return freeFloating;

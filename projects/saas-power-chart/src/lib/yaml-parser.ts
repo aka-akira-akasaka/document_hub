@@ -232,6 +232,7 @@ function walkStakeholders(
       notes: String(node.notes ?? ""),
       orgLevel: node.org_level != null ? Number(node.org_level) : 5,
       groupId: groupId,
+      sortOrder: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

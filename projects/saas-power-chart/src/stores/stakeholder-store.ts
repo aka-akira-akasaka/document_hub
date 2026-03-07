@@ -22,7 +22,7 @@ interface StakeholderState {
   orgLevelConfigByDeal: Record<string, OrgLevelEntry[]>;
 
   addStakeholder: (
-    data: Omit<Stakeholder, "id" | "createdAt" | "updatedAt">
+    data: Omit<Stakeholder, "id" | "createdAt" | "updatedAt" | "sortOrder"> & { sortOrder?: number }
   ) => Stakeholder;
   updateStakeholder: (
     id: string,
@@ -30,6 +30,8 @@ interface StakeholderState {
     updates: Partial<Stakeholder>
   ) => void;
   deleteStakeholder: (id: string, dealId: string) => void;
+  /** 同一グループ・同一orgLevel内でのsortOrder入れ替え */
+  reorderStakeholder: (id: string, dealId: string, newIndex: number) => void;
   getStakeholdersByDeal: (dealId: string) => Stakeholder[];
   getStakeholderById: (
     id: string,
@@ -85,18 +87,26 @@ export const useStakeholderStore = create<StakeholderState>()(
     orgLevelConfigByDeal: {},
 
     addStakeholder: (data) => {
+      // 同一グループ・同一orgLevel内の最大sortOrderを算出し、末尾に追加
+      const existing = get().stakeholdersByDeal[data.dealId] ?? [];
+      const siblings = existing.filter(
+        (s) => s.groupId === data.groupId && s.orgLevel === data.orgLevel
+      );
+      const maxOrder = siblings.reduce((max, s) => Math.max(max, s.sortOrder ?? 0), -1);
+
       const stakeholder: Stakeholder = {
         ...data,
+        sortOrder: data.sortOrder ?? (maxOrder + 1),
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       set((state) => {
-        const existing = state.stakeholdersByDeal[data.dealId] ?? [];
+        const current = state.stakeholdersByDeal[data.dealId] ?? [];
         return {
           stakeholdersByDeal: {
             ...state.stakeholdersByDeal,
-            [data.dealId]: [...existing, stakeholder],
+            [data.dealId]: [...current, stakeholder],
           },
         };
       });
@@ -132,6 +142,41 @@ export const useStakeholderStore = create<StakeholderState>()(
             [dealId]: rels.filter(
               (r) => r.sourceId !== id && r.targetId !== id
             ),
+          },
+        };
+      }),
+
+    reorderStakeholder: (id, dealId, newIndex) =>
+      set((state) => {
+        const list = state.stakeholdersByDeal[dealId] ?? [];
+        const target = list.find((s) => s.id === id);
+        if (!target) return state;
+
+        // 同じグループ・同じorgLevelの兄弟をsortOrder順で取得
+        const siblings = list
+          .filter((s) => s.groupId === target.groupId && s.orgLevel === target.orgLevel)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+        // 対象を除外して新しい位置に挿入
+        const filtered = siblings.filter((s) => s.id !== id);
+        const clampedIndex = Math.max(0, Math.min(newIndex, filtered.length));
+        filtered.splice(clampedIndex, 0, target);
+
+        // sortOrderを0始まりで振り直す
+        const orderMap = new Map<string, number>();
+        filtered.forEach((s, i) => orderMap.set(s.id, i));
+
+        const now = new Date().toISOString();
+        return {
+          stakeholdersByDeal: {
+            ...state.stakeholdersByDeal,
+            [dealId]: list.map((s) => {
+              const newOrder = orderMap.get(s.id);
+              if (newOrder !== undefined && newOrder !== s.sortOrder) {
+                return { ...s, sortOrder: newOrder, updatedAt: now };
+              }
+              return s;
+            }),
           },
         };
       }),

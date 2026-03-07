@@ -54,6 +54,7 @@ create table public.stakeholders (
   notes text not null default '',
   org_level integer not null default 1,
   group_id text,
+  sort_order integer not null default 0,
   position_x numeric,
   position_y numeric,
   created_at timestamptz not null default now(),

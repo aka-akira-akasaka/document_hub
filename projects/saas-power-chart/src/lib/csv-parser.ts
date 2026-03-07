@@ -121,6 +121,7 @@ export function parseCSV(csvText: string, dealId: string): CsvExtendedParseResul
       notes: d.notes ?? "",
       orgLevel: d.org_level ? Number(d.org_level) : 5,
       groupId: d.group_id || null,
+      sortOrder: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

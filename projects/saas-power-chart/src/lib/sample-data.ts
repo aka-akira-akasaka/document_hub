@@ -147,7 +147,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "会社全体の経営方針決定", relationshipOwner: "赤坂", parentId: null,
     email: "yamada@demo.co.jp", phone: "03-6000-0001",
     notes: "DX推進を経営の最重要テーマとして掲げる。決裁者",
-    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
 
   // ── 執行役員（フリーフローティング: 山田の下に3名横並び） ──
@@ -157,7 +157,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "技術戦略の立案・実行", relationshipOwner: "赤坂", parentId: S_YAMADA,
     email: "sato@demo.co.jp", phone: "03-6000-0002",
     notes: "最新技術への投資に積極的。AI・クラウドの導入を推進",
-    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_TAKAHASHI, dealId: DEAL, name: "高橋 直美", department: "コーポレート本部", title: "執行役員 CFO",
@@ -165,7 +165,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "財務統制・投資判断", relationshipOwner: "", parentId: S_YAMADA,
     email: "takahashi@demo.co.jp", phone: "03-6000-0003",
     notes: "ROIを厳密に評価。コスト削減効果が見えないと承認しない",
-    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_SUZUKI, dealId: DEAL, name: "鈴木 浩二", department: "ビジネス本部", title: "執行役員 CSO",
@@ -173,7 +173,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "売上・事業拡大の統括", relationshipOwner: "赤坂", parentId: S_YAMADA,
     email: "suzuki@demo.co.jp", phone: "03-6000-0004",
     notes: "営業現場の効率化ツールに関心が高い。パートナー連携に前向き",
-    groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: null, orgLevel: 1, createdAt: ts, updatedAt: ts,
   },
 
   // ── テクノロジー本部 > 開発部 ──
@@ -183,7 +183,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "プロダクト開発の品質管理・リソース配分", relationshipOwner: "", parentId: S_SATO,
     email: "nakamura@demo.co.jp", phone: "03-6000-1001",
     notes: "技術選定の最終判断者。アーキテクチャに強いこだわり",
-    groupId: G_DEV, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_DEV, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_WATANABE, dealId: DEAL, name: "渡辺 美咲", department: "開発部", title: "次長",
@@ -191,7 +191,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "開発プロセスの最適化", relationshipOwner: "", parentId: S_NAKAMURA,
     email: "watanabe@demo.co.jp", phone: "",
     notes: "アジャイル推進担当。ツール導入に中立的だが合理性があれば賛同",
-    groupId: G_DEV, orgLevel: 3, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_DEV, orgLevel: 3, createdAt: ts, updatedAt: ts,
   },
 
   // ── テクノロジー本部 > 開発部 > プロダクト開発課 ──
@@ -201,7 +201,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "新機能開発のリード", relationshipOwner: "", parentId: S_WATANABE,
     email: "kobayashi@demo.co.jp", phone: "",
     notes: "導入推進のキーパーソン。技術的な検証を自ら行う",
-    groupId: G_PRODUCT_DEV, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_PRODUCT_DEV, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_KATO, dealId: DEAL, name: "加藤 恵", department: "プロダクト開発課", title: "主任",
@@ -209,7 +209,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "フロントエンド開発", relationshipOwner: "", parentId: S_KOBAYASHI,
     email: "kato@demo.co.jp", phone: "",
     notes: "UIに詳しい。ユーザビリティ評価を担当",
-    groupId: G_PRODUCT_DEV, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_PRODUCT_DEV, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_YOSHIDA, dealId: DEAL, name: "吉田 裕也", department: "プロダクト開発課", title: "エンジニア",
@@ -217,7 +217,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "バックエンド開発", relationshipOwner: "", parentId: S_KOBAYASHI,
     email: "yoshida@demo.co.jp", phone: "",
     notes: "API設計・バックエンド実装担当",
-    groupId: G_PRODUCT_DEV, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_PRODUCT_DEV, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── テクノロジー本部 > 開発部 > インフラ課 ──
@@ -227,7 +227,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "インフラ設計・運用管理", relationshipOwner: "", parentId: S_WATANABE,
     email: "matsumoto@demo.co.jp", phone: "",
     notes: "セキュリティ基準に厳しい。SaaS導入にはセキュリティレビューを要求",
-    groupId: G_INFRA, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_INFRA, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_FUJITA, dealId: DEAL, name: "藤田 理恵", department: "インフラ課", title: "主任",
@@ -235,7 +235,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "クラウドインフラの運用", relationshipOwner: "", parentId: S_MATSUMOTO,
     email: "fujita@demo.co.jp", phone: "",
     notes: "AWS/GCP運用のスペシャリスト",
-    groupId: G_INFRA, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_INFRA, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── テクノロジー本部 > AI推進室 ──
@@ -245,7 +245,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "AI活用戦略の立案・推進", relationshipOwner: "", parentId: S_SATO,
     email: "inoue@demo.co.jp", phone: "03-6000-1010",
     notes: "LLM・生成AI活用の第一人者。新ツール導入に非常に積極的",
-    groupId: G_AI, orgLevel: 3, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_AI, orgLevel: 3, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_SAKAMOTO, dealId: DEAL, name: "坂本 陸", department: "AI推進室", title: "リサーチャー",
@@ -253,7 +253,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "AI技術のリサーチ・PoC実施", relationshipOwner: "", parentId: S_INOUE,
     email: "sakamoto@demo.co.jp", phone: "",
     notes: "技術検証を担当。PoCの実施・レポート作成が早い",
-    groupId: G_AI, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_AI, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── コーポレート本部 > 経営企画部 ──
@@ -263,7 +263,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "中期経営計画・投資管理", relationshipOwner: "", parentId: S_TAKAHASHI,
     email: "tanaka@demo.co.jp", phone: "03-6000-2001",
     notes: "投資判断の実務リーダー。数字に基づいた判断を重視",
-    groupId: G_PLANNING, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_PLANNING, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_YAMAGUCHI, dealId: DEAL, name: "山口 千佳", department: "経営企画部", title: "課長",
@@ -271,7 +271,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "事業計画のレビュー・分析", relationshipOwner: "", parentId: S_TANAKA,
     email: "yamaguchi@demo.co.jp", phone: "",
     notes: "Excel/スプレッドシートでの分析が得意。定量評価を担当",
-    groupId: G_PLANNING, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_PLANNING, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
 
   // ── コーポレート本部 > 人事部 ──
@@ -281,7 +281,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "人材戦略・組織開発", relationshipOwner: "", parentId: S_TAKAHASHI,
     email: "ito@demo.co.jp", phone: "03-6000-2010",
     notes: "組織可視化ツールに関心あり。タレントマネジメントとの連携を期待",
-    groupId: G_HR, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_HR, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_NISHIMURA, dealId: DEAL, name: "西村 沙也加", department: "人事部", title: "課長",
@@ -289,7 +289,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "採用・教育研修", relationshipOwner: "", parentId: S_ITO,
     email: "nishimura@demo.co.jp", phone: "",
     notes: "組織図データの活用で採用プロセス改善を検討中",
-    groupId: G_HR, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_HR, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_OKADA, dealId: DEAL, name: "岡田 凛", department: "人事部", title: "主任",
@@ -297,7 +297,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "採用事務・研修運営", relationshipOwner: "", parentId: S_NISHIMURA,
     email: "okada@demo.co.jp", phone: "",
     notes: "日常的にHRツールを利用。使い勝手のフィードバックが期待できる",
-    groupId: G_HR, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_HR, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── コーポレート本部 > 法務部 ──
@@ -307,7 +307,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "契約審査・コンプライアンス管理", relationshipOwner: "", parentId: S_TAKAHASHI,
     email: "ueda@demo.co.jp", phone: "03-6000-2020",
     notes: "外部SaaS利用の規約チェックが厳しい。個人情報保護に敏感",
-    groupId: G_LEGAL, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_LEGAL, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_MAEDA, dealId: DEAL, name: "前田 萌", department: "法務部", title: "リーガルカウンセル",
@@ -315,7 +315,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "契約書レビュー・法的リスク評価", relationshipOwner: "", parentId: S_UEDA,
     email: "maeda@demo.co.jp", phone: "",
     notes: "SaaS利用規約の詳細レビューを担当。データ所在地に関する質問が多い",
-    groupId: G_LEGAL, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_LEGAL, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
 
   // ── ビジネス本部 > 営業部 ──
@@ -325,7 +325,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "営業戦略の立案・実行", relationshipOwner: "赤坂", parentId: S_SUZUKI,
     email: "kimura@demo.co.jp", phone: "03-6000-3001",
     notes: "営業効率化に強い関心。ツール導入で成約率向上を目指す",
-    groupId: G_SALES, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_SALES, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_HAYASHI, dealId: DEAL, name: "林 真理子", department: "営業部", title: "次長",
@@ -333,7 +333,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "営業チームのマネジメント", relationshipOwner: "", parentId: S_KIMURA,
     email: "hayashi@demo.co.jp", phone: "",
     notes: "現場との橋渡し役。ツール定着の鍵を握る人物",
-    groupId: G_SALES, orgLevel: 3, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_SALES, orgLevel: 3, createdAt: ts, updatedAt: ts,
   },
 
   // ── ビジネス本部 > 営業部 > エンタープライズ営業課 ──
@@ -343,7 +343,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "大手企業向け営業の統括", relationshipOwner: "", parentId: S_HAYASHI,
     email: "shimizu@demo.co.jp", phone: "",
     notes: "大手SIer・金融機関を担当。組織図把握のニーズが最も高い",
-    groupId: G_ENTERPRISE, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_ENTERPRISE, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_MORISHITA, dealId: DEAL, name: "森下 愛", department: "エンタープライズ営業課", title: "主任",
@@ -351,7 +351,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "エンタープライズ顧客のアカウント管理", relationshipOwner: "", parentId: S_SHIMIZU,
     email: "morishita@demo.co.jp", phone: "",
     notes: "現在Excelで組織図を管理中。ツール化を強く希望",
-    groupId: G_ENTERPRISE, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_ENTERPRISE, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_ISHII, dealId: DEAL, name: "石井 遼", department: "エンタープライズ営業課", title: "担当",
@@ -359,7 +359,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "新規顧客開拓", relationshipOwner: "", parentId: S_SHIMIZU,
     email: "ishii@demo.co.jp", phone: "",
     notes: "入社2年目。顧客組織の理解に苦労しており可視化ツールに興味",
-    groupId: G_ENTERPRISE, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_ENTERPRISE, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── ビジネス本部 > 営業部 > SMB営業課 ──
@@ -369,7 +369,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "中小企業向け営業の統括", relationshipOwner: "", parentId: S_HAYASHI,
     email: "haraguchi@demo.co.jp", phone: "",
     notes: "SMBはスピード重視。ツールのシンプルさを求める",
-    groupId: G_SMB, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_SMB, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_NAKAJIMA, dealId: DEAL, name: "中島 彩", department: "SMB営業課", title: "主任",
@@ -377,7 +377,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "中小企業のアカウント管理", relationshipOwner: "", parentId: S_HARAGUCHI,
     email: "nakajima@demo.co.jp", phone: "",
     notes: "既存のCRMツールとの連携を期待。データ入力の手間を減らしたい",
-    groupId: G_SMB, orgLevel: 5, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_SMB, orgLevel: 5, createdAt: ts, updatedAt: ts,
   },
 
   // ── ビジネス本部 > マーケティング部 ──
@@ -387,7 +387,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "マーケティング戦略・ブランド管理", relationshipOwner: "", parentId: S_SUZUKI,
     email: "ikeda@demo.co.jp", phone: "03-6000-3020",
     notes: "顧客インサイトの可視化に関心。ABMとの連携を検討中",
-    groupId: G_MARKETING, orgLevel: 2, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_MARKETING, orgLevel: 2, createdAt: ts, updatedAt: ts,
   },
   {
     id: S_KAWAGUCHI, dealId: DEAL, name: "川口 翔", department: "マーケティング部", title: "マネージャー",
@@ -395,7 +395,7 @@ export const SAMPLE_STAKEHOLDERS: Stakeholder[] = [
     mission: "デジタルマーケティング・リード獲得", relationshipOwner: "", parentId: S_IKEDA,
     email: "kawaguchi@demo.co.jp", phone: "",
     notes: "MA/CRMツールに精通。データ連携の技術面を理解している",
-    groupId: G_MARKETING, orgLevel: 4, createdAt: ts, updatedAt: ts,
+    sortOrder: 0, groupId: G_MARKETING, orgLevel: 4, createdAt: ts, updatedAt: ts,
   },
 ];
 

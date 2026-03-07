@@ -74,6 +74,7 @@ export async function duplicateDeal(sourceDealId: string): Promise<string> {
       notes: s.notes,
       orgLevel: s.orgLevel,
       groupId: s.groupId ? groupIdMap.get(s.groupId) ?? null : null,
+      sortOrder: s.sortOrder,
       position: s.position ? { ...s.position } : undefined,
     });
     shIdMap.set(s.id, newSh.id);

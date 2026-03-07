@@ -159,7 +159,17 @@ export function StakeholderForm({
 
     captureSnapshot();
     if (isEdit && stakeholder) {
-      updateStakeholder(stakeholder.id, dealId, data);
+      const updates: Partial<import("@/types/stakeholder").Stakeholder> = { ...data };
+      // グループまたは役職階層が変わった場合、新しいグループ/レベルの末尾にsortOrderを設定
+      if (data.groupId !== stakeholder.groupId || data.orgLevel !== stakeholder.orgLevel) {
+        const allStakeholders = useStakeholderStore.getState().stakeholdersByDeal[dealId] ?? [];
+        const newSiblings = allStakeholders.filter(
+          (s) => s.groupId === data.groupId && s.orgLevel === data.orgLevel && s.id !== stakeholder.id
+        );
+        const maxOrder = newSiblings.reduce((max, s) => Math.max(max, s.sortOrder ?? 0), -1);
+        updates.sortOrder = maxOrder + 1;
+      }
+      updateStakeholder(stakeholder.id, dealId, updates);
     } else {
       const newStakeholder = addStakeholder(data);
       // 上司追加・中間追加の場合、元の子ノードを新ノードの部下にリンク

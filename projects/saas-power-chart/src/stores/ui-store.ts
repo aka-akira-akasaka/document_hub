@@ -100,13 +100,28 @@ interface UiState {
   draggingNodeId: string | null;
   setDraggingNodeId: (id: string | null) => void;
 
-  /** ドラッグ中の並べ替えプレビュー */
+  /** ドラッグ中の並べ替えプレビュー（グループ） */
   reorderPreview: {
     parentGroupId: string | null;
     draggedGroupId: string;
     insertIndex: number;
   } | null;
   setReorderPreview: (preview: { parentGroupId: string | null; draggedGroupId: string; insertIndex: number } | null) => void;
+
+  /** ドラッグ中のステークホルダー並べ替えプレビュー */
+  stakeholderReorderPreview: {
+    groupId: string;
+    orgLevel: number;
+    draggedStakeholderId: string;
+    insertIndex: number;
+  } | null;
+  setStakeholderReorderPreview: (preview: {
+    groupId: string;
+    orgLevel: number;
+    draggedStakeholderId: string;
+    insertIndex: number;
+  } | null) => void;
+
   clearReorderPreview: () => void;
 
   /** 新規作成されたグループにスクロールする */
@@ -199,7 +214,11 @@ export const useUiStore = create<UiState>()((set) => ({
 
   reorderPreview: null,
   setReorderPreview: (preview) => set({ reorderPreview: preview }),
-  clearReorderPreview: () => set({ reorderPreview: null, draggingNodeId: null }),
+
+  stakeholderReorderPreview: null,
+  setStakeholderReorderPreview: (preview) => set({ stakeholderReorderPreview: preview }),
+
+  clearReorderPreview: () => set({ reorderPreview: null, stakeholderReorderPreview: null, draggingNodeId: null }),
 
   scrollToGroupId: null,
   setScrollToGroup: (id) => set({ scrollToGroupId: id }),

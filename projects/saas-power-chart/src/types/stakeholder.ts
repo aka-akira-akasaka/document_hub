@@ -35,6 +35,8 @@ export interface Stakeholder {
   orgLevel: number;
   /** 所属するOrgGroupのID。nullならフリーフローティング */
   groupId: string | null;
+  /** 同一グループ・同一orgLevel内での表示順序（DnD入れ替え用） */
+  sortOrder: number;
   /** フリーフローティング時の自由配置座標（グループ所属時は不使用） */
   position?: { x: number; y: number };
   createdAt: string;

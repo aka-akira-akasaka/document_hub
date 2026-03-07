@@ -496,10 +496,19 @@ async function syncStakeholders(byDeal: Record<string, Stakeholder[]>) {
     const all = writableEntries.flatMap(([, list]) => list);
 
     if (all.length > 0) {
+      const rows = all.map(stakeholderToDb);
       const { error } = await supabase
         .from("stakeholders")
-        .upsert(all.map(stakeholderToDb), { onConflict: "id" });
-      if (error) throw error;
+        .upsert(rows, { onConflict: "id" });
+      if (error) {
+        // sort_order カラム未追加の場合: sort_order を除外してリトライ
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const rowsCompat = rows.map(({ sort_order: _so, ...rest }) => rest);
+        const { error: retryErr } = await supabase
+          .from("stakeholders")
+          .upsert(rowsCompat, { onConflict: "id" });
+        if (retryErr) throw retryErr;
+      }
     }
 
     // 削除検出: 書き込み可能な案件（オーナー + editor）に属するレコードを対象

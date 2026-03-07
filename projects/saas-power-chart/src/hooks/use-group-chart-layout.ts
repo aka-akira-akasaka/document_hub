@@ -67,21 +67,24 @@ export function useGroupChartLayout(dealId: string) {
 
   // グループベースレイアウト計算
   const groupBoundsRef = useRef<GroupBound[]>([]);
+  const layoutNodesRef = useRef<Node[]>([]);
   const reorderPreview = useUiStore((s) => s.reorderPreview);
+  const stakeholderReorderPreview = useUiStore((s) => s.stakeholderReorderPreview);
   const orgLevelConfig = useStakeholderStore((s) => s.orgLevelConfigByDeal[dealId]);
   const maxColumnsPerRow = useLayoutSettingsStore((s) => s.maxColumnsPerRow);
 
   const { layoutNodes, allEdges } = useMemo(() => {
-    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, orgLevelConfig, maxColumnsPerRow });
+    const result = computeGroupLayout(stakeholders, orgGroups, relEdges, { reorderPreview, stakeholderReorderPreview, orgLevelConfig, maxColumnsPerRow });
     // レイアウト済みノード位置に基づいて最近接ハンドルを自動選択
     const edgesWithHandles = assignHandlesToEdges(result.edges, result.nodes);
     // groupBoundsをRefに保存（コールバック内で参照するため）
     groupBoundsRef.current = result.groupBounds;
+    layoutNodesRef.current = result.nodes;
     return {
       layoutNodes: result.nodes,
       allEdges: edgesWithHandles,
     };
-  }, [stakeholders, orgGroups, relEdges, reorderPreview, orgLevelConfig, maxColumnsPerRow]);
+  }, [stakeholders, orgGroups, relEdges, reorderPreview, stakeholderReorderPreview, orgLevelConfig, maxColumnsPerRow]);
 
   // 全ノードはレイアウトエンジンの計算結果をそのまま使用（自由座標移動は廃止）
   const nodes: Node[] = layoutNodes;
@@ -157,6 +160,7 @@ export function useGroupChartLayout(dealId: string) {
   const setDragOverGroupId = useUiStore((s) => s.setDragOverGroupId);
   const setDraggingNodeId = useUiStore((s) => s.setDraggingNodeId);
   const setReorderPreview = useUiStore((s) => s.setReorderPreview);
+  const setStakeholderReorderPreview = useUiStore((s) => s.setStakeholderReorderPreview);
 
   const onNodeDragStart = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -214,16 +218,63 @@ export function useGroupChartLayout(dealId: string) {
         }
         return;
       }
+      // ステークホルダーノード: グループ内並べ替え or グループ間移動
       const absPos = getNodeAbsolutePosition(node);
       const targetGroupId = findDropTargetGroup(absPos);
       setDragOverGroupId(targetGroupId);
       setReorderPreview(null);
+
+      const draggedStakeholder = stakeholders.find((s) => s.id === node.id);
+      if (!draggedStakeholder) {
+        setStakeholderReorderPreview(null);
+        return;
+      }
+
+      const currentGroupId = draggedStakeholder.groupId;
+
+      if (targetGroupId && targetGroupId === currentGroupId) {
+        // 同じグループ内 → 同orgLevelの兄弟ノードとの並べ替えを計算
+        const sameLevelSiblings = stakeholders
+          .filter((s) => s.groupId === currentGroupId && s.orgLevel === draggedStakeholder.orgLevel)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+        if (sameLevelSiblings.length > 1) {
+          const dragCenterX = absPos.x + GROUP_LAYOUT.nodeWidth / 2;
+          const groupBound = groupBoundsRef.current.find((gb) => gb.groupId === currentGroupId);
+
+          if (groupBound) {
+            const otherSiblings = sameLevelSiblings.filter((s) => s.id !== node.id);
+            let insertIndex = 0;
+            for (const sib of otherSiblings) {
+              const sibNode = layoutNodesRef.current.find((n) => n.id === sib.id);
+              if (sibNode) {
+                const sibAbsX = groupBound.x + sibNode.position.x + GROUP_LAYOUT.nodeWidth / 2;
+                if (sibAbsX < dragCenterX) insertIndex++;
+              }
+            }
+
+            setStakeholderReorderPreview({
+              groupId: currentGroupId,
+              orgLevel: draggedStakeholder.orgLevel,
+              draggedStakeholderId: node.id,
+              insertIndex,
+            });
+          } else {
+            setStakeholderReorderPreview(null);
+          }
+        } else {
+          setStakeholderReorderPreview(null);
+        }
+      } else {
+        setStakeholderReorderPreview(null);
+      }
     },
-    [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId, setReorderPreview, orgGroups, dealId]
+    [getNodeAbsolutePosition, findDropTargetGroup, setDragOverGroupId, setReorderPreview, setStakeholderReorderPreview, orgGroups, stakeholders, dealId]
   );
 
   const updateGroup = useOrgGroupStore((s) => s.updateGroup);
   const reorderGroup = useOrgGroupStore((s) => s.reorderGroup);
+  const reorderStakeholder = useStakeholderStore((s) => s.reorderStakeholder);
 
   const clearReorderPreview = useUiStore((s) => s.clearReorderPreview);
 
@@ -294,17 +345,26 @@ export function useGroupChartLayout(dealId: string) {
         return;
       }
 
-      // ステークホルダーノードのD&D（既存ロジック）
+      // ステークホルダーノードのD&D
       const absPos = getNodeAbsolutePosition(node);
       const targetGroupId = findDropTargetGroup(absPos);
       const s = stakeholders.find((st) => st.id === node.id);
       const currentGroupId = s?.groupId ?? null;
 
       if (targetGroupId !== currentGroupId) {
+        // グループ間移動（+ sortOrder付番）
         captureSnapshot();
         const targetGroup = orgGroups.find((g) => g.id === targetGroupId);
+
+        // 移動先グループ・同orgLevelの末尾にsortOrderを設定
+        const targetSiblings = stakeholders.filter(
+          (st) => st.groupId === targetGroupId && st.orgLevel === (s?.orgLevel ?? 1)
+        );
+        const maxOrder = targetSiblings.reduce((max, st) => Math.max(max, st.sortOrder ?? 0), -1);
+
         const updates: Partial<import("@/types/stakeholder").Stakeholder> = {
           groupId: targetGroupId,
+          sortOrder: maxOrder + 1,
         };
         if (targetGroupId && targetGroup) {
           updates.department = targetGroup.name;
@@ -321,12 +381,40 @@ export function useGroupChartLayout(dealId: string) {
         } else {
           toast.success(`${s?.name ?? ""} をフリーに移動しました`);
         }
+      } else if (targetGroupId && s) {
+        // 同じグループ内 → 兄弟間の並べ替え
+        const sameLevelSiblings = stakeholders
+          .filter((st) => st.groupId === currentGroupId && st.orgLevel === s.orgLevel)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+        if (sameLevelSiblings.length > 1) {
+          const dragCenterX = absPos.x + GROUP_LAYOUT.nodeWidth / 2;
+          const groupBound = groupBoundsRef.current.find((gb) => gb.groupId === currentGroupId);
+
+          if (groupBound) {
+            const otherSiblings = sameLevelSiblings.filter((st) => st.id !== node.id);
+            let newIndex = 0;
+            for (const sib of otherSiblings) {
+              const sibNode = layoutNodesRef.current.find((n) => n.id === sib.id);
+              if (sibNode) {
+                const sibAbsX = groupBound.x + sibNode.position.x + GROUP_LAYOUT.nodeWidth / 2;
+                if (sibAbsX < dragCenterX) newIndex++;
+              }
+            }
+
+            const currentIndex = sameLevelSiblings.findIndex((st) => st.id === node.id);
+            if (newIndex !== currentIndex) {
+              captureSnapshot();
+              reorderStakeholder(node.id, dealId, newIndex);
+            }
+          }
+        }
       } else if (!targetGroupId) {
         // フリーフローティングのまま移動 → 座標を保存
         updateNodePosition(node.id, dealId, { x: node.position.x, y: node.position.y });
       }
     },
-    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, captureSnapshot, setDragOverGroupId, clearReorderPreview]
+    [dealId, stakeholders, orgGroups, getNodeAbsolutePosition, findDropTargetGroup, updateStakeholder, updateNodePosition, updateGroup, reorderGroup, reorderStakeholder, captureSnapshot, setDragOverGroupId, clearReorderPreview]
   );
 
   return { nodes, edges: allEdges, onNodeDragStop, onNodeDragStart, onNodeDrag };
