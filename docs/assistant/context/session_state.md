@@ -4,7 +4,7 @@
 > 重要な決定・進捗があるたびに更新します。
 > **新しいセッション開始時は必ずこのファイルを最初に読んでください。**
 
-*最終更新: 2026-03-14*
+*最終更新: 2026-03-14（Phase 3進行中）*
 
 ---
 
@@ -37,7 +37,7 @@
 |---|---|---|
 | Phase 1 | 市場調査・PRD・ナラティブ | ✅ 完了 |
 | Phase 2 | MVPアプリ実装（React Native + Expo） | ✅ 完了 |
-| Phase 3 | App Store申請準備 | ⏳ 未着手 |
+| Phase 3 | App Store申請準備 | 🔄 進行中 |
 | Phase 4 | マーケティング・ローンチ | ⏳ 未着手 |
 
 ---
@@ -56,6 +56,7 @@
 
 | 日付 | 決定内容 | 理由 |
 |---|---|---|
+| 2026-03-14 | Phase 3開始 — オンボーディング・通知・App Storeメタデータ | Phase 2完了を受けて申請準備へ |
 | 2026-03-14 | Phase 2（MVP実装）完了 | 27ファイル・3421行を実装 |
 | 2026-03-14 | React Native (Expo) + TypeScript採用 | クロスプラット対応・エコシステム成熟度 |
 | 2026-03-14 | Supabase採用（DB+Auth+Edge Functions） | フルスタック・OSS・コスト効率 |
@@ -65,23 +66,30 @@
 
 ---
 
-## Phase 3 着手のための前提条件
+## Phase 3 進捗（App Store申請準備）
 
-Phase 3（App Store申請準備）を開始するには：
+### ✅ 完了
+- `eas.json` — EAS Buildプロファイル設定（development/preview/production）
+- `src/services/notifications.ts` — プッシュ通知サービス実装
+- `src/screens/OnboardingScreen.tsx` — 4枚スライド + Apple Sign In + 通知許可
+- `src/screens/SettingsScreen.tsx` — 通知ON/OFF + 時刻選択UIを追加
+- `src/navigation/AppNavigator.tsx` — 初回起動時オンボーディング表示
+- `app-store/metadata_ja.md` — App Store説明文・キーワード（日本語）
+- `app-store/metadata_en.md` — App Store説明文・キーワード（英語）
+- `app-store/privacy_policy.md` — プライバシーポリシー（日英）
 
-1. ユーザーが以下を用意する必要がある：
+### ⏳ 残タスク（TestFlight配信のために必要）
+1. **ユーザーアクション（外部）:**
    - Supabaseプロジェクト作成 + schema.sql実行
-   - OpenAI APIキー（Whisper用）
-   - Anthropic APIキー（Claude Haiku用）
    - Apple Developer Program登録（$99/年）
-   - RevenueCatアカウント設定
+   - App Store ConnectでApp ID作成
+   - EAS CLIで `eas init` 実行 → projectIdを `app.json` に設定
+   - RevenueCatアカウント + 製品ID設定
 
-2. その後Claudeが担当する：
-   - App Store用スクリーンショット仕様作成
-   - App説明文（日本語・英語）
-   - プライバシーポリシー作成
-   - EAS Build設定
-   - TestFlight配信設定
+2. **Claudeが次に行うこと（上記完了後）:**
+   - TestFlight用ビルド検証
+   - App Store Connectへのメタデータ入稿ガイド
+   - スクリーンショット制作仕様の詳細化
 
 ---
 
