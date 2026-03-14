@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Echo",
+    "slug": "echo-ai-journal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.aigenesis.echo",
+      "buildNumber": "1",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Echoはあなたの声を録音してAIインサイトを生成するために、マイクへのアクセスが必要です。",
+        "NSUserNotificationUsageDescription": "毎日のリマインダーと週次Echoレターの通知を送信するために使用します。"
+      }
+    },
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-av",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7C3AED"
+        }
+      ]
+    ],
+    "extra": {
+      "supabaseUrl": "YOUR_SUPABASE_URL",
+      "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
+      "openaiApiKey": "YOUR_OPENAI_API_KEY",
+      "anthropicApiKey": "YOUR_ANTHROPIC_API_KEY",
+      "revenuecatApiKey": "YOUR_REVENUECAT_IOS_API_KEY",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
+  }
+}
