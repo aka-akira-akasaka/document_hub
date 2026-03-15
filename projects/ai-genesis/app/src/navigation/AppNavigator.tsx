@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../config/theme';
 import type { RootStackParamList, MainTabParamList } from '../types';
 
 // 画面
+import OnboardingScreen from '../screens/OnboardingScreen';
 import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
 import InsightScreen from '../screens/InsightScreen';
@@ -15,6 +17,8 @@ import TimelineScreen from '../screens/TimelineScreen';
 import LetterScreen from '../screens/LetterScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PaywallScreen from '../screens/PaywallScreen';
+
+const ONBOARDING_KEY = 'echo_onboarding_done';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -57,12 +61,33 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const { user, isInitialized } = useAuth();
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
-  if (!isInitialized) {
+  React.useEffect(() => {
+    void AsyncStorage.getItem(ONBOARDING_KEY).then(val => {
+      setOnboardingDone(val === 'true');
+    });
+  }, []);
+
+  if (!isInitialized || onboardingDone === null) {
     return (
       <View style={styles.loading}>
         <Text style={styles.loadingText}>Echo</Text>
       </View>
+    );
+  }
+
+  const handleOnboardingComplete = async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    setOnboardingDone(true);
+  };
+
+  // 初回起動: オンボーディング表示
+  if (!onboardingDone) {
+    return (
+      <NavigationContainer>
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      </NavigationContainer>
     );
   }
 
