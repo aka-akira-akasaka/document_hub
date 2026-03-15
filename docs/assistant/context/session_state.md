@@ -4,7 +4,7 @@
 > 重要な決定・進捗があるたびに更新します。
 > **新しいセッション開始時は必ずこのファイルを最初に読んでください。**
 
-*最終更新: 2026-03-14（Phase 3進行中）*
+*最終更新: 2026-03-15（Phase 3進行中）*
 
 ---
 
@@ -77,19 +77,21 @@
 - `app-store/metadata_ja.md` — App Store説明文・キーワード（日本語）
 - `app-store/metadata_en.md` — App Store説明文・キーワード（英語）
 - `app-store/privacy_policy.md` — プライバシーポリシー（日英）
+- `app-store/submission_guide.md` — App Store Connect 入稿ガイド（STEP 1〜12）
 
 ### ⏳ 残タスク（TestFlight配信のために必要）
 1. **ユーザーアクション（外部）:**
    - Supabaseプロジェクト作成 + schema.sql実行
    - Apple Developer Program登録（$99/年）
-   - App Store ConnectでApp ID作成
+   - App Store ConnectでApp ID作成 + バンドルID登録
    - EAS CLIで `eas init` 実行 → projectIdを `app.json` に設定
-   - RevenueCatアカウント + 製品ID設定
+   - RevenueCatアカウント + 製品ID設定（`echo_pro_monthly`, `echo_pro_annual`）
+   - `app.json` のプレースホルダーを実際のAPIキーに置き換え
+   - デモアカウント（`demo@echo-journal.app`）作成
 
 2. **Claudeが次に行うこと（上記完了後）:**
-   - TestFlight用ビルド検証
-   - App Store Connectへのメタデータ入稿ガイド
-   - スクリーンショット制作仕様の詳細化
+   - スクリーンショット制作仕様の詳細化（`screenshot_spec.md`）
+   - TestFlight配信後の外部テスター招待フロー
 
 ---
 
