@@ -31,6 +31,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
   const setOrgLevels = useStakeholderStore((s) => s.setOrgLevels);
   const storedTiers = useOrgGroupStore((s) => s.tierConfigByDeal[dealId]);
   const setTierConfig = useOrgGroupStore((s) => s.setTierConfig);
+  const remapGroupTiers = useOrgGroupStore((s) => s.remapGroupTiers);
   const stakeholders = useStakeholderStore((s) => s.stakeholdersByDeal[dealId] ?? EMPTY_STAKEHOLDERS);
   const orgGroups = useOrgGroupStore((s) => s.groupsByDeal[dealId] ?? EMPTY_GROUPS);
 
@@ -44,9 +45,11 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
     storedLevels && storedLevels.length > 0 ? [...storedLevels] : []
   );
 
-  // ── 組織種別のローカル編集状態 ──
+  // ── 組織種別のローカル編集状態（tier降順 = 上が高い種別）──
   const [tiers, setTiers] = useState<TierEntry[]>(() =>
-    storedTiers && storedTiers.length > 0 ? [...storedTiers] : []
+    storedTiers && storedTiers.length > 0
+      ? [...storedTiers].sort((a, b) => b.tier - a.tier)
+      : []
   );
 
   // D&D状態
@@ -59,7 +62,11 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
       const currentLevels = useStakeholderStore.getState().orgLevelConfigByDeal[dealId];
       setLevels(currentLevels && currentLevels.length > 0 ? [...currentLevels] : []);
       const currentTiers = useOrgGroupStore.getState().tierConfigByDeal[dealId];
-      setTiers(currentTiers && currentTiers.length > 0 ? [...currentTiers] : []);
+      setTiers(
+        currentTiers && currentTiers.length > 0
+          ? [...currentTiers].sort((a, b) => b.tier - a.tier)
+          : []
+      );
       setMainTab("levels");
       setLevelSubView("edit");
     }
@@ -108,10 +115,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
   }, []);
 
   const handleTierRemove = useCallback((index: number) => {
-    setTiers((prev) => {
-      const filtered = prev.filter((_, i) => i !== index);
-      return filtered.map((entry, i) => ({ ...entry, tier: i }));
-    });
+    setTiers((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // ── 共通 D&D ハンドラ ──
@@ -153,7 +157,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
       const next = [...prev];
       const [moved] = next.splice(fromIndex, 1);
       next.splice(dropIndex, 0, moved);
-      return next.map((entry, i) => ({ ...entry, tier: i }));
+      return next; // tier番号は保持し、保存時にリマップ
     });
     dragIndexRef.current = null;
     setDragOverIndex(null);
@@ -175,13 +179,24 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
   }, [dealId, levels, setOrgLevels, onOpenChange]);
 
   const handleSaveTiers = useCallback(() => {
-    const cleaned = tiers
-      .filter((t) => t.label.trim() !== "")
-      .map((t, i) => ({ tier: i, label: t.label.trim() }));
-    setTierConfig(dealId, cleaned);
+    const cleaned = tiers.filter((t) => t.label.trim() !== "");
+    const count = cleaned.length;
+    // 上から順に高い種別: position 0 → tier count-1（最上位）, position N-1 → tier 0（最下位）
+    const newConfig = cleaned.map((t, i) => ({
+      tier: count - 1 - i,
+      label: t.label.trim(),
+    }));
+    // 既存の tier番号 → 新しい tier番号 のマッピングを構築
+    const mapping = new Map<number, number>();
+    cleaned.forEach((t, i) => {
+      mapping.set(t.tier, count - 1 - i);
+    });
+    // 部署が参照している tier 番号を更新してから設定を保存
+    remapGroupTiers(dealId, mapping);
+    setTierConfig(dealId, newConfig);
     toast.success("組織種別を保存しました");
     onOpenChange(false);
-  }, [dealId, tiers, setTierConfig, onOpenChange]);
+  }, [dealId, tiers, setTierConfig, remapGroupTiers, onOpenChange]);
 
   // ── ピボットテーブル用データ ──
   const pivotData = useMemo(() => {
@@ -230,6 +245,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
     onDrop: (e: React.DragEvent, i: number) => void,
     addLabel: string,
     placeholder: string,
+    indexLabel?: (index: number, total: number) => string,
   ) => (
     <>
       <div className="space-y-1 max-h-[400px] overflow-y-auto">
@@ -250,7 +266,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
           >
             <GripVertical className="w-4 h-4 text-gray-400 cursor-grab shrink-0" />
             <span className="w-8 text-center text-xs text-muted-foreground font-mono shrink-0">
-              {prefix}{index + (prefix === "T" ? 0 : 1)}
+              {indexLabel ? indexLabel(index, items.length) : `${prefix}${index + 1}`}
             </span>
             <Input
               value={entry.label}
@@ -432,7 +448,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
           {/* ── 組織種別タブ ── */}
           <TabsContent value="tiers" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              部署の種別を定義します。種別ごとに部署を分類し、レイアウトの階層に反映されます。
+              上から順に高い種別になります。ドラッグで並べ替えできます。
             </p>
             {renderEditList(
               tiers,
@@ -443,6 +459,7 @@ export function OrgLevelEditor({ dealId, open, onOpenChange }: OrgLevelEditorPro
               handleTierDrop,
               "種別を追加",
               "例: 会議体",
+              (i, total) => `T${total - 1 - i}`,
             )}
             <div className="flex justify-end pt-2">
               <div className="flex gap-2">

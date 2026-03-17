@@ -43,6 +43,9 @@ interface OrgGroupState {
   /** 案件の部署種別定義を丸ごと更新 */
   setTierConfig: (dealId: string, entries: TierEntry[]) => void;
 
+  /** 部署の tier 番号をマッピングに基づいて一括更新 */
+  remapGroupTiers: (dealId: string, mapping: Map<number, number>) => void;
+
   /** 案件データの一括削除 */
   clearDealData: (dealId: string) => void;
   /** Supabase からの一括読み込み用 */
@@ -176,6 +179,24 @@ export const useOrgGroupStore = create<OrgGroupState>()(
               const newOrder = orderMap.get(g.id);
               if (newOrder !== undefined && newOrder !== g.sortOrder) {
                 return { ...g, sortOrder: newOrder, updatedAt: now };
+              }
+              return g;
+            }),
+          },
+        };
+      }),
+
+    remapGroupTiers: (dealId, mapping) =>
+      set((state) => {
+        const list = state.groupsByDeal[dealId] ?? [];
+        const now = new Date().toISOString();
+        return {
+          groupsByDeal: {
+            ...state.groupsByDeal,
+            [dealId]: list.map((g) => {
+              const newTier = mapping.get(g.tier);
+              if (newTier !== undefined && newTier !== g.tier) {
+                return { ...g, tier: newTier, updatedAt: now };
               }
               return g;
             }),
